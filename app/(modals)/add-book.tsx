@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     height: 50,
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
   },
@@ -247,6 +247,6 @@ const styles = StyleSheet.create({
   changeLink: { fontFamily: FONTS.uiSemiBold, fontSize: 13, marginTop: 4 },
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1 },
   formatRow: { flexDirection: 'row', gap: 10 },
-  formatPill: { flex: 1, gap: 6, height: 72, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  formatPill: { flex: 1, gap: 6, height: 72, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   formatText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
 });

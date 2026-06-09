@@ -26,10 +26,10 @@ interface StreakFlameProps {
 export function StreakFlame({ count, isAtRisk = false, size = 96 }: StreakFlameProps) {
   const t = useTheme();
   const reduceMotion = useReducedMotion();
-  const color = isAtRisk ? t.gold : t.accent;
+  // Streak owns the coral reward colour; gold (hazard) when at risk.
+  const color = isAtRisk ? t.gold : t.ember;
 
   const scale = useSharedValue(1);
-  const glow = useSharedValue(0.4);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -42,15 +42,9 @@ export function StreakFlame({ count, isAtRisk = false, size = 96 }: StreakFlameP
       -1,
       false
     );
-    glow.value = withRepeat(
-      withSequence(withTiming(0.7, { duration: dur }), withTiming(0.4, { duration: dur })),
-      -1,
-      false
-    );
-  }, [scale, glow, reduceMotion, isAtRisk]);
+  }, [scale, reduceMotion, isAtRisk]);
 
   const flameStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
 
   return (
     <View
@@ -59,15 +53,14 @@ export function StreakFlame({ count, isAtRisk = false, size = 96 }: StreakFlameP
       accessibilityLabel={`Current streak: ${count} ${count === 1 ? 'day' : 'days'}.${isAtRisk ? ' At risk.' : ''}`}
     >
       <View style={[styles.flameBox, { width: size, height: size }]}>
-        <Animated.View style={[styles.glow, glowStyle, { backgroundColor: color, width: size * 0.85, height: size * 0.85, borderRadius: size }]} />
         <Animated.View style={flameStyle}>
           <Ionicons name="flame" size={size * 0.62} color={color} />
         </Animated.View>
       </View>
       <View style={styles.labelRow}>
         <Text style={[styles.count, { color: t.text }]}>{count}</Text>
-        <Text style={[styles.unit, { color: t.textSec }]}>
-          {isAtRisk ? 'day streak · at risk' : `day streak`}
+        <Text style={[styles.unit, { color: isAtRisk ? t.gold : t.textSec }]}>
+          {isAtRisk ? 'DAY STREAK · AT RISK' : `DAY STREAK`}
         </Text>
       </View>
     </View>
@@ -77,8 +70,7 @@ export function StreakFlame({ count, isAtRisk = false, size = 96 }: StreakFlameP
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: 4 },
   flameBox: { alignItems: 'center', justifyContent: 'center' },
-  glow: { position: 'absolute' },
   labelRow: { alignItems: 'center' },
-  count: { fontFamily: FONTS.uiBold, fontSize: 52, lineHeight: 58, fontVariant: ['tabular-nums'] },
-  unit: { fontFamily: FONTS.uiMedium, fontSize: 14, marginTop: -2 },
+  count: { fontFamily: FONTS.monoBold, fontSize: 52, lineHeight: 58, fontVariant: ['tabular-nums'] },
+  unit: { fontFamily: FONTS.monoMedium, fontSize: 12, marginTop: 0, letterSpacing: 1 },
 });

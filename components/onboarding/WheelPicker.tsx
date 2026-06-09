@@ -105,7 +105,10 @@ function WheelItem({
 }
 
 const styles = StyleSheet.create({
-  wrap: { height: PICKER_HEIGHT, justifyContent: 'center' },
+  // alignSelf stretch so the picker fills its (often centre-aligned) parent —
+  // otherwise the wrap collapses to content width and the selection band shrinks
+  // to a thin vertical sliver over the digits.
+  wrap: { height: PICKER_HEIGHT, alignSelf: 'stretch', justifyContent: 'center' },
   bandOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'stretch',
@@ -114,9 +117,9 @@ const styles = StyleSheet.create({
   band: {
     height: ITEM_HEIGHT,
     marginHorizontal: 24,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
   },
   item: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  itemText: { fontFamily: FONTS.uiSemiBold, fontSize: 26, fontVariant: ['tabular-nums'] },
+  itemText: { fontFamily: FONTS.monoBold, fontSize: 26, fontVariant: ['tabular-nums'] },
 });

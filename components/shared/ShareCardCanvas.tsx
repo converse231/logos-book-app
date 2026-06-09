@@ -108,8 +108,8 @@ const headlineShadow = {
 } as const;
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 28, justifyContent: 'space-between', overflow: 'hidden' },
-  darkBg: { backgroundColor: '#0E0F14' },
+  card: { borderRadius: 0, justifyContent: 'space-between', overflow: 'hidden' },
+  darkBg: { backgroundColor: '#141414' },
   transparentBg: { backgroundColor: 'transparent' },
   glow: {
     position: 'absolute',
@@ -117,13 +117,13 @@ const styles = StyleSheet.create({
     left: '15%',
     right: '15%',
     height: '50%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(61,123,255,0.10)',
+    borderRadius: 0,
+    backgroundColor: 'rgba(255,61,31,0.10)',
   },
   top: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   bookTitle: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14, color: '#FFFFFF' },
   coverWrap: {
-    borderRadius: 8,
+    borderRadius: 0,
     shadowColor: '#000000',
     shadowOpacity: 0.45,
     shadowRadius: 12,

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 import { ReadingProjection } from '@/hooks/useReadingProjection';
 
 interface GoalProjectionCardProps {
@@ -31,9 +31,9 @@ export function GoalProjectionCard({ projection }: GoalProjectionCardProps) {
       <View style={[styles.divider, { backgroundColor: t.border }]} />
 
       <View style={styles.statsRow}>
-        <Stat value={String(projectedBooks)} label="books" color={t.text} sub={t.textSec} />
-        <Stat value={fmt(projectedPages)} label="pages" color={t.text} sub={t.textSec} />
-        <Stat value={deadlineLabel.replace('by ', '')} label="finish" color={t.text} sub={t.textSec} />
+        <Stat value={String(projectedBooks)} label="BOOKS" color={t.text} sub={t.textSec} />
+        <Stat value={fmt(projectedPages)} label="PAGES" color={t.text} sub={t.textSec} />
+        <Stat value={deadlineLabel.replace('by ', '')} label="FINISH" color={t.text} sub={t.textSec} />
       </View>
 
       <Text style={[styles.caption, { color: t.textSec }]}>
@@ -57,14 +57,14 @@ function Stat({ value, label, color, sub }: { value: string; label: string; colo
 const fmt = (n: number) => n.toLocaleString('en-US');
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 20, borderWidth: 1, padding: 20, gap: 14 },
+  card: { borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 20, gap: 14, ...SHADOW.card },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  headerText: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2 },
-  headline: { fontFamily: FONTS.uiBold, fontSize: 34, fontVariant: ['tabular-nums'] },
-  divider: { height: 1, opacity: 0.7 },
+  headerText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.2 },
+  headline: { fontFamily: FONTS.monoBold, fontSize: 32, fontVariant: ['tabular-nums'] },
+  divider: { height: 2 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
   stat: { alignItems: 'center', gap: 3 },
-  statValue: { fontFamily: FONTS.uiBold, fontSize: 20, fontVariant: ['tabular-nums'] },
-  statLabel: { fontFamily: FONTS.uiMedium, fontSize: 12 },
+  statValue: { fontFamily: FONTS.monoBold, fontSize: 20, fontVariant: ['tabular-nums'] },
+  statLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.5 },
   caption: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },
 });

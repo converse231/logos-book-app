@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, PALETTE, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 import { Badge } from '@/services/types';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 
@@ -39,17 +39,17 @@ function BadgeMedallion({ badge, onPress }: { badge: Badge; onPress?: (b: Badge)
         style={[
           styles.medallion,
           unlocked
-            ? { backgroundColor: 'rgba(255,197,61,0.16)', borderColor: 'rgba(255,197,61,0.5)' }
+            ? { backgroundColor: PALETTE.gold, borderColor: t.border }
             : { backgroundColor: t.bgTer, borderColor: t.border },
         ]}
       >
         <Ionicons
           name={badge.iconName as keyof typeof Ionicons.glyphMap}
           size={26}
-          color={unlocked ? t.gold : t.textTer}
+          color={unlocked ? '#141414' : t.textTer}
         />
         {!unlocked && ratio === 0 ? (
-          <View style={[styles.lock, { backgroundColor: t.bgSec }]}>
+          <View style={[styles.lock, { backgroundColor: t.bgSec, borderColor: t.border }]}>
             <Ionicons name="lock-closed" size={11} color={t.textSec} />
           </View>
         ) : null}
@@ -60,16 +60,16 @@ function BadgeMedallion({ badge, onPress }: { badge: Badge; onPress?: (b: Badge)
       </Text>
 
       {unlocked ? (
-        <Text style={[styles.status, { color: t.gold }]}>Earned</Text>
+        <Text style={[styles.status, { color: t.gold }]}>EARNED</Text>
       ) : ratio > 0 ? (
         <View style={styles.progress}>
-          <ProgressBar value={ratio} max={1} height={4} accent={t.gold} animateOnMount={false} />
+          <ProgressBar value={ratio} max={1} height={6} accent={PALETTE.gold} animateOnMount={false} />
           <Text style={[styles.progressText, { color: t.textTer }]}>
             {badge.progressValue}/{badge.unlockThreshold}
           </Text>
         </View>
       ) : (
-        <Text style={[styles.status, { color: t.textTer }]}>Locked</Text>
+        <Text style={[styles.status, { color: t.textTer }]}>LOCKED</Text>
       )}
     </Pressable>
   );
@@ -82,14 +82,15 @@ const styles = StyleSheet.create({
   medallion: {
     width: 60,
     height: 60,
-    borderRadius: 30,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOW.sm,
   },
-  lock: { position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  name: { fontFamily: FONTS.uiSemiBold, fontSize: 12, textAlign: 'center' },
-  status: { fontFamily: FONTS.uiMedium, fontSize: 11 },
-  progress: { width: '86%', alignItems: 'center', gap: 3 },
-  progressText: { fontFamily: FONTS.uiMedium, fontSize: 10, fontVariant: ['tabular-nums'] },
+  lock: { position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  name: { fontFamily: FONTS.uiBold, fontSize: 12, textAlign: 'center' },
+  status: { fontFamily: FONTS.monoMedium, fontSize: 10, letterSpacing: 0.5 },
+  progress: { width: '90%', alignItems: 'center', gap: 3 },
+  progressText: { fontFamily: FONTS.mono, fontSize: 10, fontVariant: ['tabular-nums'] },
 });

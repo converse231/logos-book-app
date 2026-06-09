@@ -5,7 +5,8 @@ import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { PressBlock } from '@/components/shared/PressBlock';
 
 interface StepperProps {
   value: number;
@@ -147,11 +148,11 @@ export function Stepper({
       {/* contextual hint — swipe hint when not editing, keyboard hint when not editing */}
       <View style={styles.hintRow} pointerEvents="none">
         {editing ? (
-          <Text style={[styles.hint, { color: t.accent }]}>type a number, then tap Done</Text>
+          <Text style={[styles.hint, { color: t.accent }]}>TYPE A NUMBER, THEN TAP DONE</Text>
         ) : (
           <>
             <Ionicons name="chevron-back" size={14} color={t.textTer} />
-            <Text style={[styles.hint, { color: t.textTer }]}>swipe or tap to type</Text>
+            <Text style={[styles.hint, { color: t.textTer }]}>SWIPE OR TAP TO TYPE</Text>
             <Ionicons name="chevron-forward" size={14} color={t.textTer} />
           </>
         )}
@@ -172,10 +173,11 @@ function StepButton({
   label: string;
 }) {
   return (
-    <Pressable
+    <PressBlock
       onPress={onPress}
       disabled={disabled}
-      accessibilityRole="button"
+      offset={3}
+      haptic="none"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
       hitSlop={8}
@@ -186,7 +188,7 @@ function StepButton({
       ]}
     >
       <Ionicons name={icon} size={26} color={color} />
-    </Pressable>
+    </PressBlock>
   );
 }
 
@@ -194,26 +196,26 @@ const styles = StyleSheet.create({
   container: { gap: 10 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
   btn: {
-    width: 56, height: 56, borderRadius: 28, borderWidth: 1,
+    width: 56, height: 56, borderRadius: 0, borderWidth: BORDER_WIDTH,
     alignItems: 'center', justifyContent: 'center',
   },
   disabled: { opacity: 0.4 },
   valueWrap: { alignItems: 'center', minWidth: 120, paddingVertical: 4 },
   value: {
-    fontFamily: FONTS.displayBold, fontSize: 72, lineHeight: 78,
+    fontFamily: FONTS.monoBold, fontSize: 64, lineHeight: 72,
     fontVariant: ['tabular-nums'],
   },
   // TextInput in edit mode: same size as the Text so no layout jump
   valueInput: {
-    fontFamily: FONTS.displayBold, fontSize: 72, lineHeight: 78,
+    fontFamily: FONTS.monoBold, fontSize: 64, lineHeight: 72,
     fontVariant: ['tabular-nums'],
     textAlign: 'center', minWidth: 120, padding: 0,
     borderBottomWidth: 2,
   },
-  unit: { fontFamily: FONTS.uiMedium, fontSize: 15, marginTop: -4 },
+  unit: { fontFamily: FONTS.mono, fontSize: 14, marginTop: -4, letterSpacing: 0.5 },
   hintRow: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', gap: 4,
   },
-  hint: { fontFamily: FONTS.uiMedium, fontSize: 12, letterSpacing: 0.3 },
+  hint: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.5 },
 });

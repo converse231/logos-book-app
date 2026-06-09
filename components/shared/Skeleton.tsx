@@ -22,7 +22,7 @@ interface SkeletonProps {
 // token-driven surface (bgTer) — reads as "loading" without the jank of a
 // gradient sweep, and reserves the final layout's space to avoid content jump.
 // Reduced-motion → a static muted block.
-export function Skeleton({ width = '100%', height = 16, radius = 8, style }: SkeletonProps) {
+export function Skeleton({ width = '100%', height = 16, radius = 0, style }: SkeletonProps) {
   const t = useTheme();
   const reduce = useReducedMotion();
   const opacity = useSharedValue(0.6);

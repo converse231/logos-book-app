@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 
 interface ErrorStateProps {
   onRetry: () => void;
@@ -32,10 +32,14 @@ export function ErrorState({
         }}
         accessibilityRole="button"
         accessibilityLabel="Try again"
-        style={({ pressed }) => [styles.btn, { backgroundColor: t.accent }, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.btn,
+          { backgroundColor: t.accent, borderColor: t.border },
+          pressed && styles.pressed,
+        ]}
       >
         <Ionicons name="refresh" size={18} color={t.onAccent} />
-        <Text style={[styles.btnText, { color: t.onAccent }]}>Try again</Text>
+        <Text style={[styles.btnText, { color: t.onAccent }]}>TRY AGAIN</Text>
       </Pressable>
     </View>
   );
@@ -43,10 +47,28 @@ export function ErrorState({
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36, gap: 12 },
-  icon: { width: 64, height: 64, borderRadius: 32, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: FONTS.uiBold, fontSize: 19, textAlign: 'center' },
+  icon: {
+    width: 64,
+    height: 64,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOW.sm,
+  },
+  title: { fontFamily: FONTS.uiBold, fontSize: 19, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5 },
   message: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 300 },
-  btn: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, paddingHorizontal: 24, borderRadius: 14, marginTop: 8 },
-  pressed: { opacity: 0.85 },
-  btnText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
+  btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 48,
+    paddingHorizontal: 24,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH_THICK,
+    marginTop: 8,
+    ...SHADOW.sm,
+  },
+  pressed: { opacity: 0.85, transform: [{ translateX: 2 }, { translateY: 2 }] },
+  btnText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1 },
 });

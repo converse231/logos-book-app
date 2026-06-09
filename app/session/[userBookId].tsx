@@ -12,22 +12,21 @@ import {
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeIn,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { ANIMATION, FONTS, PALETTE } from '@/theme/tokens';
+import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
 import { localDateString, useSessionStore, uuidv4 } from '@/stores/sessionStore';
+import { PressBlock } from '@/components/shared/PressBlock';
 import { SessionTimer } from '@/components/session/SessionTimer';
 import { SessionControlBar } from '@/components/session/SessionControlBar';
 import { ReadingCarousel } from '@/components/session/ReadingCarousel';
@@ -328,11 +327,11 @@ export default function SessionTracker() {
                 />
               </Pressable>
 
-              <ConfirmButton label="Start reading" icon="play" onPress={beginSession} reduce={reduce} />
+              <ConfirmButton label="Start reading" icon="play" onPress={beginSession} />
               <Text style={[styles.readyHint, { color: t.textTer }]}>The timer starts the moment you tap.</Text>
             </>
           ) : (
-            <ConfirmButton label="Add a book" icon="add" onPress={goAddReading} reduce={reduce} />
+            <ConfirmButton label="Add a book" icon="add" onPress={goAddReading} />
           )}
         </View>
       </View>
@@ -450,36 +449,18 @@ function ConfirmButton({
   label,
   icon,
   onPress,
-  reduce,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
-  reduce: boolean;
 }) {
-  const scale = useSharedValue(1);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Animated.View style={[styles.startBtnWrap, style]}>
-      <View style={styles.startGlow} pointerEvents="none" />
-      <Pressable
-        onPressIn={() => !reduce && (scale.value = withTiming(0.97, { duration: ANIMATION.durationFast }))}
-        onPressOut={() => !reduce && (scale.value = withSpring(1, ANIMATION.springSnappy))}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-      >
-        <LinearGradient
-          colors={[PALETTE.accentGradStart, PALETTE.accentGradEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.startBtn}
-        >
-          <Ionicons name={icon} size={22} color={PALETTE.onAccent} />
-          <Text style={styles.startBtnText}>{label}</Text>
-        </LinearGradient>
-      </Pressable>
-    </Animated.View>
+    <View style={styles.startBtnWrap}>
+      <PressBlock onPress={onPress} accessibilityLabel={label} style={styles.startBtn}>
+        <Ionicons name={icon} size={22} color={PALETTE.onAccent} />
+        <Text style={styles.startBtnText}>{label.toUpperCase()}</Text>
+      </PressBlock>
+    </View>
   );
 }
 
@@ -492,7 +473,7 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 42,
     height: 42,
-    borderRadius: 21,
+    borderRadius: 0,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -510,10 +491,10 @@ const styles = StyleSheet.create({
     gap: 12,
     width: '100%',
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 0,
     borderWidth: 1,
   },
-  focusIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  focusIcon: { width: 32, height: 32, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
   focusTextWrap: { flex: 1, gap: 2 },
   focusTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   focusSub: { fontFamily: FONTS.uiRegular, fontSize: 12, lineHeight: 16 },
@@ -524,8 +505,8 @@ const styles = StyleSheet.create({
     right: 16,
     top: 10,
     bottom: -6,
-    borderRadius: 16,
-    opacity: 0.35,
+    borderRadius: 0,
+    opacity: 0,
     backgroundColor: PALETTE.accent,
   },
   startBtn: {
@@ -534,9 +515,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     minHeight: 58,
-    borderRadius: 16,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH_THICK,
+    borderColor: INK,
+    backgroundColor: PALETTE.accent,
   },
-  startBtnText: { fontFamily: FONTS.uiBold, fontSize: 17, color: PALETTE.onAccent },
+  startBtnText: { fontFamily: FONTS.uiBold, fontSize: 16, letterSpacing: 1, color: PALETTE.onAccent },
   readyHint: { fontFamily: FONTS.uiRegular, fontSize: 12.5 },
 
   // Running tracker
@@ -552,7 +536,7 @@ const styles = StyleSheet.create({
   // End-page entry
   entryOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
   entryBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: PALETTE.overlay },
-  entrySheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 12 },
+  entrySheet: { borderTopLeftRadius: 0, borderTopRightRadius: 0, padding: 24, gap: 12 },
   entryTitle: { fontFamily: FONTS.uiBold, fontSize: 20 },
   entryHint: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },
   entryInput: {
@@ -564,7 +548,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginVertical: 8,
   },
-  entryBtn: { minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  entryBtn: { minHeight: 52, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
   btnBusy: { opacity: 0.7 },
   entryBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 16, color: PALETTE.onAccent },
 });

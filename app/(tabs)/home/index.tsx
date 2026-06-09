@@ -2,21 +2,17 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { HomeData, Review, StatsData, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
+import { PressBlock } from '@/components/shared/PressBlock';
 import { Card } from '@/components/shared/Card';
 import { BookCover } from '@/components/shared/BookCover';
 import { ProgressBar } from '@/components/shared/ProgressBar';
@@ -195,7 +191,7 @@ export default function Home() {
             <View style={styles.firstRow}>
               <View style={[styles.streakCell, { borderColor: t.border, backgroundColor: t.bgTer }]}>
                 <Text style={[styles.cellLabel, { color: t.textSec }]}>STREAK</Text>
-                <Ionicons name="flame" size={26} color={data.streak.isAtRisk ? t.gold : t.accent} />
+                <Ionicons name="flame" size={26} color={data.streak.isAtRisk ? t.gold : t.ember} />
                 <Text style={[styles.streakCount, { color: t.text }]}>{data.streak.currentStreak}</Text>
                 <Text style={[styles.streakUnit, { color: t.textSec }]}>
                   {data.streak.currentStreak === 1 ? 'day' : 'days'}
@@ -419,33 +415,11 @@ function Carousel({ children }: { children: React.ReactNode }) {
 }
 
 function StartButton({ onPress }: { onPress: () => void }) {
-  const reduceMotion = useReducedMotion();
-  const scale = useSharedValue(1);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Animated.View style={style}>
-      <View style={[styles.startGlow, { backgroundColor: PALETTE.accent }]} pointerEvents="none" />
-      <Pressable
-        onPressIn={() => !reduceMotion && (scale.value = withTiming(0.97, { duration: 90 }))}
-        onPressOut={() => !reduceMotion && (scale.value = withTiming(1, { duration: 120 }))}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          onPress();
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Start a reading session"
-      >
-        <LinearGradient
-          colors={[PALETTE.accentGradStart, PALETTE.accentGradEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.startBtn}
-        >
-          <Ionicons name="play" size={20} color={PALETTE.onAccent} />
-          <Text style={styles.startBtnText}>Start Reading</Text>
-        </LinearGradient>
-      </Pressable>
-    </Animated.View>
+    <PressBlock onPress={onPress} accessibilityLabel="Start a reading session" containerStyle={styles.startBtnSpacing} style={styles.startBtn}>
+      <Ionicons name="play" size={20} color={PALETTE.onAccent} />
+      <Text style={styles.startBtnText}>START READING</Text>
+    </PressBlock>
   );
 }
 
@@ -490,12 +464,12 @@ const styles = StyleSheet.create({
   skelHeaderText: { flex: 1, gap: 6 },
   skelRow: { flexDirection: 'row', gap: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 46, height: 46, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: FONTS.uiBold, fontSize: 19 },
   headerText: { flex: 1, gap: 1 },
   greeting: { fontFamily: FONTS.uiRegular, fontSize: 14 },
   name: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 32 },
-  iconBtn: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   atRisk: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   atRiskText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14, lineHeight: 19 },
 
@@ -503,12 +477,13 @@ const styles = StyleSheet.create({
   firstRow: { flexDirection: 'row', gap: 14, alignItems: 'stretch' },
   streakCell: {
     width: 92,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 16,
+    borderWidth: BORDER_WIDTH,
+    borderRadius: 0,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+    ...SHADOW.sm,
   },
   cellLabel: { fontFamily: FONTS.uiBold, fontSize: 10, letterSpacing: 1, marginBottom: 2 },
   streakCount: { fontFamily: FONTS.uiBold, fontSize: 30, lineHeight: 34, fontVariant: ['tabular-nums'], marginTop: 2 },
@@ -538,12 +513,22 @@ const styles = StyleSheet.create({
   bookAuthor: { fontFamily: FONTS.uiRegular, fontSize: 13 },
   bookProgress: { gap: 5, marginTop: 8 },
   pageText: { fontFamily: FONTS.uiMedium, fontSize: 12, fontVariant: ['tabular-nums'] },
-  startGlow: { position: 'absolute', left: 20, right: 20, top: 8, bottom: -4, borderRadius: 16, opacity: 0.35 },
-  startBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: 16, marginTop: 16 },
-  startBtnText: { fontFamily: FONTS.uiBold, fontSize: 16, color: PALETTE.onAccent },
+  startBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 54,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH_THICK,
+    borderColor: INK,
+    backgroundColor: PALETTE.accent,
+  },
+  startBtnSpacing: { marginTop: 16 },
+  startBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent },
   emptyActive: { gap: 14, alignItems: 'center' },
   emptyText: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
-  emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, height: 46, borderRadius: 14 },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, height: 46, borderRadius: 0 },
   emptyCtaText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   section: { gap: 14 },
@@ -555,7 +540,7 @@ const styles = StyleSheet.create({
   addTile: {
     width: 96,
     height: 96 / 0.66,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderStyle: 'dashed',
     alignItems: 'center',

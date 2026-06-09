@@ -57,7 +57,7 @@ export function CountUp({ to, durationMs = 1100, delayMs = 0, style }: CountUpPr
 
 const styles = StyleSheet.create({
   base: {
-    fontFamily: FONTS.uiBold,
+    fontFamily: FONTS.monoBold,
     fontVariant: ['tabular-nums'],
     padding: 0,
   },

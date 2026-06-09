@@ -39,18 +39,18 @@ function BookGridCardImpl({ userBook, width, onPress }: BookGridCardProps) {
       <View style={styles.footer}>
         {status === 'reading' ? (
           <View style={styles.progressWrap}>
-            <ProgressBar value={pct} max={1} height={5} animateOnMount={false} />
+            <ProgressBar value={pct} max={1} height={6} animateOnMount={false} />
             <Text style={[styles.footMeta, { color: t.textTer }]}>{Math.round(pct * 100)}%</Text>
           </View>
         ) : status === 'finished' ? (
           <View style={styles.statusRow}>
             <Ionicons name="checkmark-circle" size={14} color={t.accent} />
-            <Text style={[styles.footMeta, { color: t.accent }]}>Finished</Text>
+            <Text style={[styles.footMeta, { color: t.accent }]}>FINISHED</Text>
           </View>
         ) : status === 'dnf' ? (
-          <Text style={[styles.footMeta, { color: t.textTer }]}>Did not finish</Text>
+          <Text style={[styles.footMeta, { color: t.textTer }]}>DID NOT FINISH</Text>
         ) : (
-          <Text style={[styles.footMeta, { color: t.textTer }]}>Want to read</Text>
+          <Text style={[styles.footMeta, { color: t.textTer }]}>WANT TO READ</Text>
         )}
       </View>
     </Pressable>
@@ -62,10 +62,10 @@ export const BookGridCard = memo(BookGridCardImpl);
 const styles = StyleSheet.create({
   cell: { gap: 6 },
   pressed: { opacity: 0.78 },
-  title: { fontFamily: FONTS.uiSemiBold, fontSize: 14, lineHeight: 18, marginTop: 2 },
+  title: { fontFamily: FONTS.uiBold, fontSize: 14, lineHeight: 18, marginTop: 4 },
   author: { fontFamily: FONTS.uiRegular, fontSize: 12 },
   footer: { marginTop: 2, minHeight: 16, justifyContent: 'center' },
   progressWrap: { gap: 4 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  footMeta: { fontFamily: FONTS.uiMedium, fontSize: 11, fontVariant: ['tabular-nums'] },
+  footMeta: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.4, fontVariant: ['tabular-nums'] },
 });

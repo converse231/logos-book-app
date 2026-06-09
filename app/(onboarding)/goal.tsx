@@ -61,7 +61,7 @@ export default function Goal() {
                 accessibilityLabel={`${p} books per year`}
                 style={[
                   styles.preset,
-                  { borderColor: active ? t.accent : t.border, backgroundColor: active ? 'rgba(61,123,255,0.12)' : 'transparent' },
+                  { borderColor: active ? t.accent : t.border, backgroundColor: active ? 'rgba(255,61,31,0.12)' : 'transparent' },
                 ]}
               >
                 <Text style={[styles.presetText, { color: active ? t.accent : t.textSec }]}>
@@ -92,7 +92,7 @@ function presetLabel(p: number): string {
 const styles = StyleSheet.create({
   body: { paddingHorizontal: 24, paddingTop: 16, gap: 24 },
   presets: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
-  preset: { paddingHorizontal: 16, height: 40, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  preset: { paddingHorizontal: 16, height: 40, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   presetText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   estimate: { fontFamily: FONTS.uiRegular, fontSize: 13, textAlign: 'center', marginTop: -12 },
 });

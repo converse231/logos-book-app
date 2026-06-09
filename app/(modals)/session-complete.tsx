@@ -1,25 +1,20 @@
-import { Fragment, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn,
   FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withSpring,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, type ThemeTokens } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, type ThemeTokens } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { useSessionStore } from '@/stores/sessionStore';
 import { CountUp } from '@/components/onboarding/CountUp';
 import { Confetti } from '@/components/shared/Confetti';
-import { Card } from '@/components/shared/Card';
-import { PphCounter } from '@/components/session/PphCounter';
+import { PressBlock } from '@/components/shared/PressBlock';
 import { ReadingInsightCard } from '@/components/session/ReadingInsightCard';
 import { BookCover } from '@/components/shared/BookCover';
 
@@ -76,25 +71,7 @@ export default function SessionComplete() {
 
   const heroValue = isAudio ? minutes : pages;
   const heroLabel = isAudio ? 'minutes listened' : pages === 1 ? 'page read' : 'pages read';
-
-  // Supporting metrics inside the hero card (the headline stat lives above them).
-  const metricNodes: React.ReactNode[] = [];
-  if (!isAudio) {
-    metricNodes.push(<Metric key="min" value={`${minutes}`} label={minutes === 1 ? 'minute' : 'minutes'} color={t.text} sub={t.textSec} />);
-    metricNodes.push(
-      <View key="pph" style={styles.metricCol}>
-        <PphCounter pagesRead={pages} elapsedSeconds={result.durationSeconds} />
-      </View>
-    );
-  }
-  if (isPB) {
-    metricNodes.push(
-      <View key="best" style={styles.metricCol}>
-        <Ionicons name="trophy" size={24} color={t.gold} />
-        <Text style={[styles.metricLabel, { color: t.gold }]}>best</Text>
-      </View>
-    );
-  }
+  const pph = !isAudio && result.durationSeconds > 0 ? Math.round(pages / (result.durationSeconds / 3600)) : 0;
 
   const finish = () => {
     clearResult();
@@ -108,67 +85,75 @@ export default function SessionComplete() {
       <Confetti fire={fireConfetti} particleCount={isPB ? 120 : 80} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Hero — the book, big, with a celebration sticker stamped on its corner */}
         <Reveal d={d(0)} reduce={reduce}>
-          <CheckBadge isPB={isPB} reduce={reduce} t={t} />
+          {active?.bookTitle ? (
+            <View style={styles.coverWrap}>
+              <BookCover url={active.coverUrl} title={active.bookTitle} format={active.format} width={124} />
+              <View style={[styles.coverSticker, { backgroundColor: isPB ? t.gold : t.accent, borderColor: t.border }]}>
+                <Ionicons name={isPB ? 'trophy' : 'checkmark'} size={20} color={isPB ? '#141414' : t.onAccent} />
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.checkCircle, { backgroundColor: isPB ? 'rgba(255,197,61,0.16)' : 'rgba(255,61,31,0.14)', borderColor: t.border }]}>
+              <Ionicons name={isPB ? 'trophy' : 'checkmark'} size={42} color={isPB ? t.gold : t.accent} />
+            </View>
+          )}
         </Reveal>
 
         <Reveal d={d(110)} reduce={reduce}>
-          <Text style={[styles.title, { color: t.text }]}>{isPB ? 'Personal best' : 'Session complete'}</Text>
+          <View style={styles.titleBlock}>
+            <Text style={[styles.title, { color: t.text }]}>{isPB ? 'PERSONAL BEST' : 'SESSION COMPLETE'}</Text>
+            {active?.bookTitle ? (
+              <Text style={[styles.bookCtx, { color: t.textSec }]} numberOfLines={1}>
+                {active.bookTitle.toUpperCase()}
+              </Text>
+            ) : null}
+          </View>
         </Reveal>
 
-        {/* Book context — grounds the celebration in what was just read */}
-        {active?.bookTitle ? (
-          <Reveal d={d(170)} reduce={reduce}>
-            <View style={styles.bookRow}>
-              <BookCover url={active.coverUrl} title={active.bookTitle} format={active.format} width={24} />
-              <Text style={[styles.bookCtx, { color: t.textSec }]} numberOfLines={1}>
-                {active.bookTitle}
-              </Text>
+        {/* Headline stat — a single colour-blocked figure */}
+        <Reveal d={d(210)} reduce={reduce}>
+          <View style={[styles.heroStat, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
+            <CountUp to={heroValue} style={[styles.heroNum, { color: t.text }]} />
+            <Text style={[styles.heroStatLabel, { color: t.text }]}>{heroLabel.toUpperCase()}</Text>
+          </View>
+        </Reveal>
+
+        {/* Supporting telemetry — crisp bordered cells */}
+        <Reveal d={d(290)} reduce={reduce}>
+          <View style={styles.statRow}>
+            <StatCell value={`${minutes}`} label={minutes === 1 ? 'MINUTE' : 'MINUTES'} t={t} />
+            {!isAudio ? <StatCell value={`${pph}`} label="PAGES / HR" t={t} /> : null}
+            {isPB ? <StatCell value="★" label="BEST" color={t.gold} t={t} /> : null}
+          </View>
+        </Reveal>
+
+        {/* Rewards — streak (amber) + XP (gold) blocks */}
+        {result.streak.incremented || result.xpGained > 0 ? (
+          <Reveal d={d(380)} reduce={reduce}>
+            <View style={styles.rewardRow}>
+              {result.streak.incremented ? (
+                <RewardTile tone="emerald" icon="flame" label="DAY STREAK" badge="+1" t={t}>
+                  <Text style={[styles.rewardValue, { color: t.ember }]}>{result.streak.current}</Text>
+                </RewardTile>
+              ) : null}
+              <RewardTile tone="gold" icon="sparkles" label="XP EARNED" t={t}>
+                <Text style={[styles.rewardValue, { color: t.gold }]}>+</Text>
+                <CountUp to={result.xpGained} style={[styles.rewardValue, { color: t.gold }]} />
+              </RewardTile>
             </View>
           </Reveal>
         ) : null}
-
-        {/* Hero card — headline stat + supporting metrics in one elevated surface */}
-        <Reveal d={d(250)} reduce={reduce}>
-          <Card glow padded style={styles.heroCard}>
-            <CountUp to={heroValue} style={[styles.heroNum, { color: t.text }]} />
-            <Text style={[styles.heroLabel, { color: t.textSec }]}>{heroLabel}</Text>
-            {metricNodes.length > 0 ? (
-              <View style={[styles.heroMetrics, { borderTopColor: t.border }]}>
-                {metricNodes.map((node, i) => (
-                  <Fragment key={i}>
-                    {i > 0 ? <View style={[styles.divider, { backgroundColor: t.border }]} /> : null}
-                    {node}
-                  </Fragment>
-                ))}
-              </View>
-            ) : null}
-          </Card>
-        </Reveal>
-
-        {/* Reward row — streak + XP side by side instead of a loose stack */}
-        <Reveal d={d(380)} reduce={reduce}>
-          <View style={styles.rewardRow}>
-            {result.streak.incremented ? (
-              <RewardTile tone="emerald" icon="flame" label="day streak" badge="+1" t={t}>
-                <Text style={[styles.rewardValue, { color: t.accent }]}>{result.streak.current}</Text>
-              </RewardTile>
-            ) : null}
-            <RewardTile tone="gold" icon="sparkles" label="XP earned" t={t}>
-              <Text style={[styles.rewardValue, { color: t.gold }]}>+</Text>
-              <CountUp to={result.xpGained} style={[styles.rewardValue, { color: t.gold }]} />
-            </RewardTile>
-          </View>
-        </Reveal>
 
         {/* Badges */}
         {result.newBadges.length > 0 ? (
           <Reveal d={d(500)} reduce={reduce}>
             <View style={styles.badges}>
               {result.newBadges.map((b) => (
-                <View key={b.id} style={[styles.badge, { backgroundColor: t.bgSec, borderColor: t.gold }]}>
+                <View key={b.id} style={[styles.badge, { backgroundColor: t.bgSec, borderColor: t.border }]}>
                   <Ionicons name="ribbon" size={18} color={t.gold} />
-                  <Text style={[styles.badgeText, { color: t.text }]}>{b.name}</Text>
+                  <Text style={[styles.badgeText, { color: t.text }]}>{b.name.toUpperCase()}</Text>
                 </View>
               ))}
             </View>
@@ -181,18 +166,22 @@ export default function SessionComplete() {
         entering={reduce ? undefined : FadeIn.delay(d(620))}
         style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}
       >
-        <Pressable
+        <PressBlock
           onPress={share}
-          accessibilityRole="button"
           accessibilityLabel="Share your reading card"
           style={[styles.shareBtn, { backgroundColor: t.accent }]}
         >
           <Ionicons name="share-social" size={20} color={PALETTE.onAccent} />
-          <Text style={styles.shareBtnText}>Share your card</Text>
-        </Pressable>
-        <Pressable onPress={finish} accessibilityRole="button" accessibilityLabel="Done" style={styles.doneBtn}>
-          <Text style={[styles.doneText, { color: t.textSec }]}>Done</Text>
-        </Pressable>
+          <Text style={styles.shareBtnText}>SHARE YOUR CARD</Text>
+        </PressBlock>
+        <PressBlock
+          onPress={finish}
+          haptic="light"
+          accessibilityLabel="Done"
+          style={[styles.doneBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
+        >
+          <Text style={[styles.doneText, { color: t.text }]}>DONE</Text>
+        </PressBlock>
       </Animated.View>
 
       {/* Variable-reward insight */}
@@ -218,26 +207,15 @@ function Reveal({ d, reduce, children }: { d: number; reduce: boolean; children:
   return <Animated.View entering={FadeInUp.delay(d).duration(440)}>{children}</Animated.View>;
 }
 
-function CheckBadge({ isPB, reduce, t }: { isPB: boolean; reduce: boolean; t: ThemeTokens }) {
-  const scale = useSharedValue(reduce ? 1 : 0.4);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  useEffect(() => {
-    if (!reduce) scale.value = withDelay(120, withSpring(1, { damping: 10, stiffness: 150 }));
-  }, [reduce, scale]);
+function StatCell({ value, label, color, t }: { value: string; label: string; color?: string; t: ThemeTokens }) {
   return (
-    <Animated.View
-      style={[styles.checkCircle, { backgroundColor: isPB ? 'rgba(255,197,61,0.16)' : 'rgba(61,123,255,0.14)' }, style]}
-    >
-      <Ionicons name={isPB ? 'trophy' : 'checkmark'} size={42} color={isPB ? t.gold : t.accent} />
-    </Animated.View>
-  );
-}
-
-function Metric({ value, label, color, sub }: { value: string; label: string; color: string; sub: string }) {
-  return (
-    <View style={styles.metricCol}>
-      <Text style={[styles.metricValue, { color }]}>{value}</Text>
-      <Text style={[styles.metricLabel, { color: sub }]}>{label}</Text>
+    <View style={[styles.statCell, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+      <Text style={[styles.statValue, { color: color ?? t.text }]} numberOfLines={1}>
+        {value}
+      </Text>
+      <Text style={[styles.statLabel, { color: t.textSec }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -257,16 +235,17 @@ function RewardTile({
   badge?: string;
   children: React.ReactNode;
 }) {
-  const color = tone === 'gold' ? t.gold : t.accent;
-  const tint = tone === 'gold' ? 'rgba(255,197,61,0.12)' : 'rgba(61,123,255,0.12)';
+  // Non-gold tone is the streak tile → amber (ember), never the vermilion primary.
+  const color = tone === 'gold' ? t.gold : t.ember;
+  const tint = tone === 'gold' ? 'rgba(255,197,61,0.14)' : 'rgba(255,138,30,0.16)';
   return (
-    <View style={[styles.rewardTile, { backgroundColor: tint }]}>
+    <View style={[styles.rewardTile, { backgroundColor: tint, borderColor: t.border }]}>
       {badge ? (
-        <View style={[styles.rewardBadge, { backgroundColor: color }]}>
+        <View style={[styles.rewardBadge, { backgroundColor: color, borderColor: t.border }]}>
           <Text style={styles.rewardBadgeText}>{badge}</Text>
         </View>
       ) : null}
-      <Ionicons name={icon} size={22} color={color} />
+      <Ionicons name={icon} size={20} color={color} />
       <View style={styles.rewardValueRow}>{children}</View>
       <Text style={[styles.rewardLabel, { color: t.textSec }]}>{label}</Text>
     </View>
@@ -275,45 +254,57 @@ function RewardTile({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24, gap: 16 },
-  checkCircle: { width: 78, height: 78, borderRadius: 39, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: FONTS.displayBold, fontSize: 30, textAlign: 'center' },
-  bookRow: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: 260 },
-  bookCtx: { fontFamily: FONTS.uiMedium, fontSize: 14, flexShrink: 1 },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24, gap: 16 },
 
-  heroCard: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 22 },
-  heroNum: { fontFamily: FONTS.uiBold, fontSize: 76, lineHeight: 82, textAlign: 'center', minWidth: 120 },
-  heroLabel: { fontFamily: FONTS.uiMedium, fontSize: 16, marginTop: -2 },
-  heroMetrics: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'stretch',
-    gap: 16,
-    marginTop: 18,
-    paddingTop: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
+  // Cover hero
+  coverWrap: { alignSelf: 'center', position: 'relative' },
+  coverSticker: {
+    position: 'absolute', top: -12, right: -12, width: 38, height: 38, borderRadius: 0,
+    borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center',
   },
-  metricCol: { alignItems: 'center', gap: 2, minWidth: 64 },
-  divider: { width: 1, height: 34 },
-  metricValue: { fontFamily: FONTS.uiBold, fontSize: 26, fontVariant: ['tabular-nums'] },
-  metricLabel: { fontFamily: FONTS.uiMedium, fontSize: 13 },
+  checkCircle: { alignSelf: 'center', width: 78, height: 78, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
 
+  // Title block
+  titleBlock: { alignItems: 'center', gap: 4 },
+  title: { fontFamily: FONTS.displayBold, fontSize: 28, letterSpacing: -0.5, textAlign: 'center' },
+  bookCtx: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.6, textAlign: 'center', maxWidth: 280 },
+
+  // Headline stat block
+  heroStat: {
+    alignSelf: 'stretch', borderRadius: 0, borderWidth: BORDER_WIDTH_THICK,
+    paddingVertical: 18, paddingHorizontal: 20, ...SHADOW.card,
+  },
+  heroNum: { fontFamily: FONTS.monoBold, fontSize: 60, lineHeight: 64, fontVariant: ['tabular-nums'] },
+  heroStatLabel: { fontFamily: FONTS.monoMedium, fontSize: 13, letterSpacing: 1, marginTop: 2 },
+
+  // Supporting stat cells
+  statRow: { flexDirection: 'row', alignSelf: 'stretch', gap: 12 },
+  statCell: { flex: 1, borderRadius: 0, borderWidth: BORDER_WIDTH, paddingVertical: 14, paddingHorizontal: 12, gap: 2, ...SHADOW.sm },
+  statValue: { fontFamily: FONTS.monoBold, fontSize: 24, fontVariant: ['tabular-nums'] },
+  statLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5 },
+
+  // Reward blocks
   rewardRow: { flexDirection: 'row', alignSelf: 'stretch', gap: 12 },
-  rewardTile: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 18, borderRadius: 18, overflow: 'hidden' },
-  rewardBadge: { position: 'absolute', top: 10, right: 10, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 },
-  rewardBadgeText: { fontFamily: FONTS.uiBold, fontSize: 11, color: '#FFFFFF' },
-  rewardValueRow: { flexDirection: 'row', alignItems: 'center' },
-  rewardValue: { fontFamily: FONTS.uiBold, fontSize: 30, lineHeight: 34, fontVariant: ['tabular-nums'] },
-  rewardLabel: { fontFamily: FONTS.uiMedium, fontSize: 12 },
+  rewardTile: { flex: 1, alignItems: 'flex-start', gap: 4, padding: 14, borderRadius: 0, borderWidth: BORDER_WIDTH, overflow: 'hidden', ...SHADOW.sm },
+  rewardBadge: { position: 'absolute', top: 0, right: 0, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 0, borderLeftWidth: BORDER_WIDTH, borderBottomWidth: BORDER_WIDTH },
+  rewardBadgeText: { fontFamily: FONTS.monoBold, fontSize: 11, color: '#FFFFFF' },
+  rewardValueRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  rewardValue: { fontFamily: FONTS.monoBold, fontSize: 30, lineHeight: 34, fontVariant: ['tabular-nums'] },
+  rewardLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5 },
 
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
-  badgeText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  badgeText: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 0.5 },
 
-  actions: { paddingHorizontal: 24, gap: 6 },
-  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 16 },
-  shareBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 16, color: PALETTE.onAccent },
-  doneBtn: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  doneText: { fontFamily: FONTS.uiMedium, fontSize: 15 },
+  actions: { paddingHorizontal: 24, gap: 12 },
+  shareBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,
+    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+  },
+  shareBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent },
+  doneBtn: {
+    minHeight: 50, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 0, borderWidth: BORDER_WIDTH,
+  },
+  doneText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
 });

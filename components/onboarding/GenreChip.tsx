@@ -53,10 +53,10 @@ export function GenreChip({ label, selected, onToggle }: GenreChipProps) {
         <Text
           style={[
             styles.label,
-            { color: selected ? '#FFFFFF' : t.text, fontFamily: selected ? FONTS.uiSemiBold : FONTS.uiMedium },
+            { color: selected ? t.onAccent : t.text, fontFamily: selected ? FONTS.uiBold : FONTS.uiMedium },
           ]}
         >
-          {label}
+          {label.toUpperCase()}
         </Text>
       </Pressable>
     </Animated.View>
@@ -67,10 +67,10 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 44,
     paddingHorizontal: 18,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: 15 },
+  label: { fontSize: 13, letterSpacing: 0.5 },
 });

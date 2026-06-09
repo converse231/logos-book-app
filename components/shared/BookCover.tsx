@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
 import { BookFormat } from '@/services/types';
 
 interface BookCoverProps {
@@ -32,7 +32,12 @@ export function BookCover({
   const showPlaceholder = !url || failed;
 
   return (
-    <View style={[styles.wrap, { width, height, borderRadius: 8, backgroundColor: t.bgTer }]}>
+    <View
+      style={[
+        styles.wrap,
+        { width, height, backgroundColor: t.bgTer, borderColor: t.border },
+      ]}
+    >
       {showPlaceholder ? (
         <View style={styles.placeholder}>
           <Ionicons name="book" size={width * 0.3} color={t.textTer} />
@@ -62,12 +67,12 @@ export function BookCover({
 }
 
 const styles = StyleSheet.create({
-  wrap: { overflow: 'hidden' },
+  wrap: { overflow: 'hidden', borderRadius: 0, borderWidth: BORDER_WIDTH },
   image: { width: '100%', height: '100%' },
   placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 8, gap: 6 },
   placeholderTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 11, textAlign: 'center' },
   badge: {
-    position: 'absolute', bottom: 6, left: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
+    position: 'absolute', bottom: 0, left: 0, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 0,
   },
-  badgeText: { fontFamily: FONTS.uiBold, fontSize: 9, color: '#FFFFFF', letterSpacing: 0.4 },
+  badgeText: { fontFamily: FONTS.monoBold, fontSize: 9, color: '#FFFFFF', letterSpacing: 0.4, textTransform: 'uppercase' },
 });

@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 import { CountUp } from './CountUp';
 
 // RULE 1: an animated mock stat card that shows, not tells, what a year of
@@ -23,7 +23,6 @@ export function WelcomeStatCard() {
   const reduceMotion = useReducedMotion();
 
   const flameScale = useSharedValue(1);
-  const glow = useSharedValue(0.35);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -35,15 +34,9 @@ export function WelcomeStatCard() {
       -1,
       false
     );
-    glow.value = withRepeat(
-      withSequence(withTiming(0.6, { duration: 900 }), withTiming(0.35, { duration: 900 })),
-      -1,
-      false
-    );
-  }, [flameScale, glow, reduceMotion]);
+  }, [flameScale, reduceMotion]);
 
   const flameStyle = useAnimatedStyle(() => ({ transform: [{ scale: flameScale.value }] }));
-  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
 
   return (
     <View style={[styles.card, { backgroundColor: t.bgSec, borderColor: t.border }]}>
@@ -53,7 +46,7 @@ export function WelcomeStatCard() {
           <Ionicons name="sparkles" size={13} color={t.accent} />
           <Text style={[styles.overline, { color: t.accent }]}>ONE YEAR FROM NOW</Text>
         </View>
-        <View style={[styles.pill, { backgroundColor: 'rgba(61,123,255,0.14)' }]}>
+        <View style={[styles.pill, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
           <Text style={[styles.pillText, { color: t.accent }]}>LV 7 · BIBLIOPHILE</Text>
         </View>
       </View>
@@ -61,14 +54,13 @@ export function WelcomeStatCard() {
       {/* streak flame */}
       <View style={styles.flameRow}>
         <View style={styles.flameWrap}>
-          <Animated.View style={[styles.flameGlow, glowStyle, { backgroundColor: t.accent }]} />
           <Animated.View style={flameStyle}>
-            <Ionicons name="flame" size={48} color={t.accent} />
+            <Ionicons name="flame" size={48} color={t.ember} />
           </Animated.View>
         </View>
         <View style={styles.flameText}>
           <Text style={[styles.streakNum, { color: t.text }]}>24</Text>
-          <Text style={[styles.streakLabel, { color: t.textSec }]}>day reading streak</Text>
+          <Text style={[styles.streakLabel, { color: t.textSec }]}>DAY READING STREAK</Text>
         </View>
       </View>
 
@@ -106,21 +98,20 @@ function Stat({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 24, borderWidth: 1, padding: 22, gap: 18 },
+  card: { borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 22, gap: 18, ...SHADOW.card },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   overlineRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  overline: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1 },
-  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
-  pillText: { fontFamily: FONTS.uiBold, fontSize: 10, letterSpacing: 0.6 },
+  overline: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
+  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 0, borderWidth: 1 },
+  pillText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 0.6 },
   flameRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   flameWrap: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
-  flameGlow: { position: 'absolute', width: 52, height: 52, borderRadius: 26 },
   flameText: { flex: 1 },
-  streakNum: { fontFamily: FONTS.uiBold, fontSize: 40, lineHeight: 44, fontVariant: ['tabular-nums'] },
-  streakLabel: { fontFamily: FONTS.uiMedium, fontSize: 14 },
-  divider: { height: 1, opacity: 0.7 },
+  streakNum: { fontFamily: FONTS.monoBold, fontSize: 40, lineHeight: 44, fontVariant: ['tabular-nums'] },
+  streakLabel: { fontFamily: FONTS.mono, fontSize: 12, letterSpacing: 0.5 },
+  divider: { height: 2 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
   stat: { alignItems: 'center', gap: 4, flex: 1 },
   statValue: { fontSize: 24, textAlign: 'center', minWidth: 56 },
-  statLabel: { fontFamily: FONTS.uiMedium, fontSize: 12, textAlign: 'center' },
+  statLabel: { fontFamily: FONTS.mono, fontSize: 11, textAlign: 'center', letterSpacing: 0.4 },
 });

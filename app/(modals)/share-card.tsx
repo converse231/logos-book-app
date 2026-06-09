@@ -16,11 +16,12 @@ import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { useSessionStore } from '@/stores/sessionStore';
 import { CardVariant } from '@/services/types';
 import { ShareCardCanvas, CardStats } from '@/components/shared/ShareCardCanvas';
+import { PressBlock } from '@/components/shared/PressBlock';
 
 type Mode = 'transparent' | 'dark';
 type SaveStatus = 'idle' | 'working' | 'saved' | 'denied' | 'error';
@@ -165,7 +166,7 @@ export default function ShareCard() {
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Close"
-          style={[styles.closeBtn, { backgroundColor: t.bgSec }]}
+          style={[styles.closeBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
         >
           <Ionicons name="close" size={22} color={t.text} />
         </Pressable>
@@ -228,10 +229,9 @@ export default function ShareCard() {
 
       {/* Actions */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <Pressable
+        <PressBlock
           onPress={saveToPhotos}
           disabled={status === 'working'}
-          accessibilityRole="button"
           accessibilityLabel="Save to Photos"
           style={[styles.saveBtn, { backgroundColor: t.accent }, status === 'working' && styles.btnBusy]}
         >
@@ -244,20 +244,20 @@ export default function ShareCard() {
                 size={20}
                 color={PALETTE.onAccent}
               />
-              <Text style={styles.saveText}>{status === 'saved' ? 'Saved' : 'Save to Photos'}</Text>
+              <Text style={styles.saveText}>{status === 'saved' ? 'SAVED' : 'SAVE TO PHOTOS'}</Text>
             </>
           )}
-        </Pressable>
+        </PressBlock>
 
-        <Pressable
+        <PressBlock
           onPress={onShare}
-          accessibilityRole="button"
+          haptic="light"
           accessibilityLabel="Share your reading card"
-          style={[styles.shareBtn, { borderColor: t.border }]}
+          style={[styles.shareBtn, { borderColor: t.border, backgroundColor: t.bgSec }]}
         >
           <Ionicons name="share-social-outline" size={18} color={t.text} />
-          <Text style={[styles.shareText, { color: t.text }]}>Share</Text>
-        </Pressable>
+          <Text style={[styles.shareText, { color: t.text }]}>SHARE</Text>
+        </PressBlock>
 
         <Text
           style={[
@@ -320,7 +320,7 @@ function Checkerboard() {
           {Array.from({ length: cols }).map((_, c) => (
             <View
               key={c}
-              style={[styles.checkerCell, { backgroundColor: (r + c) % 2 === 0 ? '#252A34' : '#181B22' }]}
+              style={[styles.checkerCell, { backgroundColor: (r + c) % 2 === 0 ? '#E5E0D2' : '#F4F1E8' }]}
             />
           ))}
         </View>
@@ -336,33 +336,36 @@ const styles = StyleSheet.create({
   fallbackLink: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
   title: { fontFamily: FONTS.uiBold, fontSize: 22 },
-  closeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  toggle: { flexDirection: 'row', marginHorizontal: 20, marginTop: 16, padding: 4, borderRadius: 14, borderWidth: 1, gap: 4 },
-  seg: { flex: 1, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 40, height: 40, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  toggle: { flexDirection: 'row', marginHorizontal: 20, marginTop: 16, padding: 4, borderRadius: 0, borderWidth: BORDER_WIDTH, gap: 4 },
+  seg: { flex: 1, minHeight: 44, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
   segText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   previewArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  previewBox: { borderRadius: 32, overflow: 'hidden', padding: 12, alignItems: 'center', justifyContent: 'center' },
+  previewBox: { borderRadius: 0, overflow: 'hidden', padding: 12, alignItems: 'center', justifyContent: 'center' },
   cardWrap: {},
   checker: { ...StyleSheet.absoluteFillObject },
   checkerRow: { flex: 1, flexDirection: 'row' },
   checkerCell: { flex: 1 },
   chips: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingHorizontal: 20, paddingBottom: 8 },
-  chip: { paddingHorizontal: 14, height: 36, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  chip: { paddingHorizontal: 14, height: 36, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
-  footer: { paddingHorizontal: 24, gap: 10 },
-  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: 16 },
-  saveText: { fontFamily: FONTS.uiBold, fontSize: 16, color: PALETTE.onAccent },
+  footer: { paddingHorizontal: 24, gap: 12 },
+  saveBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,
+    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+  },
+  saveText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.8, color: PALETTE.onAccent },
   btnBusy: { opacity: 0.7 },
   shareBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
+    minHeight: 50,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
   },
-  shareText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
+  shareText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.5 },
   note: { fontFamily: FONTS.uiRegular, fontSize: 12, textAlign: 'center', marginTop: 2 },
   offscreen: { position: 'absolute', left: -100000, top: 0 },
 });

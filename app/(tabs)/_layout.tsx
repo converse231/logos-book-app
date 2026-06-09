@@ -70,14 +70,14 @@ export default function TabsLayout() {
           tabBarStyle: {
             backgroundColor: t.bgSec,
             borderTopColor: t.border,
-            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopWidth: 2,
             height: 60 + insets.bottom,
             paddingBottom: insets.bottom + 6,
             paddingTop: 8,
           },
           tabBarActiveTintColor: t.accent,
           tabBarInactiveTintColor: t.textSec,
-          tabBarLabelStyle: { fontFamily: FONTS.uiSemiBold, fontSize: 11, marginTop: 2 },
+          tabBarLabelStyle: { fontFamily: FONTS.monoMedium, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 2 },
           tabBarItemStyle: { paddingTop: 2 },
         }}
       >
@@ -138,6 +138,6 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   iconWrap: { width: 52, height: 30, alignItems: 'center', justifyContent: 'center' },
-  iconPill: { position: 'absolute', width: 52, height: 30, borderRadius: 15 },
+  iconPill: { position: 'absolute', width: 52, height: 30, borderRadius: 0 },
   spacer: { flex: 1 },
 });

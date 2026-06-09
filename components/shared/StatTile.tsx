@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 
 interface StatTileProps {
   label: string;
@@ -29,9 +29,18 @@ export function StatTile({ label, value, delta, icon }: StatTileProps) {
 }
 
 const styles = StyleSheet.create({
-  tile: { flex: 1, borderRadius: 16, borderWidth: 1, padding: 14, gap: 2, minHeight: 92, justifyContent: 'center' },
+  tile: {
+    flex: 1,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
+    padding: 14,
+    gap: 2,
+    minHeight: 92,
+    justifyContent: 'center',
+    ...SHADOW.sm,
+  },
   icon: { marginBottom: 4 },
-  value: { fontFamily: FONTS.uiBold, fontSize: 24, fontVariant: ['tabular-nums'] },
-  label: { fontFamily: FONTS.uiMedium, fontSize: 12 },
-  delta: { fontFamily: FONTS.uiSemiBold, fontSize: 11, marginTop: 2 },
+  value: { fontFamily: FONTS.monoBold, fontSize: 23, fontVariant: ['tabular-nums'] },
+  label: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' },
+  delta: { fontFamily: FONTS.monoMedium, fontSize: 11, marginTop: 2 },
 });

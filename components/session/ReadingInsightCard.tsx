@@ -12,7 +12,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 import { InsightType } from '@/services/types';
 
 interface ReadingInsightCardProps {
@@ -26,13 +26,13 @@ const CARD_H = 200;
 const AUTO_MS = 6000;
 
 const TYPE_COLOR: Record<InsightType, string> = {
-  TIME_OF_DAY: '#FF6B4A',
-  PACE_TREND: '#3D7BFF',
-  GENRE_SPEED: '#FFC53D',
-  CONSISTENCY: '#3FA9FF',
-  PAGE_MILESTONE: '#FF4D8D',
-  BEST_SESSION: '#FF9F40',
-  BOOK_PACE: '#00D2C2',
+  TIME_OF_DAY: '#FF8A1E',   // coral
+  PACE_TREND: '#FF3D1F',    // blue
+  GENRE_SPEED: '#FFC53D',   // gold
+  CONSISTENCY: '#2FA84F',   // green
+  PAGE_MILESTONE: '#E5327A', // magenta
+  BEST_SESSION: '#FF9F1C',  // orange
+  BOOK_PACE: '#00B3A6',     // teal
 };
 
 // Variable-reward reveal (blueprint 4A/6). Slides up from the bottom over the
@@ -106,7 +106,7 @@ export function ReadingInsightCard({ insight, onShare, onSave, onAutoDismiss }: 
         </View>
         <Text style={[styles.body, { color: t.text }]}>{insight.text}</Text>
         <View style={styles.actions}>
-          <Text style={[styles.hint, { color: t.textTer }]}>swipe up to save</Text>
+          <Text style={[styles.hint, { color: t.textTer }]}>SWIPE UP TO SAVE</Text>
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -114,10 +114,10 @@ export function ReadingInsightCard({ insight, onShare, onSave, onAutoDismiss }: 
             }}
             accessibilityRole="button"
             accessibilityLabel="Share this insight"
-            style={[styles.shareBtn, { backgroundColor: accent }]}
+            style={[styles.shareBtn, { backgroundColor: accent, borderColor: t.border }]}
           >
             <Ionicons name="share-outline" size={16} color="#FFFFFF" />
-            <Text style={styles.shareText}>Share</Text>
+            <Text style={styles.shareText}>SHARE</Text>
           </Pressable>
         </View>
       </Animated.View>
@@ -132,21 +132,22 @@ const styles = StyleSheet.create({
     right: 12,
     bottom: 24,
     minHeight: CARD_H,
-    borderRadius: 22,
-    borderWidth: 1.5,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH_THICK,
     padding: 18,
     gap: 10,
+    ...SHADOW.card,
   },
   grabber: { alignItems: 'center', marginTop: -6, marginBottom: 2 },
-  grabberBar: { width: 36, height: 4, borderRadius: 2 },
+  grabberBar: { width: 40, height: 4, borderRadius: 0 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  headerText: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2 },
+  headerText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.2 },
   body: { fontFamily: FONTS.displaySemiBold, fontSize: 22, lineHeight: 28, flex: 1 },
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  hint: { fontFamily: FONTS.uiMedium, fontSize: 12 },
+  hint: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.5 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 16, minHeight: 40, borderRadius: 12,
+    paddingHorizontal: 16, minHeight: 40, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK,
   },
-  shareText: { fontFamily: FONTS.uiSemiBold, fontSize: 14, color: '#FFFFFF' },
+  shareText: { fontFamily: FONTS.uiBold, fontSize: 14, color: '#FFFFFF', letterSpacing: 0.5 },
 });

@@ -30,7 +30,7 @@ export function ProgressBar({
   const t = useTheme();
   const reduceMotion = useReducedMotion();
   const pct = Math.max(0, Math.min(1, max > 0 ? value / max : 0));
-  const radius = Math.round(height / 2);
+  const radius = 0; // brutalism — sharp corners
 
   const [trackWidth, setTrackWidth] = useState(0);
   const fillPx = useSharedValue(0);
@@ -50,7 +50,7 @@ export function ProgressBar({
 
   return (
     <View
-      style={[styles.track, { height, borderRadius: radius, backgroundColor: t.bgTer }]}
+      style={[styles.track, { height, borderRadius: radius, backgroundColor: t.bgTer, borderColor: t.border }]}
       onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
       accessibilityRole="progressbar"
       // Fabric types accessibilityValue.now/min/max as integers (long long).
@@ -71,6 +71,6 @@ export function ProgressBar({
 }
 
 const styles = StyleSheet.create({
-  track: { width: '100%', overflow: 'hidden' },
+  track: { width: '100%', overflow: 'hidden', borderWidth: 1 },
   fill: { position: 'absolute', left: 0, top: 0 },
 });

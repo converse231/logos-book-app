@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, RADIUS, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 import { BookCover } from '@/components/shared/BookCover';
 import { StarRating } from '@/components/library/StarRating';
 import { BookFormat } from '@/services/types';
@@ -24,7 +24,7 @@ export function ReviewQuoteCard({ bookTitle, coverUrl, format, rating, body, aut
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Review of ${bookTitle} by ${author}`}
-      style={({ pressed }) => [styles.card, { backgroundColor: t.bgSec }, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, { backgroundColor: t.bgSec, borderColor: t.border }, pressed && styles.pressed]}
     >
       <View style={styles.head}>
         <BookCover url={coverUrl} title={bookTitle} format={format} width={40} />
@@ -50,17 +50,16 @@ export function ReviewQuoteCard({ bookTitle, coverUrl, format, rating, body, aut
 const styles = StyleSheet.create({
   card: {
     width: 288,
-    borderRadius: RADIUS.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: PALETTE.cardBorder,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
     padding: 16,
     gap: 12,
-    ...SHADOW.sm,
+    ...SHADOW.card,
   },
-  pressed: { opacity: 0.85 },
+  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headText: { flex: 1, gap: 5 },
-  bookTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
+  bookTitle: { fontFamily: FONTS.uiBold, fontSize: 15 },
   quote: { fontFamily: FONTS.displayMedium, fontSize: 19, lineHeight: 25 },
-  author: { fontFamily: FONTS.uiSemiBold, fontSize: 12 },
+  author: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 0.3, textTransform: 'uppercase' },
 });

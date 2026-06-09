@@ -241,13 +241,13 @@ function SectionTitle({ label, t }: { label: string; t: ReturnType<typeof useThe
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 12 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  roundBtn: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   topBarSpacer: { width: 42, height: 42 },
   title: { fontFamily: FONTS.uiBold, fontSize: 18 },
   sectionTitle: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginTop: 14, marginBottom: 10, marginLeft: 4 },
 
   themePicker: { flexDirection: 'row', padding: 6, gap: 4 },
-  themeOption: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, borderRadius: 12, borderWidth: 1 },
+  themeOption: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, borderRadius: 0, borderWidth: 1 },
   themeLabel: { fontFamily: FONTS.uiSemiBold, fontSize: 12 },
 
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

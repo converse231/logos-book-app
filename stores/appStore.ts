@@ -10,6 +10,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  theme: 'dark',
+  // Neubrutalism is light-first (off-white paper substrate). Dark is a fallback.
+  theme: 'light',
   setTheme: (theme) => set({ theme }),
 }));

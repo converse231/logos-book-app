@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
@@ -59,11 +59,25 @@ export default function AgeGate() {
       title="When were you born?"
       subtitle="Logos is for readers 13 and up. We only use this to keep things age-appropriate."
       footer={
-        <PrimaryButton
-          label="Continue"
-          onPress={handleContinue}
-          loading={submitting}
-        />
+        <View style={styles.footer}>
+          <PrimaryButton
+            label="Continue"
+            onPress={handleContinue}
+            loading={submitting}
+          />
+          <Pressable
+            onPress={() => router.push('/(auth)/sign-in' as Href)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Sign in to an existing account"
+            style={styles.signInLink}
+          >
+            <Text style={[styles.signInText, { color: t.textSec }]}>
+              Already have an account?{' '}
+              <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>Sign in</Text>
+            </Text>
+          </Pressable>
+        </View>
       }
     >
       <View style={styles.pickerArea}>
@@ -104,8 +118,11 @@ function BlockedScreen() {
 const styles = StyleSheet.create({
   pickerArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20 },
   ageHint: { fontFamily: FONTS.uiMedium, fontSize: 15 },
+  footer: { gap: 14 },
+  signInLink: { alignItems: 'center', paddingVertical: 2 },
+  signInText: { fontFamily: FONTS.uiRegular, fontSize: 14 },
   blockedRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 },
-  blockedIcon: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
+  blockedIcon: { width: 80, height: 80, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
   blockedTitle: { fontFamily: FONTS.displayBold, fontSize: 30, lineHeight: 36, textAlign: 'center' },
   blockedBody: { fontFamily: FONTS.uiRegular, fontSize: 16, lineHeight: 24, textAlign: 'center' },
 });

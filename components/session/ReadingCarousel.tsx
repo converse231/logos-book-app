@@ -81,7 +81,7 @@ export function ReadingCarousel({ books, initialIndex, onSelect, onAddPress }: R
           style={[styles.addTile, { borderColor: t.accent, backgroundColor: t.bgSec }]}
         >
           <Ionicons name="add" size={36} color={t.accent} />
-          <Text style={[styles.addText, { color: t.text }]}>Add a book</Text>
+          <Text style={[styles.addText, { color: t.text }]}>ADD A BOOK</Text>
         </Pressable>
       </CarouselItem>
     </Animated.ScrollView>
@@ -116,12 +116,12 @@ const styles = StyleSheet.create({
   addTile: {
     width: COVER_W,
     height: COVER_H,
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: 0,
+    borderWidth: 2,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  addText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
+  addText: { fontFamily: FONTS.uiBold, fontSize: 13, letterSpacing: 0.5 },
 });

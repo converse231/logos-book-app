@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { SlideInDown, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, RADIUS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
 
 interface SheetScaffoldProps {
   title: string;
@@ -47,7 +47,7 @@ export function SheetScaffold({ title, onClose, children, hideHeader = false }: 
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Close"
-              style={[styles.closeBtn, { backgroundColor: t.bgTer }]}
+              style={[styles.closeBtn, { backgroundColor: t.bgTer, borderColor: t.border }]}
             >
               <Ionicons name="close" size={20} color={t.text} />
             </Pressable>
@@ -62,15 +62,16 @@ export function SheetScaffold({ title, onClose, children, hideHeader = false }: 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderWidth: 0,
+    borderTopWidth: BORDER_WIDTH_THICK,
     paddingHorizontal: 20,
     paddingTop: 10,
     maxHeight: '92%',
   },
-  handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, marginBottom: 12 },
+  handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: 0, marginBottom: 12 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  title: { fontFamily: FONTS.uiBold, fontSize: 20 },
-  closeBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  title: { fontFamily: FONTS.uiBold, fontSize: 20, textTransform: 'uppercase', letterSpacing: 0.5 },
+  closeBtn: { width: 34, height: 34, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 });

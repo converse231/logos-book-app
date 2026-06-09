@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 
 interface SessionControlBarProps {
   isPaused: boolean;
@@ -39,7 +39,7 @@ export function SessionControlBar({
       >
         <Ionicons name={isPaused ? 'play' : 'pause'} size={22} color={t.text} />
         <Text style={[styles.secondaryText, { color: t.text }]}>
-          {isPaused ? 'Resume' : 'Pause'}
+          {isPaused ? 'RESUME' : 'PAUSE'}
         </Text>
       </Pressable>
 
@@ -53,16 +53,16 @@ export function SessionControlBar({
         accessibilityRole="button"
         accessibilityLabel={canStop ? 'Stop and finish session' : `Stop available in ${stopUnlocksInSec} seconds`}
         accessibilityState={{ disabled: !canStop }}
-        style={[styles.stop, { backgroundColor: canStop ? t.accent : t.bgTer }, !canStop && styles.stopLocked]}
+        style={[styles.stop, { backgroundColor: canStop ? t.accent : t.bgTer, borderColor: t.border }, !canStop && styles.stopLocked]}
       >
         {canStop ? (
           <>
-            <Ionicons name="stop" size={20} color="#FFFFFF" />
-            <Text style={styles.stopText}>Finish</Text>
+            <Ionicons name="stop" size={20} color={t.onAccent} />
+            <Text style={[styles.stopText, { color: t.onAccent }]}>FINISH</Text>
           </>
         ) : (
           <Text style={[styles.lockedText, { color: t.textSec }]}>
-            Finish in {stopUnlocksInSec}s
+            FINISH IN {stopUnlocksInSec}s
           </Text>
         )}
       </Pressable>
@@ -76,8 +76,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    borderRadius: 20,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH_THICK,
+    ...SHADOW.card,
   },
   secondary: {
     flexDirection: 'row',
@@ -86,10 +87,10 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 52,
     paddingHorizontal: 20,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
   },
-  secondaryText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
+  secondaryText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
   stop: {
     flex: 1,
     flexDirection: 'row',
@@ -97,9 +98,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
   },
   stopLocked: { opacity: 0.7 },
-  stopText: { fontFamily: FONTS.uiBold, fontSize: 16, color: '#FFFFFF' },
-  lockedText: { fontFamily: FONTS.uiMedium, fontSize: 14, fontVariant: ['tabular-nums'] },
+  stopText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.8 },
+  lockedText: { fontFamily: FONTS.monoMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
 });

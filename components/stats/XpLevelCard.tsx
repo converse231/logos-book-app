@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, PALETTE } from '@/theme/tokens';
 import { LevelName } from '@/services/types';
 import { Card } from '@/components/shared/Card';
 import { ProgressBar } from '@/components/shared/ProgressBar';
@@ -26,7 +26,7 @@ export function XpLevelCard({ levelName, level, totalXp, prevLevelXp, xpToNextLe
     <Card glow padded style={styles.card}>
       <View style={styles.head}>
         <LevelNameBadge levelName={levelName} context="home" />
-        <Text style={[styles.level, { color: t.textSec }]}>Level {level}</Text>
+        <Text style={[styles.level, { color: t.textSec }]}>LEVEL {level}</Text>
       </View>
 
       <Text style={[styles.xp, { color: t.text }]}>
@@ -34,9 +34,9 @@ export function XpLevelCard({ levelName, level, totalXp, prevLevelXp, xpToNextLe
         <Text style={[styles.xpUnit, { color: t.textSec }]}> XP</Text>
       </Text>
 
-      <ProgressBar value={into} max={span} height={8} accent={t.gold} />
+      <ProgressBar value={into} max={span} height={10} accent={PALETTE.gold} />
       <Text style={[styles.caption, { color: t.textSec }]}>
-        {remaining.toLocaleString()} XP to Level {level + 1}
+        {remaining.toLocaleString()} XP TO LEVEL {level + 1}
       </Text>
     </Card>
   );
@@ -45,8 +45,8 @@ export function XpLevelCard({ levelName, level, totalXp, prevLevelXp, xpToNextLe
 const styles = StyleSheet.create({
   card: { gap: 12 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  level: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
-  xp: { fontFamily: FONTS.uiBold, fontSize: 34, fontVariant: ['tabular-nums'] },
-  xpUnit: { fontFamily: FONTS.uiSemiBold, fontSize: 18 },
-  caption: { fontFamily: FONTS.uiMedium, fontSize: 13 },
+  level: { fontFamily: FONTS.monoBold, fontSize: 12, letterSpacing: 0.5 },
+  xp: { fontFamily: FONTS.monoBold, fontSize: 34, fontVariant: ['tabular-nums'] },
+  xpUnit: { fontFamily: FONTS.monoMedium, fontSize: 18 },
+  caption: { fontFamily: FONTS.mono, fontSize: 12, letterSpacing: 0.3 },
 });

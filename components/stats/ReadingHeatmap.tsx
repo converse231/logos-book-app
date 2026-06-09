@@ -28,7 +28,7 @@ export function ReadingHeatmap({ days }: ReadingHeatmapProps) {
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
 
   const level = (m: number) => (m <= 0 ? 0 : m < 20 ? 1 : m < 45 ? 2 : m < 75 ? 3 : 4);
-  const colorFor = (lvl: number) => (lvl === 0 ? t.bgTer : `rgba(61,123,255,${ALPHAS[lvl]})`);
+  const colorFor = (lvl: number) => (lvl === 0 ? t.bgTer : `rgba(255,61,31,${ALPHAS[lvl]})`);
 
   return (
     <View style={styles.wrap}>
@@ -49,11 +49,11 @@ export function ReadingHeatmap({ days }: ReadingHeatmapProps) {
       </View>
 
       <View style={styles.legend}>
-        <Text style={[styles.legendText, { color: t.textTer }]}>Less</Text>
+        <Text style={[styles.legendText, { color: t.textTer }]}>LESS</Text>
         {[0, 1, 2, 3, 4].map((l) => (
           <View key={l} style={[styles.legendCell, { backgroundColor: colorFor(l) }]} />
         ))}
-        <Text style={[styles.legendText, { color: t.textTer }]}>More</Text>
+        <Text style={[styles.legendText, { color: t.textTer }]}>MORE</Text>
       </View>
     </View>
   );
@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: 12 },
   grid: { flexDirection: 'row', gap: GAP },
   col: { gap: GAP },
-  cell: { width: CELL, height: CELL, borderRadius: 3 },
+  cell: { width: CELL, height: CELL, borderRadius: 0 },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
-  legendText: { fontFamily: FONTS.uiMedium, fontSize: 11, marginHorizontal: 2 },
-  legendCell: { width: 11, height: 11, borderRadius: 3 },
+  legendText: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5, marginHorizontal: 2 },
+  legendCell: { width: 11, height: 11, borderRadius: 0 },
 });

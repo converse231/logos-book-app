@@ -12,7 +12,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { Badge, HomeData, ReadingGoal, StatsData, UserProfile } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -138,7 +138,7 @@ export default function Profile() {
 
         {/* Lifetime stats — 3 prominent numbers */}
         <Reveal i={2} reduce={reduce}>
-          <View style={[styles.statsRow, { backgroundColor: t.bgSec }]}>
+          <View style={[styles.statsRow, { backgroundColor: t.bgSec, borderColor: t.border }]}>
             <BigStat value={stats.lifetimePages.toLocaleString()} label="Pages read" t={t} />
             <View style={[styles.statDivider, { backgroundColor: t.border }]} />
             <BigStat value={`${stats.lifetimeHours}h`} label="Time read" t={t} />
@@ -309,10 +309,10 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 16 },
   skelIdentity: { alignItems: 'center', gap: 10, paddingTop: 4, paddingBottom: 8 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roundBtn: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
   identity: { alignItems: 'center', gap: 8, paddingTop: 4, paddingBottom: 8 },
-  avatar: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 80, height: 80, borderRadius: 0, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: FONTS.uiBold, fontSize: 32 },
   name: { fontFamily: FONTS.displayBold, fontSize: 30, lineHeight: 34, textAlign: 'center' },
   handle: { fontFamily: FONTS.uiMedium, fontSize: 15 },
@@ -320,10 +320,11 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
     paddingVertical: 18,
     paddingHorizontal: 12,
-    ...({ shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 } as const),
+    ...({ boxShadow: '4px 4px 0px #141414' } as const),
   },
   bigStat: { flex: 1, alignItems: 'center', gap: 3 },
   bigValue: { fontFamily: FONTS.uiBold, fontSize: 26, fontVariant: ['tabular-nums'] },
@@ -336,11 +337,11 @@ const styles = StyleSheet.create({
   goalLabel: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   goalCount: { flex: 1, fontFamily: FONTS.uiBold, fontSize: 22, fontVariant: ['tabular-nums'], textAlign: 'right' },
   goalTotal: { fontFamily: FONTS.uiSemiBold, fontSize: 16 },
-  editChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  editChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 0 },
   editLabel: { fontFamily: FONTS.uiMedium, fontSize: 11 },
   goalCaption: { fontFamily: FONTS.uiRegular, fontSize: 13 },
 
-  emptyGoal: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth },
+  emptyGoal: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 0, borderWidth: StyleSheet.hairlineWidth },
   emptyGoalText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   streakRow: { flexDirection: 'row', gap: 12 },

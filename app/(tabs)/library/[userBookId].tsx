@@ -2,16 +2,16 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp, useAnimatedStyle, useSharedValue, withTiming, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, Review, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
+import { PressBlock } from '@/components/shared/PressBlock';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -183,7 +183,6 @@ export default function BookDetail() {
               label={status === 'reading' ? 'Continue reading' : 'Start a session'}
               icon="play"
               onPress={startSession}
-              reduce={reduce}
             />
           ) : (
             <View style={[styles.finishedRow, { backgroundColor: t.accentMuted }]}>
@@ -459,33 +458,14 @@ function RoundBtn({
   );
 }
 
-function CTAButton({ label, icon, onPress, reduce }: { label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void; reduce: boolean }) {
-  const scale = useSharedValue(1);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+function CTAButton({ label, icon, onPress }: { label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void }) {
   return (
-    <Animated.View style={[styles.ctaWrap, style]}>
-      <View style={styles.ctaGlow} pointerEvents="none" />
-      <Pressable
-        onPressIn={() => !reduce && (scale.value = withTiming(0.97, { duration: 90 }))}
-        onPressOut={() => !reduce && (scale.value = withTiming(1, { duration: 120 }))}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          onPress();
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-      >
-        <LinearGradient
-          colors={[PALETTE.accentGradStart, PALETTE.accentGradEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.cta}
-        >
-          <Ionicons name={icon} size={20} color={PALETTE.onAccent} />
-          <Text style={styles.ctaText}>{label}</Text>
-        </LinearGradient>
-      </Pressable>
-    </Animated.View>
+    <View style={styles.ctaWrap}>
+      <PressBlock onPress={onPress} accessibilityLabel={label} style={styles.cta}>
+        <Ionicons name={icon} size={20} color={PALETTE.onAccent} />
+        <Text style={styles.ctaText}>{label.toUpperCase()}</Text>
+      </PressBlock>
+    </View>
   );
 }
 
@@ -596,27 +576,29 @@ const styles = StyleSheet.create({
   skelIdentity: { alignItems: 'center', gap: 8 },
   skelChips: { flexDirection: 'row', gap: 8 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roundBtn: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
   hero: { alignItems: 'center', justifyContent: 'flex-end', paddingTop: 8, marginBottom: 2 },
-  heroArc: { position: 'absolute', bottom: 0, left: 28, right: 28, height: 150, borderTopLeftRadius: 130, borderTopRightRadius: 130 },
-  heroGlow: { position: 'absolute', top: 0, left: 44, right: 44, height: 220, borderRadius: 220, opacity: 0.7 },
+  heroArc: { position: 'absolute', bottom: 0, left: 28, right: 28, height: 150, borderTopLeftRadius: 0, borderTopRightRadius: 0 },
+  heroGlow: { position: 'absolute', top: 0, left: 44, right: 44, height: 220, borderRadius: 0, opacity: 0 },
   coverShadow: {
-    borderRadius: 10,
-    ...({ shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 24, shadowOffset: { width: 0, height: 16 }, elevation: 16 } as const),
+    borderRadius: 0,
+    ...({ boxShadow: '4px 4px 0px #141414' } as const),
   },
 
   ctaWrap: { position: 'relative' },
-  ctaGlow: { position: 'absolute', left: 24, right: 24, top: 8, bottom: -4, borderRadius: 16, opacity: 0.32, backgroundColor: PALETTE.accent },
-  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56, borderRadius: 16 },
-  ctaText: { fontFamily: FONTS.uiBold, fontSize: 17, color: PALETTE.onAccent },
-  finishedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 16 },
+  cta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56,
+    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: INK, backgroundColor: PALETTE.accent,
+  },
+  ctaText: { fontFamily: FONTS.uiBold, fontSize: 16, letterSpacing: 1, color: PALETTE.onAccent },
+  finishedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 0 },
   finishedText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   identity: { alignItems: 'center', gap: 5, paddingHorizontal: 8 },
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metaDot: { width: 3, height: 3, borderRadius: 2 },
+  metaDot: { width: 3, height: 3, borderRadius: 0 },
   metaText: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   title: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 32, textAlign: 'center', marginTop: 4 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 14, textAlign: 'center', lineHeight: 19 },
@@ -625,11 +607,11 @@ const styles = StyleSheet.create({
 
   chipScroll: { marginHorizontal: -18 },
   chipRow: { paddingHorizontal: 18, gap: 8, alignItems: 'center' },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 999 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 0 },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
 
   statusRow: { flexDirection: 'row', gap: 8 },
-  statusPill: { flex: 1, height: 42, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  statusPill: { flex: 1, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   statusText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
 
   progressBlock: { gap: 8 },
@@ -644,10 +626,10 @@ const styles = StyleSheet.create({
   moreLink: { fontFamily: FONTS.uiSemiBold, fontSize: 13, marginTop: -6 },
   detailWrap: { gap: 10 },
   detailGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
-  dTile: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth },
+  dTile: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 0, borderWidth: StyleSheet.hairlineWidth },
   dTileHalf: { width: '48.5%' },
   dTileWide: { width: '100%' },
-  dIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  dIcon: { width: 32, height: 32, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
   dText: { flex: 1, gap: 1 },
   dValue: { fontFamily: FONTS.uiBold, fontSize: 15 },
   dLabel: { fontFamily: FONTS.uiMedium, fontSize: 11.5 },
@@ -663,6 +645,6 @@ const styles = StyleSheet.create({
   reviewDate: { fontFamily: FONTS.uiRegular, fontSize: 12 },
   reviewBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },
   spoiler: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
-  writeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, borderWidth: 1, marginTop: 4 },
+  writeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 0, borderWidth: 1, marginTop: 4 },
   writeText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
 });

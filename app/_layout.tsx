@@ -7,19 +7,19 @@ import { StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
-  CormorantGaramond_500Medium,
-  CormorantGaramond_600SemiBold,
-  CormorantGaramond_700Bold,
-} from '@expo-google-fonts/cormorant-garamond';
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+  JetBrainsMono_700Bold,
+} from '@expo-google-fonts/jetbrains-mono';
 import { ThemeProvider } from '@/theme/ThemeContext';
 import { ApiProvider } from '@/services/ApiContext';
-import { mockApi } from '@/services/mock';
+import { liveApi } from '@/services/supabase';
 import { useAppStore } from '@/stores/appStore';
 
 SplashScreen.preventAutoHideAsync();
@@ -27,13 +27,13 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const theme = useAppStore((s) => s.theme);
   const [fontsLoaded, fontError] = useFonts({
-    CormorantGaramond_500Medium,
-    CormorantGaramond_600SemiBold,
-    CormorantGaramond_700Bold,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
+    JetBrainsMono_700Bold,
   });
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <ApiProvider api={mockApi}>
+        <ApiProvider api={liveApi}>
           <ThemeProvider preference={theme}>
             <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
             <Stack screenOptions={{ headerShown: false }}>

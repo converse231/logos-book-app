@@ -20,13 +20,13 @@ export function PphCounter({ pagesRead, elapsedSeconds, align = 'center' }: PphC
       accessibilityLabel={`Reading speed ${pph} pages per hour`}
     >
       <Text style={[styles.value, { color: t.text }]}>{pph}</Text>
-      <Text style={[styles.label, { color: t.textSec }]}>pages / hr</Text>
+      <Text style={[styles.label, { color: t.textSec }]}>PAGES / HR</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { gap: 2 },
-  value: { fontFamily: FONTS.uiBold, fontSize: 28, fontVariant: ['tabular-nums'] },
-  label: { fontFamily: FONTS.uiMedium, fontSize: 13 },
+  value: { fontFamily: FONTS.monoBold, fontSize: 28, fontVariant: ['tabular-nums'] },
+  label: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.6 },
 });

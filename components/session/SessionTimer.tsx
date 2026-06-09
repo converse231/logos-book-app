@@ -49,9 +49,10 @@ export function SessionTimer({ elapsedSec, style }: SessionTimerProps) {
 
 const styles = StyleSheet.create({
   clock: {
-    fontFamily: FONTS.uiBold,
-    fontSize: 72,
+    fontFamily: FONTS.monoBold,
+    fontSize: 68,
     fontVariant: ['tabular-nums'],
+    letterSpacing: 1,
     textAlign: 'center',
     padding: 0,
   },
