@@ -35,7 +35,8 @@
           "photosPermission": "Logos saves your reading share cards to your photo library so you can post them.",
           "isAccessMediaLocationEnabled": false
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {}
   }

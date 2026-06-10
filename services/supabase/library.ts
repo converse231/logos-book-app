@@ -6,13 +6,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { LogosApi } from '../api';
-import type { Book, BookFormat, ReadingStatus, Review, UserBook } from '../types';
+import type { Book, BookFormat, BookSearchResult, ReadingStatus, Review, UserBook } from '../types';
 import { supabase } from '@/lib/supabase';
-import { fetchBookForId, recommendedBooks, searchBooks as catalogSearch } from '@/lib/bookSearch';
+import { recommendedBooks, searchBooks as catalogSearch, type EnsureBookInput } from '@/lib/bookSearch';
 
 const USER_BOOK_SELECT = '*, book:books(*)';
 
-function mapBook(r: any): Book {
+export function mapBook(r: any): Book {
   return {
     id: r.id,
     googleBooksId: r.google_books_id ?? null,
@@ -31,7 +31,7 @@ function mapBook(r: any): Book {
   };
 }
 
-function mapUserBook(r: any): UserBook {
+export function mapUserBook(r: any): UserBook {
   return {
     id: r.id,
     userId: r.user_id,
@@ -63,6 +63,23 @@ function mapReview(r: any, profile?: { display_name: string | null; avatar_url: 
     userName: profile?.display_name ?? null,
     userAvatarUrl: profile?.avatar_url ?? null,
   };
+}
+
+// supabase.functions.invoke throws a FunctionsHttpError whose .context is the raw
+// Response. Pull the function's `{ error }` JSON body out of it so the UI shows the
+// true cause (a Postgres message, "Unauthorized", etc.) instead of the generic text.
+async function readEdgeError(err: any): Promise<string> {
+  const ctx = err?.context;
+  if (ctx && typeof ctx.json === 'function') {
+    try {
+      const body = await ctx.json();
+      if (body?.error) return String(body.error);
+    } catch {
+      // body wasn't JSON — fall through
+    }
+  }
+  if (typeof ctx?.status === 'number') return `ensure_book failed (HTTP ${ctx.status}). ${err?.message ?? ''}`.trim();
+  return err?.message ?? 'ensure_book request failed.';
 }
 
 async function requireUid(): Promise<string> {
@@ -102,20 +119,38 @@ export const libraryApi: Partial<LogosApi> = {
     return mapUserBook(data);
   },
 
-  async addBook(googleBooksId: string, format: BookFormat) {
+  async addBook(book: BookSearchResult, format: BookFormat) {
     const uid = await requireUid();
-    // 1) Build the catalog payload from the search provider, then upsert the
-    //    shared books row via the service-role edge function.
-    const meta = await fetchBookForId(googleBooksId);
-    if (!meta) throw new Error('Could not load that book. Try another result.');
+    // 1) Build the catalog payload directly from the search result — no second
+    //    network round-trip (the old re-fetch was an intermittent failure point).
+    //    Open-Library-only results carry an `ol:`-prefixed id → map it across.
+    const isOL = book.googleBooksId.startsWith('ol:');
+    const meta: EnsureBookInput = {
+      googleBooksId: isOL ? null : book.googleBooksId,
+      openLibraryId: isOL ? book.googleBooksId.slice(3) : null,
+      title: book.title,
+      authors: book.authors,
+      coverUrl: book.coverUrl,
+      pageCount: book.pageCount,
+      durationMinutes: book.durationMinutes,
+      publishedYear: book.publishedYear,
+      genres: book.genres,
+      description: book.description,
+    };
     const { data: fnData, error: fnErr } = await supabase.functions.invoke('ensure_book', { body: meta });
-    if (fnErr) throw fnErr;
+    if (fnErr) {
+      // functions.invoke hides the real reason behind a generic message; the
+      // function's JSON { error } body lives on the thrown error's .context Response.
+      const detail = await readEdgeError(fnErr);
+      console.warn('[addBook] ensure_book failed:', detail, '| book:', meta.title, book.googleBooksId);
+      throw new Error(detail);
+    }
     const bookId: string | undefined = fnData?.book?.id;
     if (!bookId) throw new Error(fnData?.error ?? 'ensure_book did not return a book.');
 
     // 2) Add to the shelf. Unique (user_id, book_id, format) → upsert returns the
     //    existing row instead of duplicating if it's already shelved.
-    const totalDuration = format === 'audiobook' ? meta.durationMinutes ?? null : null;
+    const totalDuration = format === 'audiobook' ? book.durationMinutes ?? null : null;
     const { data, error } = await supabase
       .from('user_books')
       .upsert(
@@ -148,6 +183,13 @@ export const libraryApi: Partial<LogosApi> = {
       .from('user_books')
       .update({ current_page: Math.max(0, Math.round(page)) })
       .eq('id', userBookId);
+    if (error) throw error;
+  },
+
+  async removeBook(userBookId: string) {
+    // RLS (own_userbooks) scopes the delete to the caller's own row. The DB
+    // cascades to reading_sessions; reviews keep their book_id (user_book_id → null).
+    const { error } = await supabase.from('user_books').delete().eq('id', userBookId);
     if (error) throw error;
   },
 

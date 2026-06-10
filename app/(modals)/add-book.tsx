@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn, ZoomIn, useReducedMotion } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, PALETTE, SHADOW, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { BookFormat, BookSearchResult } from '@/services/types';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { BookCover } from '@/components/shared/BookCover';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
+import { track } from '@/lib/analytics';
 
 const FORMATS: { key: BookFormat; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'physical', label: 'Physical', icon: 'book-outline' },
@@ -24,17 +26,21 @@ export default function AddBook() {
   const t = useTheme();
   const router = useRouter();
   const api = useApi();
-  // When launched from the session picker we add straight to "currently reading".
-  const { status } = useLocalSearchParams<{ status?: string }>();
+  // `status` (from the session picker) adds straight to "currently reading";
+  // `q` (from Logos AI) pre-seeds the search with a recommended title.
+  const { status, q } = useLocalSearchParams<{ status?: string; q?: string }>();
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(q ?? '');
   const [results, setResults] = useState<BookSearchResult[]>([]);
   const [recommended, setRecommended] = useState<BookSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<BookSearchResult | null>(null);
   const [format, setFormat] = useState<BookFormat>('physical');
   const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState<BookSearchResult | null>(null); // success overlay
+  const [error, setError] = useState<string | null>(null);
   const reqId = useRef(0);
+  const reduce = useReducedMotion();
 
   // Recommendations to fill the screen before any query.
   useEffect(() => {
@@ -71,15 +77,20 @@ export default function AddBook() {
   const confirmAdd = async () => {
     if (!selected || adding) return;
     setAdding(true);
+    setError(null);
     try {
-      const added = await api.addBook(selected.googleBooksId, format);
-      if (status === 'reading' && added.status !== 'reading') {
-        await api.updateBookStatus(added.id, 'reading');
+      const result = await api.addBook(selected, format);
+      if (status === 'reading' && result.status !== 'reading') {
+        await api.updateBookStatus(result.id, 'reading');
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      close();
-    } catch {
+      track('book_added', { source: status === 'reading' ? 'session_picker' : 'search' });
       setAdding(false);
+      setAdded(selected); // fire the success celebration overlay
+    } catch (e: any) {
+      setAdding(false);
+      setError(e?.message ?? 'Could not add this book. Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
@@ -111,6 +122,7 @@ export default function AddBook() {
   );
 
   return (
+    <>
     <SheetScaffold title={selected ? 'Add to shelf' : 'Add a book'} onClose={close}>
       {selected ? (
         <View style={styles.confirm}>
@@ -154,7 +166,14 @@ export default function AddBook() {
             })}
           </View>
 
-          <PrimaryButton label="Add to shelf" onPress={confirmAdd} loading={adding} />
+          {error ? (
+            <View style={[styles.errorBanner, { backgroundColor: t.bgSec, borderColor: t.danger }]}>
+              <Ionicons name="alert-circle" size={18} color={t.danger} />
+              <Text style={[styles.errorText, { color: t.danger }]}>{error}</Text>
+            </View>
+          ) : null}
+
+          <PrimaryButton label={error ? 'Try again' : 'Add to shelf'} onPress={confirmAdd} loading={adding} />
         </View>
       ) : (
         <View style={styles.searchWrap}>
@@ -212,6 +231,80 @@ export default function AddBook() {
         </View>
       )}
     </SheetScaffold>
+
+    <BookAddedOverlay book={added} reduce={reduce} accent={t.accent} onDone={close} />
+    </>
+  );
+}
+
+// Full-screen success celebration shown after a book lands on the shelf. Rendered
+// via RN Modal so it escapes the bottom-sheet bounds and centres on the whole
+// screen — big cover on a dark scrim, neubrutalist frame + check sticker, a light
+// confetti burst. Auto-dismisses after ~2s; tap anywhere to continue sooner.
+function BookAddedOverlay({
+  book,
+  reduce,
+  accent,
+  onDone,
+}: {
+  book: BookSearchResult | null;
+  reduce: boolean;
+  accent: string;
+  onDone: () => void;
+}) {
+  const doneRef = useRef(false);
+
+  useEffect(() => {
+    if (!book) return;
+    doneRef.current = false;
+    const handle = setTimeout(() => {
+      if (!doneRef.current) {
+        doneRef.current = true;
+        onDone();
+      }
+    }, 2100);
+    return () => clearTimeout(handle);
+  }, [book, onDone]);
+
+  if (!book) return null;
+
+  const dismiss = () => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    onDone();
+  };
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={dismiss}>
+      <Pressable style={overlay.root} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Continue">
+        <Animated.View
+          entering={reduce ? undefined : ZoomIn.springify().damping(13).stiffness(140)}
+          style={overlay.coverWrap}
+        >
+          <View style={overlay.coverFrame}>
+            <BookCover url={book.coverUrl} title={book.title} width={172} />
+          </View>
+          <View style={[overlay.sticker, { backgroundColor: accent }]}>
+            <Ionicons name="checkmark" size={26} color={PALETTE.onAccent} />
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={reduce ? undefined : FadeIn.delay(220).duration(360)} style={overlay.textBlock}>
+          <Text style={[overlay.kicker, { color: accent }]}>ADDED TO YOUR LIBRARY</Text>
+          <Text style={overlay.title} numberOfLines={3}>{book.title}</Text>
+          {book.authors.length > 0 ? (
+            <Text style={overlay.author} numberOfLines={1}>{book.authors.join(', ')}</Text>
+          ) : null}
+        </Animated.View>
+
+        <Animated.Text
+          entering={reduce ? undefined : FadeIn.delay(700).duration(400)}
+          style={overlay.hint}
+        >
+          Tap anywhere to continue
+        </Animated.Text>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -249,4 +342,30 @@ const styles = StyleSheet.create({
   formatRow: { flexDirection: 'row', gap: 10 },
   formatPill: { flex: 1, gap: 6, height: 72, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   formatText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12,
+    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK,
+  },
+  errorText: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 13, lineHeight: 18 },
+});
+
+const overlay = StyleSheet.create({
+  root: {
+    flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 24,
+    backgroundColor: 'rgba(3,4,6,0.88)',
+  },
+  coverWrap: { alignItems: 'center', justifyContent: 'center' },
+  coverFrame: {
+    borderWidth: BORDER_WIDTH_THICK, borderColor: PALETTE.ink, backgroundColor: PALETTE.paper,
+    borderRadius: 0, ...SHADOW.card,
+  },
+  sticker: {
+    position: 'absolute', top: -16, right: -16, width: 48, height: 48, borderRadius: 0,
+    borderWidth: BORDER_WIDTH_THICK, borderColor: PALETTE.ink, alignItems: 'center', justifyContent: 'center',
+  },
+  textBlock: { alignItems: 'center', gap: 8 },
+  kicker: { fontFamily: FONTS.monoBold, fontSize: 12, letterSpacing: 2, textAlign: 'center' },
+  title: { fontFamily: FONTS.displayBold, fontSize: 26, lineHeight: 30, color: '#F4F1E8', textAlign: 'center' },
+  author: { fontFamily: FONTS.uiMedium, fontSize: 15, color: 'rgba(244,241,232,0.7)', textAlign: 'center' },
+  hint: { fontFamily: FONTS.mono, fontSize: 12, letterSpacing: 0.5, color: 'rgba(244,241,232,0.5)', textTransform: 'uppercase' },
 });

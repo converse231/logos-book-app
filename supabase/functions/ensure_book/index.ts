@@ -92,16 +92,34 @@ Deno.serve(async (req) => {
     language: input.language ?? 'en',
   };
 
-  // Dedupe on google_books_id when present (it's the unique key). If the book
-  // already exists, return it instead of creating a duplicate.
+  // Dedupe so the same book never lands in the catalog twice. The same title has
+  // MANY Google volume IDs across editions, so google_books_id alone isn't enough
+  // (that's what duplicated shelves). Fall back to ISBN-13, then to a normalized
+  // title + first-author match.
+  const norm = (s: string) => s.toLowerCase().trim().replace(/\s+/g, ' ');
+  const baseTitle = (t: string) => norm(t).split(':')[0].trim(); // drop ": A Novel" subtitles
+  const firstAuthor = norm(row.authors[0] ?? '');
+
+  let existing: any = null;
   if (row.google_books_id) {
-    const { data: existing } = await admin
+    existing = (await admin.from('books').select('*').eq('google_books_id', row.google_books_id).maybeSingle()).data;
+  }
+  if (!existing && row.isbn_13) {
+    existing = (await admin.from('books').select('*').eq('isbn_13', row.isbn_13).maybeSingle()).data;
+  }
+  if (!existing) {
+    // Case-insensitive title-prefix match, then confirm the first author lines up.
+    const { data: candidates } = await admin
       .from('books')
       .select('*')
-      .eq('google_books_id', row.google_books_id)
-      .maybeSingle();
-    if (existing) return json({ book: existing });
+      .ilike('title', `${baseTitle(row.title)}%`)
+      .limit(20);
+    existing = (candidates ?? []).find((c: any) =>
+      baseTitle(c.title) === baseTitle(row.title) &&
+      (firstAuthor === '' || norm(c.authors?.[0] ?? '') === firstAuthor)
+    ) ?? null;
   }
+  if (existing) return json({ book: existing });
 
   const { data, error } = await admin.from('books').insert(row).select('*').single();
   if (error) return json({ error: error.message }, 500);

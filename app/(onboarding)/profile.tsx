@@ -11,6 +11,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
+import { track } from '@/lib/analytics';
 import { useAppStore } from '@/stores/appStore';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
@@ -64,6 +65,7 @@ export default function Profile() {
       await api.setReadingGoal(new Date().getFullYear(), goalBooks);
       // 3) Mark onboarding done so the boot redirect lands on home next launch.
       await api.completeOnboarding();
+      track('onboarding_completed');
       // Cast: typed routes regenerate on first `expo start`; this is a valid route.
       router.replace('/(tabs)/home' as Href);
     } catch (e: any) {

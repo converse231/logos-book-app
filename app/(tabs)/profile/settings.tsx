@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
@@ -63,6 +63,8 @@ export default function Settings() {
     }
   };
 
+  const [busy, setBusy] = useState<'export' | 'delete' | null>(null);
+
   const signOut = () => {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -75,6 +77,45 @@ export default function Settings() {
         },
       },
     ]);
+  };
+
+  const exportData = async () => {
+    if (busy) return;
+    Haptics.selectionAsync();
+    setBusy('export');
+    try {
+      const json = await api.exportData();
+      await Share.share({ message: json });
+    } catch (e: any) {
+      Alert.alert('Export failed', e?.message ?? 'Please try again.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const deleteAccount = () => {
+    if (busy) return;
+    Alert.alert(
+      'Delete account',
+      'This permanently deletes your account and everything in it — books, sessions, streak, XP, and reviews. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete everything',
+          style: 'destructive',
+          onPress: async () => {
+            setBusy('delete');
+            try {
+              await api.deleteAccount();
+              router.replace('/(auth)/sign-in' as Href);
+            } catch (e: any) {
+              setBusy(null);
+              Alert.alert('Could not delete account', e?.message ?? 'Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const dirty = profile && (displayName.trim() !== (profile.displayName ?? '') || username.trim() !== (profile.username ?? ''));
@@ -210,13 +251,39 @@ export default function Settings() {
               </View>
             ) : null}
             <Pressable
+              onPress={exportData}
+              disabled={!!busy}
+              accessibilityRole="button"
+              accessibilityLabel="Export my data"
+              style={({ pressed }) => [styles.menuRow, { borderBottomColor: t.border }, pressed && { opacity: 0.7 }]}
+            >
+              <Ionicons name="download-outline" size={20} color={t.textSec} />
+              <Text style={[styles.menuLabel, { color: t.text }]}>
+                {busy === 'export' ? 'Preparing export…' : 'Export my data'}
+              </Text>
+              {busy === 'export' ? <ActivityIndicator size="small" color={t.textSec} /> : null}
+            </Pressable>
+            <Pressable
               onPress={signOut}
               accessibilityRole="button"
               accessibilityLabel="Sign out"
+              style={({ pressed }) => [styles.menuRow, { borderBottomColor: t.border }, pressed && { opacity: 0.7 }]}
+            >
+              <Ionicons name="log-out-outline" size={20} color={t.text} />
+              <Text style={[styles.menuLabel, { color: t.text }]}>Sign out</Text>
+            </Pressable>
+            <Pressable
+              onPress={deleteAccount}
+              disabled={!!busy}
+              accessibilityRole="button"
+              accessibilityLabel="Delete account"
               style={({ pressed }) => [styles.menuRow, { borderBottomWidth: 0 }, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="log-out-outline" size={20} color={t.danger} />
-              <Text style={[styles.menuLabel, { color: t.danger }]}>Sign out</Text>
+              <Ionicons name="trash-outline" size={20} color={t.danger} />
+              <Text style={[styles.menuLabel, { color: t.danger }]}>
+                {busy === 'delete' ? 'Deleting…' : 'Delete account'}
+              </Text>
+              {busy === 'delete' ? <ActivityIndicator size="small" color={t.danger} /> : null}
             </Pressable>
           </Card>
         </Reveal>

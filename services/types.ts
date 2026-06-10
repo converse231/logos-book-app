@@ -272,3 +272,15 @@ export interface BookSearchResult {
   genres: string[];
   description: string | null;
 }
+
+// ── AI recommendations (B6 / blueprint §17) ──────────────────────────────────
+export interface AiBookRec {
+  title: string;
+  author: string;
+  why: string; // one concise sentence on why it fits the reader
+}
+
+export interface AiRecResult {
+  recs: AiBookRec[];
+  cached: boolean; // served from the 7-day ai_rec_cache vs a fresh Claude call
+}

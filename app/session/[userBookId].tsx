@@ -26,6 +26,7 @@ import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/toke
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
 import { localDateString, useSessionStore, uuidv4 } from '@/stores/sessionStore';
+import { track } from '@/lib/analytics';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { SessionTimer } from '@/components/session/SessionTimer';
 import { SessionControlBar } from '@/components/session/SessionControlBar';
@@ -227,6 +228,14 @@ export default function SessionTracker() {
         attempts: 0,
       });
       setResult(result);
+      track('session_completed', {
+        format: sessionBook.format,
+        pagesRead: result.pagesRead,
+        durationSeconds: result.durationSeconds,
+        isPersonalBest: result.isPersonalBest,
+        xpGained: result.xpGained,
+        source: 'live',
+      });
       // Keep `active` set so the celebration + share card can read the book
       // title/cover; the celebration's Done action clears it.
       router.replace('/(modals)/session-complete' as Href);

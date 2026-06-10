@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import {
+  AiRecResult,
   BookFormat,
   BookSearchResult,
   CompleteSessionResult,
@@ -43,12 +44,17 @@ export interface LogosApi {
   // ── Library ───────────────────────────────────────────────────────────────
   getUserBooks(status?: ReadingStatus): Promise<UserBook[]>;
   getUserBook(userBookId: string): Promise<UserBook>;
-  addBook(googleBooksId: string, format: BookFormat): Promise<UserBook>;
+  /** Add a searched book to the shelf. Pass the full search result (not just an
+   *  id) so no second catalog round-trip is needed — the metadata is already in hand. */
+  addBook(book: BookSearchResult, format: BookFormat): Promise<UserBook>;
   searchBooks(query: string): Promise<BookSearchResult[]>;
   /** Curated suggestions shown in add-book before the user has typed anything. */
   getRecommendedBooks(): Promise<BookSearchResult[]>;
   updateBookStatus(userBookId: string, status: ReadingStatus): Promise<UserBook>;
   updateCurrentPage(userBookId: string, page: number): Promise<void>;
+  /** Remove a book from the shelf. Cascades to its reading_sessions (DB FK);
+   *  reviews survive (their user_book_id is set null). Does NOT reverse XP/streak. */
+  removeBook(userBookId: string): Promise<void>;
 
   // ── Sessions ──────────────────────────────────────────────────────────────
   /** All post-session side effects (streak/XP/badges/insight/comeback) happen here.
@@ -69,4 +75,14 @@ export interface LogosApi {
   // ── Reviews ───────────────────────────────────────────────────────────────
   writeReview(bookId: string, rating: number, body?: string, spoiler?: boolean): Promise<Review>;
   getReviews(bookId: string): Promise<Review[]>;
+
+  // ── AI (B6) ─────────────────────────────────────────────────────────────────
+  /** Mood/context → Claude book recommendations (server-side, cached 7 days). */
+  aiRecommend(mood: string, context?: string): Promise<AiRecResult>;
+
+  // ── Account (B6 / §21) ───────────────────────────────────────────────────────
+  /** Export all of the caller's data as a JSON string (GDPR portability). */
+  exportData(): Promise<string>;
+  /** Permanently delete the account + all data (cascade). Signs out after. */
+  deleteAccount(): Promise<void>;
 }

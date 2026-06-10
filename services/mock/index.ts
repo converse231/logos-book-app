@@ -6,7 +6,9 @@
 
 import { LogosApi } from '../api';
 import {
+  Book,
   BookFormat,
+  BookSearchResult,
   CompleteSessionResult,
   HomeData,
   QueuedSession,
@@ -114,9 +116,27 @@ export const mockApi: LogosApi = {
     return { ...found };
   },
 
-  async addBook(googleBooksId: string, format: BookFormat) {
+  async addBook(searchResult: BookSearchResult, format: BookFormat) {
     await delay(400);
-    const book = MOCK_BOOKS.find((b) => b.googleBooksId === googleBooksId) ?? MOCK_BOOKS[0];
+    // Prefer a known catalog book (richer fixture); otherwise synthesize one from
+    // the search result so any added book lands on the shelf.
+    const book: Book =
+      MOCK_BOOKS.find((b) => b.googleBooksId === searchResult.googleBooksId) ?? {
+        id: 'book-' + searchResult.googleBooksId,
+        googleBooksId: searchResult.googleBooksId,
+        title: searchResult.title,
+        subtitle: null,
+        authors: searchResult.authors,
+        coverUrl: searchResult.coverUrl,
+        pageCount: searchResult.pageCount,
+        durationMinutes: searchResult.durationMinutes,
+        publishedYear: searchResult.publishedYear,
+        genres: searchResult.genres,
+        description: searchResult.description,
+        publisher: null,
+        isbn13: null,
+        language: 'en',
+      };
     // Already on the shelf — return the existing row instead of duplicating it.
     const existing = MOCK_USER_BOOKS.find((b) => b.book.id === book.id);
     if (existing) return { ...existing };
@@ -164,6 +184,12 @@ export const mockApi: LogosApi = {
 
   async updateCurrentPage(_userBookId: string, _page: number) {
     await delay(100);
+  },
+
+  async removeBook(userBookId: string) {
+    await delay(200);
+    const i = MOCK_USER_BOOKS.findIndex((b) => b.id === userBookId);
+    if (i >= 0) MOCK_USER_BOOKS.splice(i, 1); // in-session removal so the shelf updates
   },
 
   // ── Sessions ────────────────────────────────────────────────────────────
@@ -264,5 +290,31 @@ export const mockApi: LogosApi = {
   async getReviews(bookId: string) {
     await delay();
     return (MOCK_REVIEWS[bookId] ?? []).map((r) => ({ ...r }));
+  },
+
+  // ── Account ────────────────────────────────────────────────────────────────
+  async exportData() {
+    await delay(400);
+    return JSON.stringify({ exportedAt: new Date().toISOString(), user: _user, note: 'mock export' }, null, 2);
+  },
+
+  async deleteAccount() {
+    await delay(300);
+  },
+
+  // ── AI ───────────────────────────────────────────────────────────────────
+  async aiRecommend(mood: string, _context?: string) {
+    await delay(900);
+    const m = mood.toLowerCase();
+    return {
+      recs: [
+        { title: 'Project Hail Mary', author: 'Andy Weir', why: `A ${m || 'gripping'} ride — propulsive problem-solving with real heart.` },
+        { title: 'Piranesi', author: 'Susanna Clarke', why: 'Quietly mind-bending; a haunting world that unfolds one room at a time.' },
+        { title: 'The Long Way to a Small, Angry Planet', author: 'Becky Chambers', why: 'Cozy, character-first sci-fi for when you want warmth over stakes.' },
+        { title: 'Recursion', author: 'Blake Crouch', why: 'Fast, twisty, and impossible to put down once it grabs you.' },
+        { title: 'Tomorrow, and Tomorrow, and Tomorrow', author: 'Gabrielle Zevin', why: 'A tender story about making things together and growing up.' },
+      ],
+      cached: false,
+    };
   },
 };

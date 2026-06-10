@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, Review, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -53,6 +53,7 @@ export default function BookDetail() {
   const [ub, setUb] = useState<UserBook | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [savingStatus, setSavingStatus] = useState<ReadingStatus | null>(null);
+  const [removing, setRemoving] = useState(false);
   const [favorite, setFavorite] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
@@ -83,7 +84,7 @@ export default function BookDetail() {
       <ScreenBackground>
         <View style={[styles.errorTopBar, { paddingTop: insets.top + 6 }]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => router.navigate('/(tabs)/library' as Href)}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Back"
@@ -121,6 +122,31 @@ export default function BookDetail() {
     }
   };
 
+  const removeFromLibrary = () => {
+    Alert.alert(
+      'Remove from library',
+      `Remove "${book.title}" from your library?\n\nThis also deletes any reading sessions logged for it. Your XP, level, and streak are not affected.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setRemoving(true);
+            try {
+              await api.removeBook(ub.id);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.navigate('/(tabs)/library' as Href);
+            } catch {
+              setRemoving(false);
+              Alert.alert('Could not remove', 'Something went wrong. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const length = lengthLabel(ub);
   const ratingCount = reviews.length;
   const ratingAvg = ratingCount > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / ratingCount : 0;
@@ -152,7 +178,7 @@ export default function BookDetail() {
       >
         {/* Top bar */}
         <View style={styles.topBar}>
-          <RoundBtn icon="chevron-back" label="Back" onPress={() => router.back()} t={t} />
+          <RoundBtn icon="chevron-back" label="Back" onPress={() => router.navigate('/(tabs)/library' as Href)} t={t} />
           <RoundBtn
             icon={favorite ? 'heart' : 'heart-outline'}
             label={favorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -344,6 +370,24 @@ export default function BookDetail() {
                 <DetailTile key={d.label} icon={d.icon} label={d.label} value={d.value} t={t} wide />
               ))}
             </View>
+
+            {/* Destructive: remove this book from the shelf (confirm dialog). */}
+            <Pressable
+              onPress={removeFromLibrary}
+              disabled={removing}
+              accessibilityRole="button"
+              accessibilityLabel="Remove from library"
+              style={[styles.removeBtn, { borderColor: t.danger, opacity: removing ? 0.6 : 1 }]}
+            >
+              {removing ? (
+                <ActivityIndicator size="small" color={t.danger} />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={18} color={t.danger} />
+                  <Text style={[styles.removeText, { color: t.danger }]}>Remove from library</Text>
+                </>
+              )}
+            </Pressable>
           </View>
         ) : (
           <View style={styles.tabBody}>
@@ -647,4 +691,6 @@ const styles = StyleSheet.create({
   spoiler: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   writeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 0, borderWidth: 1, marginTop: 4 },
   writeText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
+  removeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 0, borderWidth: BORDER_WIDTH, marginTop: 20 },
+  removeText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 });

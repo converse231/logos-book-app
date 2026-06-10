@@ -21,6 +21,8 @@ import { ThemeProvider } from '@/theme/ThemeContext';
 import { ApiProvider } from '@/services/ApiContext';
 import { liveApi } from '@/services/supabase';
 import { useAppStore } from '@/stores/appStore';
+import { supabase } from '@/lib/supabase';
+import { initAnalytics, identifyUser, resetAnalytics } from '@/lib/analytics';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,6 +43,18 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  // Analytics (B6): init once, then keep PostHog's distinct_id in sync with the
+  // Supabase session — identify on sign-in, reset on sign-out. Centralized here
+  // (the root never unmounts) so no screen has to manage it.
+  useEffect(() => {
+    initAnalytics();
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) identifyUser(session.user.id);
+      else resetAnalytics();
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return null;

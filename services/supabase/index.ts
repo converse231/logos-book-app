@@ -10,18 +10,26 @@
 //   Implemented so far:
 //     B2 — authApi:    auth + onboarding write-through + getProfile
 //     B3 — libraryApi: library + search + reviews (+ ensure_book edge fn)
+//     B4 — sessionApi: completeSession (RPC) + home/stats/insights/goal reads
+//     B6 — aiApi:      aiRecommend (ai_recommend edge fn)
 //   Still on the mock:
-//     B4 — sessions/home/stats/insights/goal-read
+//     (none of the LogosApi surface — B4b adds the MMKV offline queue around completeSession)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { LogosApi } from '../api';
 import { mockApi } from '../mock';
 import { authApi } from './auth';
 import { libraryApi } from './library';
+import { sessionApi } from './sessions';
+import { aiApi } from './ai';
+import { accountApi } from './account';
 
 // Real method groups, in B-phase order. Spread last-wins over the mock.
 export const liveApi: LogosApi = {
   ...mockApi,
   ...authApi,
   ...libraryApi,
+  ...sessionApi,
+  ...aiApi,
+  ...accountApi,
 };
