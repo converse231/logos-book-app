@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StarRating } from '@/components/library/StarRating';
 import { getBookProgress } from '@/components/library/bookProgress';
+import { FinishedDatePicker } from '@/components/library/FinishedDatePicker';
 
 // A curated set of tinted genre pill colours (bg + fg). Rotates by index so
 // consecutive genres always get different hues without needing a genre→colour map.
@@ -31,10 +32,21 @@ const GENRE_PALETTE = [
 
 const STATUSES: { key: ReadingStatus; label: string }[] = [
   { key: 'want', label: 'Want' },
+  { key: 'tbr', label: 'TBR' },
   { key: 'reading', label: 'Reading' },
   { key: 'finished', label: 'Finished' },
   { key: 'dnf', label: 'DNF' },
 ];
+
+const RATING_WORDS: Record<number, string> = {
+  1: 'Not for me',
+  2: 'It was okay',
+  3: 'Liked it',
+  4: 'Really liked it',
+  5: 'It was amazing',
+};
+
+const formatStars = (r: number) => (Number.isInteger(r) ? `${r}` : r.toFixed(1));
 
 type Tab = 'about' | 'reviews';
 
@@ -60,6 +72,9 @@ export default function BookDetail() {
   const [tab, setTab] = useState<Tab>('about');
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [savingRating, setSavingRating] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -78,6 +93,15 @@ export default function BookDetail() {
       };
     }, [api, userBookId, nonce])
   );
+
+  // The signed-in user's id — used to find their own review (rating + body).
+  useEffect(() => {
+    let alive = true;
+    api.getProfile().then((p) => alive && setUserId(p.id)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [api]);
 
   if (error && !ub) {
     return (
@@ -113,9 +137,28 @@ export default function BookDetail() {
   const setStatus = async (next: ReadingStatus) => {
     if (next === status || savingStatus) return;
     Haptics.selectionAsync();
+    // Finishing a book asks for the month/year first, so backfilled reads land in
+    // the right period on stats. Other transitions stamp "now" immediately.
+    if (next === 'finished') {
+      setDatePickerOpen(true);
+      return;
+    }
     setSavingStatus(next);
     try {
       const updated = await api.updateBookStatus(ub.id, next);
+      setUb(updated);
+    } finally {
+      setSavingStatus(null);
+    }
+  };
+
+  // Confirmed from the month/year picker — backdates (or re-dates) the finish.
+  const finishWithDate = async (iso: string) => {
+    setDatePickerOpen(false);
+    Haptics.selectionAsync();
+    setSavingStatus('finished');
+    try {
+      const updated = await api.updateBookStatus(ub.id, 'finished', iso);
       setUb(updated);
     } finally {
       setSavingStatus(null);
@@ -155,7 +198,44 @@ export default function BookDetail() {
   const startSession = () => router.push(`/session/${ub.id}` as Href);
   const writeReview = () =>
     router.push(`/(modals)/review?bookId=${book.id}&title=${encodeURIComponent(book.title)}` as Href);
-  const mine = reviews.find((r) => r.userId === 'mock-user-1');
+
+  const shareReview = (r: Review) => {
+    Haptics.selectionAsync();
+    router.push({
+      pathname: '/(modals)/share-review',
+      params: {
+        rating: String(r.rating),
+        body: r.body ?? '',
+        bookTitle: book.title,
+        author: book.authors[0] ?? '',
+        cover: book.coverUrl ?? '',
+        reviewer: r.userId === selfId ? 'You' : r.userName ?? 'A reader',
+        format,
+      },
+    } as unknown as Href);
+  };
+
+  // Until the profile id loads, fall back to the mock id so mock mode still
+  // recognises the user's own review.
+  const selfId = userId ?? 'mock-user-1';
+  const myReview = reviews.find((r) => r.userId === selfId);
+  const myRating = myReview?.rating ?? 0;
+
+  // Quick star-only rating, separate from a written review. Preserves any words
+  // the reader already posted (and the spoiler flag) so a star-tap never wipes them.
+  const rateBook = async (next: number) => {
+    if (savingRating) return;
+    setSavingRating(true);
+    try {
+      const updated = await api.writeReview(book.id, next, myReview?.body ?? undefined, myReview?.containsSpoilers ?? false);
+      setReviews((prev) => [updated, ...prev.filter((r) => r.userId !== updated.userId)]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('Could not save rating', 'Please try again.');
+    } finally {
+      setSavingRating(false);
+    }
+  };
 
   // Short values become compact half-tiles; long ones (publisher, ISBN) get a
   // full-width tile so nothing truncates. Genres live in the chips above.
@@ -183,9 +263,15 @@ export default function BookDetail() {
             icon={favorite ? 'heart' : 'heart-outline'}
             label={favorite ? 'Remove from favorites' : 'Add to favorites'}
             color={favorite ? t.danger : t.text}
-            onPress={() => {
+            onPress={async () => {
               Haptics.selectionAsync();
-              setFavorite((f) => !f);
+              const next = !favorite;
+              setFavorite(next); // optimistic
+              try {
+                await api.setFavorite(ub.id, next);
+              } catch {
+                setFavorite(!next); // revert on failure
+              }
             }}
             t={t}
           />
@@ -281,6 +367,35 @@ export default function BookDetail() {
           </ScrollView>
         </Reveal>
 
+        {/* Your rating — quick, words-optional. A written review is a separate step. */}
+        <Reveal i={3} reduce={reduce}>
+          <View style={[styles.rateCard, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+            <View style={styles.rateLeft}>
+              <Text style={[styles.rateLabel, { color: t.textSec }]}>YOUR RATING</Text>
+              <StarRating value={myRating} onChange={rateBook} allowHalf size={30} />
+              <Text style={[styles.rateHint, { color: myRating > 0 ? t.text : t.textTer }]}>
+                {savingRating
+                  ? 'Saving…'
+                  : myRating > 0
+                  ? `${formatStars(myRating)} · ${RATING_WORDS[Math.ceil(myRating)]}`
+                  : 'Tap a star to rate'}
+              </Text>
+            </View>
+            <Pressable
+              onPress={writeReview}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={myReview?.body ? 'Edit your written review' : 'Add a written review'}
+              style={[styles.reviewLink, { borderColor: t.border }]}
+            >
+              <Ionicons name="create-outline" size={16} color={t.accent} />
+              <Text style={[styles.reviewLinkText, { color: t.accent }]}>
+                {myReview?.body ? 'Edit review' : 'Add review'}
+              </Text>
+            </Pressable>
+          </View>
+        </Reveal>
+
         {/* Shelf status */}
         <Reveal i={4} reduce={reduce}>
           <View style={styles.statusRow}>
@@ -300,13 +415,29 @@ export default function BookDetail() {
                   {savingStatus === s.key ? (
                     <ActivityIndicator size="small" color={t.accent} />
                   ) : (
-                    <Text style={[styles.statusText, { color: active ? t.accent : t.textSec }]}>{s.label}</Text>
+                    <Text style={[styles.statusText, { color: active ? t.accent : t.textSec }]} numberOfLines={1}>{s.label}</Text>
                   )}
                 </Pressable>
               );
             })}
           </View>
         </Reveal>
+
+        {/* Finished date — editable, so backfilled reads can be re-dated. */}
+        {status === 'finished' && ub.finishedAt ? (
+          <Pressable
+            onPress={() => setDatePickerOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Edit finish date"
+            style={[styles.finishDateRow, { borderColor: t.border, backgroundColor: t.bgSec }]}
+          >
+            <Ionicons name="checkmark-circle" size={18} color={t.accent} />
+            <Text style={[styles.finishDateText, { color: t.text }]}>
+              Finished {monthYearLabel(ub.finishedAt)}
+            </Text>
+            <Ionicons name="pencil" size={15} color={t.textSec} />
+          </Pressable>
+        ) : null}
 
         {/* Progress */}
         {(status === 'reading' || status === 'dnf') && prog.max > 0 ? (
@@ -411,9 +542,10 @@ export default function BookDetail() {
               <ReviewRow
                 key={r.id}
                 review={r}
-                isMine={r.userId === 'mock-user-1'}
+                isMine={r.userId === selfId}
                 revealed={revealed.has(r.id)}
                 onReveal={() => setRevealed((s) => new Set(s).add(r.id))}
+                onShare={() => shareReview(r)}
                 t={t}
               />
             ))}
@@ -421,17 +553,30 @@ export default function BookDetail() {
             <Pressable
               onPress={writeReview}
               accessibilityRole="button"
-              accessibilityLabel={mine ? 'Edit your review' : 'Write a review'}
+              accessibilityLabel={myReview?.body ? 'Edit your review' : 'Write a review'}
               style={[styles.writeBtn, { borderColor: t.border }]}
             >
               <Ionicons name="create-outline" size={18} color={t.text} />
-              <Text style={[styles.writeText, { color: t.text }]}>{mine ? 'Edit your review' : 'Write a review'}</Text>
+              <Text style={[styles.writeText, { color: t.text }]}>{myReview?.body ? 'Edit your review' : 'Write a review'}</Text>
             </Pressable>
           </View>
         )}
       </ScrollView>
+
+      <FinishedDatePicker
+        visible={datePickerOpen}
+        initialISO={ub.finishedAt}
+        onClose={() => setDatePickerOpen(false)}
+        onConfirm={finishWithDate}
+      />
     </ScreenBackground>
   );
+}
+
+// "Mon YYYY" for the finish-date row (e.g. "Mar 2026").
+function monthYearLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
 }
 
 // ── Module-level pieces (stable identity → no remount/replay on re-render) ──
@@ -468,8 +613,8 @@ function BookDetailSkeleton({ topInset, coverW }: { topInset: number; coverW: nu
         <Skeleton width={80} height={34} radius={999} />
       </View>
       <View style={styles.statusRow}>
-        {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} width="22%" height={42} radius={12} />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} width="18%" height={42} radius={12} />
         ))}
       </View>
     </ScrollView>
@@ -548,12 +693,14 @@ function ReviewRow({
   isMine,
   revealed,
   onReveal,
+  onShare,
   t,
 }: {
   review: Review;
   isMine: boolean;
   revealed: boolean;
   onReveal: () => void;
+  onShare: () => void;
   t: ReturnType<typeof useTheme>;
 }) {
   const hidden = review.containsSpoilers && !revealed;
@@ -565,6 +712,9 @@ function ReviewRow({
           {isMine ? 'Your review' : review.userName ?? 'Reader'}
         </Text>
         <Text style={[styles.reviewDate, { color: t.textTer }]}>{relativeDate(review.createdAt)}</Text>
+        <Pressable onPress={onShare} hitSlop={10} accessibilityRole="button" accessibilityLabel="Share this review">
+          <Ionicons name="share-social-outline" size={16} color={t.accent} />
+        </Pressable>
       </View>
       {review.body ? (
         hidden ? (
@@ -654,9 +804,19 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 0 },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
 
+  rateCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  rateLeft: { gap: 7 },
+  rateLabel: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1 },
+  rateHint: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
+  reviewLink: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 38, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  reviewLinkText: { fontFamily: FONTS.uiBold, fontSize: 13 },
+
   statusRow: { flexDirection: 'row', gap: 8 },
   statusPill: { flex: 1, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   statusText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
+
+  finishDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, paddingHorizontal: 14, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  finishDateText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14 },
 
   progressBlock: { gap: 8 },
   progressText: { fontFamily: FONTS.uiMedium, fontSize: 12, fontVariant: ['tabular-nums'] },

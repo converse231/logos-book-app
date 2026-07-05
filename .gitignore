@@ -41,3 +41,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local DB SQL runner (uses DATABASE_URL from .env; not committed)
+dbrun.mjs

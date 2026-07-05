@@ -121,12 +121,18 @@ export const sessionApi: Partial<LogosApi> = {
     return data as CompleteSessionResult;
   },
 
+  // ── Delete a session + reverse its XP (streak/badges preserved) ─────────────
+  async deleteSession(sessionId): Promise<void> {
+    const { error } = await supabase.rpc('delete_session', { p_session_id: sessionId });
+    if (error) throw error;
+  },
+
   // ── Home view-model ─────────────────────────────────────────────────────────
   async getHomeData(): Promise<HomeData> {
     const uid = await requireUid();
     const year = new Date().getFullYear();
     const [uRes, sRes, abRes, cbRes, gRes, rsRes] = await Promise.all([
-      supabase.from('users').select('id, display_name, level, level_name, total_xp').eq('id', uid).single(),
+      supabase.from('users').select('id, display_name, avatar_url, level, level_name, total_xp').eq('id', uid).single(),
       supabase.from('streaks').select('*').eq('user_id', uid).maybeSingle(),
       supabase.from('user_books').select(USER_BOOK_SELECT).eq('user_id', uid).eq('status', 'reading').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('comeback_challenges').select('*').eq('user_id', uid).is('completed_at', null).is('expired_at', null).maybeSingle(),
@@ -158,6 +164,7 @@ export const sessionApi: Partial<LogosApi> = {
       user: {
         id: u.id,
         displayName: u.display_name ?? null,
+        avatarUrl: u.avatar_url ?? null,
         levelName: u.level_name,
         level: u.level,
         totalXp,

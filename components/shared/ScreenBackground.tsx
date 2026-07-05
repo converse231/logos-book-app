@@ -1,36 +1,35 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
 interface ScreenBackgroundProps {
   children: React.ReactNode;
 }
 
-// Neubrutalism: a FLAT substrate fill (no gradients / glow / blur) overlaid with
-// two tiled "analog degradation" textures — a faint blueprint crosshair grid and
-// a fine paper grain. Both are tiny alpha PNGs tiled with resizeMode="repeat"
-// and recoloured per-theme via tintColor, so they stay crisp at any size and
-// flip ink↔light with the theme. Non-interactive, behind all content.
-const grainSrc = require('../../assets/textures/grain.png');
-const gridSrc = require('../../assets/textures/grid.png');
+const CELL = 40; // grid cell size in dp
 
+// Neubrutalism substrate: a FLAT fill (no gradients / glow / blur) overlaid with a
+// blueprint grid. The grid is drawn as thin absolutely-positioned line Views — RN's
+// `<Image resizeMode="repeat">` does NOT tile reliably on the New Architecture (it
+// renders a single tile in the corner), so we draw the lines directly. Crisp at any
+// size, ink on light / white on dark, non-interactive, behind all content.
 export function ScreenBackground({ children }: ScreenBackgroundProps) {
   const t = useTheme();
+  const { width, height } = useWindowDimensions();
   const isDark = t.mode === 'dark';
-  const tint = isDark ? '#FFFFFF' : '#141414';
+  const line = isDark ? 'rgba(255,255,255,0.09)' : 'rgba(20,20,20,0.08)';
+
+  const cols = Math.ceil(width / CELL);
+  const rows = Math.ceil(height / CELL);
 
   return (
     <View style={[styles.root, { backgroundColor: t.bg }]}>
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <Image
-          source={gridSrc}
-          resizeMode="repeat"
-          style={[StyleSheet.absoluteFill, { tintColor: tint, opacity: isDark ? 0.06 : 0.05 }]}
-        />
-        <Image
-          source={grainSrc}
-          resizeMode="repeat"
-          style={[StyleSheet.absoluteFill, { tintColor: tint, opacity: isDark ? 0.07 : 0.05 }]}
-        />
+        {Array.from({ length: cols + 1 }).map((_, i) => (
+          <View key={`v${i}`} style={[styles.vLine, { left: i * CELL, backgroundColor: line }]} />
+        ))}
+        {Array.from({ length: rows + 1 }).map((_, i) => (
+          <View key={`h${i}`} style={[styles.hLine, { top: i * CELL, backgroundColor: line }]} />
+        ))}
       </View>
       {children}
     </View>
@@ -39,4 +38,6 @@ export function ScreenBackground({ children }: ScreenBackgroundProps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  vLine: { position: 'absolute', top: 0, bottom: 0, width: 1 },
+  hLine: { position: 'absolute', left: 0, right: 0, height: 1 },
 });

@@ -1,0 +1,45 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": { "simulator": false },
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gkigoeaycabiviuqfojd.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdraWdvZWF5Y2FiaXZpdXFmb2pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDY1NTUsImV4cCI6MjA5NjA4MjU1NX0.aQK0f_8vk_ItVhu7xajlH-KbB0aSWQ9p2OvH_kEwUhA",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_ozvLMb5Y323nSfAbPhqiEaKmMUKCZrZ2R3tzdq4ZMTRZ",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
+        "EXPO_PUBLIC_GOOGLE_BOOKS_KEY": "AIzaSyCa23krVNo7azCnwwWB4wxmKlWbtz5Yw4Y"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gkigoeaycabiviuqfojd.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdraWdvZWF5Y2FiaXZpdXFmb2pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDY1NTUsImV4cCI6MjA5NjA4MjU1NX0.aQK0f_8vk_ItVhu7xajlH-KbB0aSWQ9p2OvH_kEwUhA",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_ozvLMb5Y323nSfAbPhqiEaKmMUKCZrZ2R3tzdq4ZMTRZ",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
+        "EXPO_PUBLIC_GOOGLE_BOOKS_KEY": "AIzaSyCa23krVNo7azCnwwWB4wxmKlWbtz5Yw4Y"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gkigoeaycabiviuqfojd.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdraWdvZWF5Y2FiaXZpdXFmb2pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDY1NTUsImV4cCI6MjA5NjA4MjU1NX0.aQK0f_8vk_ItVhu7xajlH-KbB0aSWQ9p2OvH_kEwUhA",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_ozvLMb5Y323nSfAbPhqiEaKmMUKCZrZ2R3tzdq4ZMTRZ",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
+        "EXPO_PUBLIC_GOOGLE_BOOKS_KEY": "AIzaSyCa23krVNo7azCnwwWB4wxmKlWbtz5Yw4Y"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

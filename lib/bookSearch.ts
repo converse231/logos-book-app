@@ -28,6 +28,29 @@ export interface EnsureBookInput {
 const GOOGLE = 'https://www.googleapis.com/books/v1/volumes';
 const OPENLIB = 'https://openlibrary.org/search.json';
 
+// Optional Google Books API key. Keyless access shares a low daily quota across
+// everyone and 429s when exhausted; a (free) key raises it dramatically. Unset =
+// keyless (fine for dev, unreliable at scale). Returns the `key` URL param or ''.
+const GOOGLE_BOOKS_KEY = process.env.EXPO_PUBLIC_GOOGLE_BOOKS_KEY;
+const gbKey = (sep: '?' | '&') => (GOOGLE_BOOKS_KEY ? `${sep}key=${GOOGLE_BOOKS_KEY}` : '');
+
+// Friendly onboarding/category labels → Google Books' BISAC subject taxonomy.
+// We keep the nice labels for display/AI/genre_prefs, but `subject:` searches need
+// the canonical term or they return thin/empty results (e.g. `subject:Sci-Fi` is
+// weak vs `subject:Science Fiction`). Anything not listed passes straight through.
+const GENRE_SUBJECT: Record<string, string> = {
+  'Sci-Fi': 'Science Fiction',
+  'Non-Fiction': 'Nonfiction',
+  'Literary Fiction': 'Literary',
+  'Historical': 'Historical Fiction',
+  'Young Adult': 'Young Adult Fiction',
+  'Biography': 'Biography & Autobiography',
+  'Business': 'Business & Economics',
+};
+
+/** Map a display genre label to a Google Books subject for `subject:` queries. */
+export const toSubject = (genre: string): string => GENRE_SUBJECT[genre] ?? genre;
+
 function yearFrom(date?: string | null): number | null {
   if (!date) return null;
   const m = date.match(/\d{4}/);
@@ -72,24 +95,62 @@ function toSearchResult(b: EnsureBookInput): BookSearchResult {
     publishedYear: b.publishedYear ?? null,
     genres: b.genres ?? [],
     description: b.description ?? null,
+    isbn13: b.isbn13 ?? null,
   };
 }
 
+const olDesc = (v: any): string | null =>
+  typeof v === 'string' ? v : typeof v?.value === 'string' ? v.value : null;
+
+/** Open Library's edition/work records often carry a page count, description, or
+ *  subjects that Google omits. When a book about to be added is missing any of
+ *  those AND has an ISBN-13, fill the gaps from OL — ONE extra call, only at add
+ *  time (never per search result). Best-effort: returns the input unchanged on
+ *  any miss/error so adding a book never fails because enrichment did. */
+export async function enrichFromOpenLibrary(meta: EnsureBookInput): Promise<EnsureBookInput> {
+  const missing = !meta.pageCount || !meta.description || !(meta.genres && meta.genres.length);
+  if (!missing || !meta.isbn13) return meta;
+  try {
+    const res = await fetch(`https://openlibrary.org/isbn/${meta.isbn13}.json`);
+    if (!res.ok) return meta;
+    const ed = await res.json(); // edition record
+    const out: EnsureBookInput = { ...meta };
+
+    if (!out.pageCount && typeof ed.number_of_pages === 'number') out.pageCount = ed.number_of_pages;
+    let desc = olDesc(ed.description);
+    let subjects: string[] = Array.isArray(ed.subjects) ? ed.subjects : [];
+
+    // Description + subjects usually live on the parent WORK, not the edition.
+    if ((!desc || subjects.length === 0) && Array.isArray(ed.works) && ed.works[0]?.key) {
+      const wr = await fetch(`https://openlibrary.org${ed.works[0].key}.json`);
+      if (wr.ok) {
+        const w = await wr.json();
+        if (!desc) desc = olDesc(w.description);
+        if (subjects.length === 0 && Array.isArray(w.subjects)) subjects = w.subjects;
+      }
+    }
+
+    if (!out.description && desc) out.description = desc;
+    if ((!out.genres || out.genres.length === 0) && subjects.length) out.genres = subjects.slice(0, 5);
+    if (!out.publishedYear && typeof ed.publish_date === 'string') out.publishedYear = yearFrom(ed.publish_date);
+    return out;
+  } catch {
+    return meta;
+  }
+}
+
 async function googleSearch(query: string, max = 20): Promise<EnsureBookInput[]> {
-  const u = `${GOOGLE}?q=${encodeURIComponent(query)}&maxResults=${max}&printType=books`;
+  const u = `${GOOGLE}?q=${encodeURIComponent(query)}&maxResults=${max}&printType=books${gbKey('&')}`;
   const res = await fetch(u);
   if (!res.ok) throw new Error(`Google Books ${res.status}`);
   const data = await res.json();
   return (data.items ?? []).map(mapGoogleVolume);
 }
 
-async function openLibrarySearch(query: string, max = 20): Promise<EnsureBookInput[]> {
-  const fields = 'key,title,author_name,cover_i,first_publish_year,number_of_pages_median,subject,id_google,isbn';
-  const u = `${OPENLIB}?q=${encodeURIComponent(query)}&limit=${max}&fields=${fields}`;
-  const res = await fetch(u);
-  if (!res.ok) throw new Error(`Open Library ${res.status}`);
-  const data = await res.json();
-  return (data.docs ?? []).map((d: any) => ({
+const OL_FIELDS = 'key,title,author_name,cover_i,first_publish_year,number_of_pages_median,subject,id_google,isbn';
+
+function mapOlDoc(d: any): EnsureBookInput {
+  return {
     googleBooksId: Array.isArray(d.id_google) ? d.id_google[0] : null,
     openLibraryId: typeof d.key === 'string' ? d.key.replace('/works/', '') : null,
     isbn13: Array.isArray(d.isbn) ? d.isbn.find((s: string) => s.length === 13) ?? null : null,
@@ -101,23 +162,67 @@ async function openLibrarySearch(query: string, max = 20): Promise<EnsureBookInp
     publishedYear: typeof d.first_publish_year === 'number' ? d.first_publish_year : null,
     genres: Array.isArray(d.subject) ? d.subject.slice(0, 5) : [],
     description: null,
-  }));
+  };
 }
 
-/** Search the public catalog. Google Books first; Open Library on failure. */
+async function openLibrarySearch(query: string, max = 20): Promise<EnsureBookInput[]> {
+  const res = await fetch(`${OPENLIB}?q=${encodeURIComponent(query)}&limit=${max}&fields=${OL_FIELDS}`);
+  if (!res.ok) throw new Error(`Open Library ${res.status}`);
+  const data = await res.json();
+  return (data.docs ?? []).map(mapOlDoc);
+}
+
+// Open Library's ISBN-keyed search — strong ISBN coverage where Google has gaps.
+async function openLibraryByIsbn(isbn: string): Promise<EnsureBookInput[]> {
+  const res = await fetch(`${OPENLIB}?isbn=${encodeURIComponent(isbn)}&limit=5&fields=${OL_FIELDS}`);
+  if (!res.ok) throw new Error(`Open Library ${res.status}`);
+  const data = await res.json();
+  return (data.docs ?? []).map(mapOlDoc);
+}
+
+// A scanned barcode / typed code is an ISBN-13 (13 digits) or ISBN-10 (9 digits
+// + trailing digit or X). Returns the cleaned ISBN, else null.
+function asIsbn(q: string): string | null {
+  const clean = q.replace(/[\s-]/g, '');
+  return /^\d{13}$/.test(clean) || /^\d{9}[\dXx]$/.test(clean) ? clean : null;
+}
+
+/** Search the public catalog. A bare ISBN (e.g. from the scanner) is matched by
+ *  ISBN across BOTH providers (Google `isbn:` → Open Library `isbn=`), since
+ *  neither alone has complete ISBN coverage. Keyword queries: Google → OL. */
 export async function searchBooks(query: string): Promise<BookSearchResult[]> {
   const q = query.trim();
   if (!q) return [];
+  const isbn = asIsbn(q);
+
+  // Google first (both modes).
   try {
-    const g = await googleSearch(q);
+    const g = await googleSearch(isbn ? `isbn:${isbn}` : q);
     if (g.length > 0) return g.map(toSearchResult);
   } catch {
-    // fall through to Open Library
+    // fall through
   }
+  // Open Library fallback — ISBN-keyed for a scan, keyword otherwise.
   try {
-    return (await openLibrarySearch(q)).map(toSearchResult);
+    const ol = isbn ? await openLibraryByIsbn(isbn) : await openLibrarySearch(q);
+    return ol.map(toSearchResult);
   } catch {
     return [];
+  }
+}
+
+/** Author headshot from Open Library (Google Books has none). Resolves the
+ *  author's OLID, then the medium cover. `?default=false` → 404 when no photo
+ *  exists, so the caller can fall back to an initial. Null if not found. */
+export async function fetchAuthorPhoto(name: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(name)}&limit=1`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const key = data.docs?.[0]?.key;
+    return key ? `https://covers.openlibrary.org/a/olid/${key}-M.jpg?default=false` : null;
+  } catch {
+    return null;
   }
 }
 
@@ -157,7 +262,7 @@ export async function fetchBookForId(id: string): Promise<EnsureBookInput | null
     }
   }
   try {
-    const res = await fetch(`${GOOGLE}/${encodeURIComponent(id)}`);
+    const res = await fetch(`${GOOGLE}/${encodeURIComponent(id)}${gbKey('?')}`);
     if (!res.ok) return null;
     return mapGoogleVolume(await res.json());
   } catch {

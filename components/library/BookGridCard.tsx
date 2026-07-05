@@ -62,8 +62,8 @@ export const BookGridCard = memo(BookGridCardImpl);
 const styles = StyleSheet.create({
   cell: { gap: 6 },
   pressed: { opacity: 0.78 },
-  title: { fontFamily: FONTS.uiBold, fontSize: 14, lineHeight: 18, marginTop: 4 },
-  author: { fontFamily: FONTS.uiRegular, fontSize: 12 },
+  title: { fontFamily: FONTS.uiBold, fontSize: 12, lineHeight: 16, marginTop: 4 },
+  author: { fontFamily: FONTS.uiRegular, fontSize: 11 },
   footer: { marginTop: 2, minHeight: 16, justifyContent: 'center' },
   progressWrap: { gap: 4 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

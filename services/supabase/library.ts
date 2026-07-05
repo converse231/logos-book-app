@@ -8,7 +8,7 @@
 import type { LogosApi } from '../api';
 import type { Book, BookFormat, BookSearchResult, ReadingStatus, Review, UserBook } from '../types';
 import { supabase } from '@/lib/supabase';
-import { recommendedBooks, searchBooks as catalogSearch, type EnsureBookInput } from '@/lib/bookSearch';
+import { recommendedBooks, searchBooks as catalogSearch, enrichFromOpenLibrary, type EnsureBookInput } from '@/lib/bookSearch';
 
 const USER_BOOK_SELECT = '*, book:books(*)';
 
@@ -125,9 +125,10 @@ export const libraryApi: Partial<LogosApi> = {
     //    network round-trip (the old re-fetch was an intermittent failure point).
     //    Open-Library-only results carry an `ol:`-prefixed id → map it across.
     const isOL = book.googleBooksId.startsWith('ol:');
-    const meta: EnsureBookInput = {
+    let meta: EnsureBookInput = {
       googleBooksId: isOL ? null : book.googleBooksId,
       openLibraryId: isOL ? book.googleBooksId.slice(3) : null,
+      isbn13: book.isbn13 ?? null,
       title: book.title,
       authors: book.authors,
       coverUrl: book.coverUrl,
@@ -137,6 +138,9 @@ export const libraryApi: Partial<LogosApi> = {
       genres: book.genres,
       description: book.description,
     };
+    // Fill thin Google metadata (missing pages/description/subjects) from Open
+    // Library by ISBN before persisting — one best-effort call, never blocks the add.
+    meta = await enrichFromOpenLibrary(meta);
     const { data: fnData, error: fnErr } = await supabase.functions.invoke('ensure_book', { body: meta });
     if (fnErr) {
       // functions.invoke hides the real reason behind a generic message; the
@@ -163,11 +167,12 @@ export const libraryApi: Partial<LogosApi> = {
     return mapUserBook(data);
   },
 
-  async updateBookStatus(userBookId: string, status: ReadingStatus) {
+  async updateBookStatus(userBookId: string, status: ReadingStatus, finishedAt?: string | null) {
     const patch: Record<string, any> = { status };
     // Stamp lifecycle timestamps the first time a book enters reading/finished.
+    // `finishedAt` lets the caller backdate a book read earlier (else: now).
     if (status === 'reading') patch.started_at = new Date().toISOString();
-    if (status === 'finished') patch.finished_at = new Date().toISOString();
+    if (status === 'finished') patch.finished_at = finishedAt ?? new Date().toISOString();
     const { data, error } = await supabase
       .from('user_books')
       .update(patch)
@@ -193,13 +198,25 @@ export const libraryApi: Partial<LogosApi> = {
     if (error) throw error;
   },
 
+  async setFavorite(userBookId: string, isFavorite: boolean) {
+    // is_favorite already exists on user_books (B1 schema); owner-scoped by RLS.
+    const { data, error } = await supabase
+      .from('user_books')
+      .update({ is_favorite: isFavorite })
+      .eq('id', userBookId)
+      .select(USER_BOOK_SELECT)
+      .single();
+    if (error) throw error;
+    return mapUserBook(data);
+  },
+
   // ── Reviews ─────────────────────────────────────────────────────────────────
   async writeReview(bookId: string, rating: number, body?: string, spoiler = false) {
     const uid = await requireUid();
-    // reviews.rating is smallint(1–5); the half-star UI is rounded to the nearest
-    // whole star on persist (see B3 note in CLAUDE.md). is_public is forced false
-    // for minors by trg_lock_minor_reviews regardless of what we send.
-    const safeRating = Math.min(5, Math.max(1, Math.round(rating)));
+    // reviews.rating is numeric(2,1) — clamp to 0.5 steps in [0.5, 5] so half-stars
+    // persist (see 20260614 migration). is_public is forced false for minors by
+    // trg_lock_minor_reviews regardless of what we send.
+    const safeRating = Math.min(5, Math.max(0.5, Math.round(rating * 2) / 2));
     const { data, error } = await supabase
       .from('reviews')
       .upsert(

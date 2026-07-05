@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,18 +23,22 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
 import { localDateString, useSessionStore, uuidv4 } from '@/stores/sessionStore';
 import { track } from '@/lib/analytics';
+import { startReadingActivity, updateReadingActivity, endReadingActivity } from '@/lib/liveActivity';
+import { sendOrQueue } from '@/lib/sessionQueue';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { LoadingIndicator } from '@/components/shared/LoadingIndicator';
 import { SessionTimer } from '@/components/session/SessionTimer';
 import { SessionControlBar } from '@/components/session/SessionControlBar';
 import { ReadingCarousel } from '@/components/session/ReadingCarousel';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 
 const STOP_LOCK_SEC = 120; // focus-mode accidental-abort / commitment guard
+const CANCEL_WINDOW_SEC = 60; // opening window to drop a mis-started session (never recorded)
 const REVEAL_MS = 4000;
 const TICK_MS = 250;
 
@@ -49,6 +54,7 @@ export default function SessionTracker() {
 
   const startSession = useSessionStore((s) => s.startSession);
   const setResult = useSessionStore((s) => s.setResult);
+  const endSession = useSessionStore((s) => s.endSession);
 
   // Currently-reading shelf for the picker; selection drives which book starts.
   const [readingBooks, setReadingBooks] = useState<UserBook[] | null>(null);
@@ -68,9 +74,20 @@ export default function SessionTracker() {
   const [showEndEntry, setShowEndEntry] = useState(false);
   const [endPage, setEndPage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Correct the starting page (e.g. you read ahead without tracking). null = use
+  // the book's stored currentPage. Reset whenever the picker selection changes.
+  const [startOverride, setStartOverride] = useState<number | null>(null);
+  const [editingStart, setEditingStart] = useState(false);
+  const [startInput, setStartInput] = useState('');
 
   const selectedBook =
     readingBooks && selectedIndex < readingBooks.length ? readingBooks[selectedIndex] : null;
+
+  // Changing the picked book drops any start-page edit (it belonged to the old book).
+  useEffect(() => {
+    setStartOverride(null);
+    setEditingStart(false);
+  }, [selectedIndex]);
 
   // --- clock state (JS refs; wall-clock based so it can never drift or stall) ---
   const startedAtRef = useRef(0);
@@ -97,14 +114,17 @@ export default function SessionTracker() {
     return () => clearInterval(id);
   }, [phase, computeElapsedMs, elapsedSec]);
 
-  // --- focus-mode stop-lock countdown (1s tick, only while it matters) ---
+  // --- whole-second counter for the opening window (1s tick, only while it
+  //     matters). Drives the cancel affordance (first 60s) and the focus-mode
+  //     finish-lock (first 120s). Ticks only while actively reading (not paused);
+  //     stops once past the longer of the two windows. ---
   useEffect(() => {
-    if (phase !== 'running' || !focusMode || elapsedWhole >= STOP_LOCK_SEC) return;
+    if (phase !== 'running' || elapsedWhole >= STOP_LOCK_SEC) return;
     const id = setInterval(() => {
       if (!paused) setElapsedWhole((e) => e + 1);
     }, 1000);
     return () => clearInterval(id);
-  }, [phase, focusMode, elapsedWhole, paused]);
+  }, [phase, elapsedWhole, paused]);
 
   // --- load the currently-reading shelf (does NOT start the session) ---
   // Refetches on focus so a book added via the "add to current reads" flow shows
@@ -161,13 +181,37 @@ export default function SessionTracker() {
     };
   }, []);
 
+  // Safety net: clear any live activity if the tracker unmounts (idempotent).
+  useEffect(() => () => { endReadingActivity(); }, []);
+
   const detailsStyle = useAnimatedStyle(() => ({ opacity: detailsOpacity.value }));
+
+  // Persist a corrected starting page (you read ahead without tracking). Clamped
+  // to the book length; saved so it sticks even if you don't start the session.
+  const beginEditStart = () => {
+    Haptics.selectionAsync();
+    setStartInput(String(startOverride ?? selectedBook?.currentPage ?? 0));
+    setEditingStart(true);
+  };
+  const confirmEditStart = () => {
+    if (!selectedBook) return;
+    const max = selectedBook.book.pageCount ?? null;
+    let n = parseInt(startInput, 10);
+    if (isNaN(n) || n < 0) n = 0;
+    if (max && max > 0) n = Math.min(n, max);
+    setStartOverride(n);
+    setEditingStart(false);
+    api.updateCurrentPage(selectedBook.id, n).catch(() => {}); // best-effort persist
+  };
 
   const beginSession = () => {
     const b = selectedBook;
     if (!b) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSessionBook(b);
+    const start = startOverride ?? b.currentPage;
+    // Freeze the running book at the (possibly corrected) start page so progress
+    // and the finish calc both use it.
+    setSessionBook({ ...b, currentPage: start });
     startedAtRef.current = Date.now();
     pausedAccumRef.current = 0;
     pauseStartRef.current = null;
@@ -179,10 +223,19 @@ export default function SessionTracker() {
       coverUrl: b.book.coverUrl,
       format: b.format,
       startedAtMs: startedAtRef.current,
-      startPage: b.currentPage,
+      startPage: start,
       pageCount: b.book.pageCount,
     });
     setPhase('running');
+    // Live activity (lock screen / Dynamic Island) — no-op until the dev build.
+    startReadingActivity({
+      bookTitle: b.book.title,
+      coverUrl: b.book.coverUrl,
+      format: b.format,
+      startedAtMs: startedAtRef.current,
+      startPage: b.currentPage,
+      pageCount: b.book.pageCount,
+    });
     revealDetails();
   };
 
@@ -193,9 +246,11 @@ export default function SessionTracker() {
         pauseStartRef.current = null;
       }
       setPaused(false);
+      updateReadingActivity({ paused: false });
     } else {
       pauseStartRef.current = Date.now();
       setPaused(true);
+      updateReadingActivity({ paused: true });
     }
   };
 
@@ -204,41 +259,83 @@ export default function SessionTracker() {
     setShowEndEntry(true);
   };
 
+  // Drop a just-started session before it's ever recorded. Finish is the only
+  // path that calls completeSession, so cancelling simply leaves the tracker —
+  // no session row, no streak/XP touched, nothing to reverse.
+  const cancelSession = () => {
+    Alert.alert(
+      'Cancel session?',
+      "This session won't be saved and your streak, XP, and progress stay exactly as they were.",
+      [
+        { text: 'Keep reading', style: 'cancel' },
+        {
+          text: 'Cancel session',
+          style: 'destructive',
+          onPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            endReadingActivity(); // dismiss the lock-screen / Dynamic Island activity
+            endSession();
+            router.back();
+          },
+        },
+      ]
+    );
+  };
+
   const confirmFinish = async () => {
-    if (!sessionBook) return;
+    if (!sessionBook || submitting) return; // guard double-submit (each call = a new session)
     setSubmitting(true);
     const elapsedMs = computeElapsedMs();
     const start = sessionBook.currentPage;
-    const end = Math.max(start, parseInt(endPage, 10) || start);
+    // Clamp the end page to the book's length (when known) so a fat-fingered
+    // number can't over-count pages_read.
+    const maxPage = sessionBook.pageCountOverride ?? sessionBook.book.pageCount ?? null;
+    let end = Math.max(start, parseInt(endPage, 10) || start);
+    if (maxPage && maxPage > 0) end = Math.min(end, maxPage);
+    const queued = {
+      clientUuid: uuidv4(),
+      userBookId: sessionBook.id,
+      bookId: sessionBook.book.id,
+      format: sessionBook.format,
+      startedAt: new Date(startedAtRef.current).toISOString(),
+      endedAt: new Date(startedAtRef.current + elapsedMs).toISOString(),
+      startPage: sessionBook.format === 'audiobook' ? null : start,
+      endPage: sessionBook.format === 'audiobook' ? null : end,
+      minutesListened: sessionBook.format === 'audiobook' ? Math.round(elapsedMs / 60000) : null,
+      endPositionMin: null,
+      localDate: localDateString(), // frozen at capture — the streak's source of truth
+      source: 'live' as const,
+      enqueuedAt: Date.now(),
+      attempts: 0,
+    };
+
     try {
-      const result = await api.completeSession({
-        clientUuid: uuidv4(),
-        userBookId: sessionBook.id,
-        bookId: sessionBook.book.id,
-        format: sessionBook.format,
-        startedAt: new Date(startedAtRef.current).toISOString(),
-        endedAt: new Date(startedAtRef.current + elapsedMs).toISOString(),
-        startPage: sessionBook.format === 'audiobook' ? null : start,
-        endPage: sessionBook.format === 'audiobook' ? null : end,
-        minutesListened: sessionBook.format === 'audiobook' ? Math.round(elapsedMs / 60000) : null,
-        endPositionMin: null,
-        localDate: localDateString(),
-        source: 'live',
-        enqueuedAt: Date.now(),
-        attempts: 0,
-      });
-      setResult(result);
-      track('session_completed', {
-        format: sessionBook.format,
-        pagesRead: result.pagesRead,
-        durationSeconds: result.durationSeconds,
-        isPersonalBest: result.isPersonalBest,
-        xpGained: result.xpGained,
-        source: 'live',
-      });
-      // Keep `active` set so the celebration + share card can read the book
-      // title/cover; the celebration's Done action clears it.
-      router.replace('/(modals)/session-complete' as Href);
+      // Send now; if offline/transient the session is persisted and synced later.
+      const result = await sendOrQueue(api, queued);
+      endReadingActivity(); // dismiss the lock-screen activity either way
+
+      if (result) {
+        setResult(result);
+        track('session_completed', {
+          format: sessionBook.format,
+          pagesRead: result.pagesRead,
+          durationSeconds: result.durationSeconds,
+          isPersonalBest: result.isPersonalBest,
+          xpGained: result.xpGained,
+          source: 'live',
+        });
+        // Keep `active` set so the celebration + share card can read the book
+        // title/cover; the celebration's Done action clears it.
+        router.replace('/(modals)/session-complete' as Href);
+      } else {
+        // Offline / failed — queued. No server result yet, so no celebration;
+        // it (and the streak) sync automatically next time we reach the server.
+        router.replace('/(tabs)/home' as Href);
+        Alert.alert(
+          'Saved offline',
+          "You're offline, so we saved this session. It'll sync — along with your streak and XP — automatically once you're back online.",
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -249,7 +346,7 @@ export default function SessionTracker() {
   if (!readingBooks) {
     return (
       <View style={[styles.loading, { backgroundColor: t.bg }]}>
-        <ActivityIndicator color={t.accent} />
+        <LoadingIndicator />
       </View>
     );
   }
@@ -293,9 +390,25 @@ export default function SessionTracker() {
                 <Text style={[styles.readyAuthor, { color: t.textSec }]} numberOfLines={1}>
                   {selectedBook.book.authors.join(', ')}
                 </Text>
-                <Text style={[styles.readyStartPage, { color: t.textTer }]}>
-                  {isAudio ? 'Picking up where you left off' : `Starting on page ${selectedBook.currentPage}`}
-                </Text>
+                {isAudio ? (
+                  <Text style={[styles.readyStartPage, { color: t.textTer }]}>Picking up where you left off</Text>
+                ) : (
+                  <Pressable
+                    onPress={beginEditStart}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Starting on page ${startOverride ?? selectedBook.currentPage}. Tap to change if you read ahead.`}
+                    style={[styles.startPageChip, { borderColor: t.border, backgroundColor: t.bgSec }]}
+                  >
+                    <Text style={[styles.readyStartPage, { color: t.textSec }]}>
+                      Starting on page{' '}
+                      <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>
+                        {startOverride ?? selectedBook.currentPage}
+                      </Text>
+                    </Text>
+                    <Ionicons name="pencil" size={13} color={t.accent} />
+                  </Pressable>
+                )}
               </>
             ) : (
               <>
@@ -343,6 +456,42 @@ export default function SessionTracker() {
             <ConfirmButton label="Add a book" icon="add" onPress={goAddReading} />
           )}
         </View>
+
+        {/* Starting-page dialog — a keyboard-aware bottom sheet so the input is
+            never hidden behind the keyboard and the prompt can't be missed. */}
+        {editingStart && selectedBook ? (
+          <KeyboardAvoidingView
+            style={styles.entryOverlay}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <Pressable style={styles.entryBackdrop} onPress={() => setEditingStart(false)} accessibilityLabel="Dismiss" />
+            <View style={[styles.entrySheet, { backgroundColor: t.bgSec, paddingBottom: insets.bottom + 20 }]}>
+              <Text style={[styles.entryTitle, { color: t.text }]}>What page are you starting on?</Text>
+              <Text style={[styles.entryHint, { color: t.textSec }]}>
+                We have you on page {selectedBook.currentPage}. Bump it up if you read ahead without tracking.
+              </Text>
+              <TextInput
+                value={startInput}
+                onChangeText={setStartInput}
+                keyboardType="number-pad"
+                returnKeyType="done"
+                autoFocus
+                selectTextOnFocus
+                maxLength={5}
+                onSubmitEditing={confirmEditStart}
+                style={[styles.entryInput, { color: t.text, borderColor: t.accent }]}
+                accessibilityLabel="Starting page"
+              />
+              <PressBlock
+                onPress={confirmEditStart}
+                accessibilityLabel="Set starting page"
+                style={[styles.entryBtn, { backgroundColor: t.accent, borderColor: INK }]}
+              >
+                <Text style={styles.entryBtnText}>Set page</Text>
+              </PressBlock>
+            </View>
+          </KeyboardAvoidingView>
+        ) : null}
       </View>
     );
   }
@@ -352,13 +501,14 @@ export default function SessionTracker() {
   if (!book) {
     return (
       <View style={[styles.loading, { backgroundColor: t.bg }]}>
-        <ActivityIndicator color={t.accent} />
+        <LoadingIndicator />
       </View>
     );
   }
   const isAudio = book.format === 'audiobook';
   const canStop = focusMode ? elapsedWhole >= STOP_LOCK_SEC && !paused : !paused;
   const stopUnlocksInSec = Math.max(0, STOP_LOCK_SEC - elapsedWhole);
+  const canCancel = elapsedWhole < CANCEL_WINDOW_SEC;
 
   return (
     <Animated.View
@@ -404,8 +554,10 @@ export default function SessionTracker() {
           isPaused={paused}
           canStop={canStop}
           stopUnlocksInSec={stopUnlocksInSec}
+          showCancel={canCancel}
           onTogglePause={togglePause}
           onStop={beginFinish}
+          onCancel={cancelSession}
         />
       </View>
 
@@ -434,19 +586,18 @@ export default function SessionTracker() {
               style={[styles.entryInput, { color: t.text, borderColor: t.accent }]}
               accessibilityLabel="End page"
             />
-            <Pressable
+            <PressBlock
               onPress={confirmFinish}
               disabled={submitting}
-              accessibilityRole="button"
               accessibilityLabel="Finish session"
-              style={[styles.entryBtn, { backgroundColor: t.accent }, submitting && styles.btnBusy]}
+              style={[styles.entryBtn, { backgroundColor: t.accent, borderColor: INK }, submitting && styles.btnBusy]}
             >
               {submitting ? (
                 <ActivityIndicator color={PALETTE.onAccent} />
               ) : (
                 <Text style={styles.entryBtnText}>Finish session</Text>
               )}
-            </Pressable>
+            </PressBlock>
           </View>
         </KeyboardAvoidingView>
       ) : null}
@@ -492,7 +643,11 @@ const styles = StyleSheet.create({
   readyText: { alignItems: 'center', gap: 6, paddingHorizontal: 32, minHeight: 92 },
   readyTitle: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 34, textAlign: 'center' },
   readyAuthor: { fontFamily: FONTS.uiRegular, fontSize: 15, textAlign: 'center' },
-  readyStartPage: { fontFamily: FONTS.uiMedium, fontSize: 13, marginTop: 4, fontVariant: ['tabular-nums'] },
+  readyStartPage: { fontFamily: FONTS.uiMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
+  startPageChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 0, borderWidth: BORDER_WIDTH,
+  },
   readyFooter: { paddingHorizontal: 24, gap: 14, alignItems: 'center' },
   focusRow: {
     flexDirection: 'row',
@@ -557,7 +712,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginVertical: 8,
   },
-  entryBtn: { minHeight: 52, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  entryBtn: { minHeight: 52, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
   btnBusy: { opacity: 0.7 },
   entryBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 16, color: PALETTE.onAccent },
 });

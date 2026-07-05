@@ -232,7 +232,7 @@ export const LIGHT_TOKENS: ThemeTokens = {
   bgSec:   '#FFFFFF',  // white blocks
   bgTer:   '#ECE7DA',  // inset cream
   accent:  '#FF3D1F',
-  gold:    '#B8860B',  // readable gold for text/icons (bright #FFC53D for fills)
+  gold:    '#F5A623',  // vivid amber-gold for text/icons (bright #FFC53D for fills/stars)
   ember:   '#D9730F',  // readable amber for text/icons on light
   level:   '#D62E6F',  // deeper magenta for text on light
   text:    '#141414',

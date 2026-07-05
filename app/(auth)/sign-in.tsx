@@ -16,6 +16,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
+import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -96,19 +97,13 @@ export default function SignIn() {
 
             <View style={styles.field}>
               <Text style={[styles.label, { color: t.textSec }]}>PASSWORD</Text>
-              <TextInput
+              <PasswordInput
                 value={password}
                 onChangeText={(v) => { setPassword(v); setError(null); }}
                 placeholder="Your password"
-                placeholderTextColor={t.textTer}
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry
                 textContentType="password"
                 returnKeyType="go"
                 onSubmitEditing={handleSignIn}
-                accessibilityLabel="Password"
-                style={[styles.input, { backgroundColor: t.bgSec, color: t.text, borderColor: t.border }]}
               />
             </View>
 

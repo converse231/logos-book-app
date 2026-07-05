@@ -1,14 +1,16 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE } from '@/theme/tokens';
+import { FONTS, PALETTE, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ComebackChallenge, UserBook } from '@/services/types';
+import { LoadingIndicator } from '@/components/shared/LoadingIndicator';
+import { PressBlock } from '@/components/shared/PressBlock';
 
 // Comeback Challenge (blueprint Section 5). A streak broke; finish 3 sessions
 // before it expires to restore it. Loss-aversion framed in gold. Deep link:
@@ -60,16 +62,16 @@ export default function Comeback() {
 
       <View style={[styles.center, { paddingTop: insets.top, paddingBottom: insets.bottom }]} pointerEvents="box-none">
         {comeback === undefined ? (
-          <ActivityIndicator color={t.accent} />
+          <LoadingIndicator />
         ) : comeback === null ? (
           <View style={[styles.panel, { backgroundColor: t.bgSec, borderColor: t.border }]}>
             <Text style={[styles.title, { color: t.text }]}>No active challenge</Text>
             <Text style={[styles.body, { color: t.textSec }]}>
               Keep your streak alive and you’ll never need one.
             </Text>
-            <Pressable onPress={close} style={[styles.cta, { backgroundColor: t.accent }]} accessibilityRole="button">
+            <PressBlock onPress={close} accessibilityLabel="Got it" containerStyle={styles.ctaWrap} style={[styles.cta, { backgroundColor: t.accent, borderColor: t.border }]}>
               <Text style={styles.ctaText}>Got it</Text>
-            </Pressable>
+            </PressBlock>
           </View>
         ) : (
           <AnimatedPanel reduce={reduce}>
@@ -120,10 +122,10 @@ export default function Comeback() {
                 </Text>
               </View>
 
-              <Pressable onPress={startSession} style={[styles.cta, { backgroundColor: t.accent }]} accessibilityRole="button" accessibilityLabel="Start a session">
+              <PressBlock onPress={startSession} accessibilityLabel="Start a session" containerStyle={styles.ctaWrap} style={[styles.cta, { backgroundColor: t.accent, borderColor: t.border }]}>
                 <Ionicons name="play" size={18} color={PALETTE.onAccent} />
                 <Text style={styles.ctaText}>Start a session</Text>
-              </Pressable>
+              </PressBlock>
               <Pressable onPress={close} style={styles.later} accessibilityRole="button" accessibilityLabel="Maybe later">
                 <Text style={[styles.laterText, { color: t.textSec }]}>Maybe later</Text>
               </Pressable>
@@ -163,7 +165,8 @@ const styles = StyleSheet.create({
   sessionLabel: { fontFamily: FONTS.uiBold, fontSize: 12 },
   countdownRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
   countdown: { fontFamily: FONTS.uiMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
-  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, alignSelf: 'stretch', minHeight: 52, borderRadius: 0, marginTop: 16 },
+  ctaWrap: { alignSelf: 'stretch', marginTop: 16 },
+  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 16, color: PALETTE.onAccent },
   later: { minHeight: 40, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   laterText: { fontFamily: FONTS.uiMedium, fontSize: 14 },

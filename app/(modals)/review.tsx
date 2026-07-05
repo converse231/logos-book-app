@@ -25,13 +25,28 @@ export default function Review() {
   const [posting, setPosting] = useState(false);
   const [isMinor, setIsMinor] = useState(false);
 
+  // Pre-fill from the reader's existing review (rating set inline, or a prior
+  // write) so editing here never wipes a star rating they already gave.
   useEffect(() => {
     let alive = true;
-    api.getProfile().then((p) => alive && setIsMinor(p.isMinor));
+    api.getProfile().then((p) => {
+      if (!alive) return;
+      setIsMinor(p.isMinor);
+      if (!bookId) return;
+      api.getReviews(bookId).then((rv) => {
+        if (!alive) return;
+        const own = rv.find((r) => r.userId === p.id);
+        if (own) {
+          setRating(own.rating);
+          setBody(own.body ?? '');
+          setSpoiler(own.containsSpoilers);
+        }
+      });
+    });
     return () => {
       alive = false;
     };
-  }, [api]);
+  }, [api, bookId]);
 
   const close = () => router.back();
 

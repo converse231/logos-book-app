@@ -73,21 +73,21 @@ fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'grain.png'), encodePng(W, H, buf));
 }
 
-// ── grid.png — 44×44 tile with a centred crosshair "+" ───────────────────────
+// ── grid.png — 40×40 graph-paper cell: thin lines on the top + left edges ─────
+// Tiling the edge lines yields a continuous blueprint grid (vs the old sparse
+// crosshairs). A brighter pixel at the corner gives a faint registration dot.
 {
-  const W = 44, H = 44;
+  const W = 40, H = 40;
   const buf = Buffer.alloc(W * H * 4); // transparent
-  const cx = W / 2, cy = H / 2;
-  const arm = 4; // half-length of each crosshair arm (px)
   const set = (x, y, a) => {
     if (x < 0 || y < 0 || x >= W || y >= H) return;
     const o = (y * W + x) * 4;
     buf[o] = 0; buf[o + 1] = 0; buf[o + 2] = 0; buf[o + 3] = a;
   };
-  for (let d = -arm; d <= arm; d++) {
-    set(cx + d, cy, 255);      // horizontal arm
-    set(cx, cy + d, 255);      // vertical arm
-  }
+  const LINE = 150; // line alpha (the overlay opacity scales this down further)
+  for (let x = 0; x < W; x++) set(x, 0, LINE); // top edge  → horizontal lines
+  for (let y = 0; y < H; y++) set(0, y, LINE); // left edge → vertical lines
+  set(0, 0, 255);                              // crisp intersection dot
   fs.writeFileSync(path.join(outDir, 'grid.png'), encodePng(W, H, buf));
 }
 

@@ -3,20 +3,39 @@ import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextIn
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, ZoomIn, useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  FadeIn,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, SHADOW, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
-import { BookFormat, BookSearchResult } from '@/services/types';
+import { BookFormat, BookSearchResult, ReadingStatus } from '@/services/types';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { BookCover } from '@/components/shared/BookCover';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
+import { FinishedDatePicker } from '@/components/library/FinishedDatePicker';
 import { track } from '@/lib/analytics';
 
 const FORMATS: { key: BookFormat; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'physical', label: 'Physical', icon: 'book-outline' },
   { key: 'ebook', label: 'E-book', icon: 'tablet-portrait-outline' },
   { key: 'audiobook', label: 'Audiobook', icon: 'headset-outline' },
+];
+
+// Final offset (px) of the hard ink shadow on the success cover.
+const SHADOW_OFFSET = 9;
+
+const SHELVES: { key: ReadingStatus; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'want', label: 'Want', icon: 'bookmark-outline' },
+  { key: 'tbr', label: 'TBR', icon: 'time-outline' },
+  { key: 'reading', label: 'Reading', icon: 'book-outline' },
+  { key: 'finished', label: 'Finished', icon: 'checkmark-circle-outline' },
 ];
 
 // Add-to-shelf flow (blueprint Section 3). Step 1: browse recommendations or
@@ -36,6 +55,13 @@ export default function AddBook() {
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<BookSearchResult | null>(null);
   const [format, setFormat] = useState<BookFormat>('physical');
+  // Which shelf to land on. The session picker forces "reading"; the "Up next"
+  // (TBR) entry point pre-selects "tbr"; otherwise the user picks (default
+  // "want", or "finished" to backfill an already-read book).
+  const [shelf, setShelf] = useState<ReadingStatus>(
+    status === 'reading' ? 'reading' : status === 'tbr' ? 'tbr' : 'want'
+  );
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState<BookSearchResult | null>(null); // success overlay
   const [error, setError] = useState<string | null>(null);
@@ -74,17 +100,34 @@ export default function AddBook() {
 
   const close = () => router.back();
 
-  const confirmAdd = async () => {
+  // Adding "Finished" asks for the month/year first (so backfilled reads land in
+  // the right period); other shelves add immediately.
+  const onConfirmPress = () => {
     if (!selected || adding) return;
+    if (shelf === 'finished') {
+      setDatePickerOpen(true);
+      return;
+    }
+    performAdd();
+  };
+
+  const performAdd = async (finishedISO?: string) => {
+    if (!selected || adding) return;
+    setDatePickerOpen(false);
     setAdding(true);
     setError(null);
     try {
       const result = await api.addBook(selected, format);
-      if (status === 'reading' && result.status !== 'reading') {
+      // addBook lands the book on "want"; promote it if the user chose otherwise.
+      if (shelf === 'tbr') {
+        await api.updateBookStatus(result.id, 'tbr');
+      } else if (shelf === 'reading' && result.status !== 'reading') {
         await api.updateBookStatus(result.id, 'reading');
+      } else if (shelf === 'finished') {
+        await api.updateBookStatus(result.id, 'finished', finishedISO ?? new Date().toISOString());
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      track('book_added', { source: status === 'reading' ? 'session_picker' : 'search' });
+      track('book_added', { source: status === 'reading' ? 'session_picker' : 'search', shelf });
       setAdding(false);
       setAdded(selected); // fire the success celebration overlay
     } catch (e: any) {
@@ -141,6 +184,31 @@ export default function AddBook() {
             </View>
           </View>
 
+          <Text style={[styles.label, { color: t.textSec }]}>ADD TO</Text>
+          <View style={styles.formatRow}>
+            {SHELVES.map((s) => {
+              const active = s.key === shelf;
+              return (
+                <Pressable
+                  key={s.key}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setShelf(s.key);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={[
+                    styles.formatPill,
+                    { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
+                  ]}
+                >
+                  <Ionicons name={s.icon} size={20} color={active ? t.accent : t.textSec} />
+                  <Text style={[styles.formatText, { color: active ? t.accent : t.textSec }]} numberOfLines={1}>{s.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
           <Text style={[styles.label, { color: t.textSec }]}>FORMAT</Text>
           <View style={styles.formatRow}>
             {FORMATS.map((f) => {
@@ -173,7 +241,11 @@ export default function AddBook() {
             </View>
           ) : null}
 
-          <PrimaryButton label={error ? 'Try again' : 'Add to shelf'} onPress={confirmAdd} loading={adding} />
+          <PrimaryButton
+            label={error ? 'Try again' : shelf === 'finished' ? 'Set finish date' : 'Add to shelf'}
+            onPress={onConfirmPress}
+            loading={adding}
+          />
         </View>
       ) : (
         <View style={styles.searchWrap}>
@@ -233,6 +305,12 @@ export default function AddBook() {
     </SheetScaffold>
 
     <BookAddedOverlay book={added} reduce={reduce} accent={t.accent} onDone={close} />
+
+    <FinishedDatePicker
+      visible={datePickerOpen}
+      onClose={() => setDatePickerOpen(false)}
+      onConfirm={performAdd}
+    />
     </>
   );
 }
@@ -253,10 +331,15 @@ function BookAddedOverlay({
   onDone: () => void;
 }) {
   const doneRef = useRef(false);
+  // Drives the hard offset shadow: slides from flush (0,0) to its full offset and
+  // fades in once the cover has cut in — the neubrutalist "block lifts off the page".
+  const shadow = useSharedValue(0);
 
   useEffect(() => {
     if (!book) return;
     doneRef.current = false;
+    shadow.value = 0;
+    shadow.value = reduce ? 1 : withDelay(120, withTiming(1, { duration: 170, easing: Easing.out(Easing.cubic) }));
     const handle = setTimeout(() => {
       if (!doneRef.current) {
         doneRef.current = true;
@@ -264,7 +347,15 @@ function BookAddedOverlay({
       }
     }, 2100);
     return () => clearTimeout(handle);
-  }, [book, onDone]);
+  }, [book, onDone, reduce, shadow]);
+
+  const shadowStyle = useAnimatedStyle(() => ({
+    opacity: shadow.value,
+    transform: [
+      { translateX: SHADOW_OFFSET * shadow.value },
+      { translateY: SHADOW_OFFSET * shadow.value },
+    ],
+  }));
 
   if (!book) return null;
 
@@ -278,9 +369,11 @@ function BookAddedOverlay({
     <Modal visible transparent animationType="fade" onRequestClose={dismiss}>
       <Pressable style={overlay.root} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Continue">
         <Animated.View
-          entering={reduce ? undefined : ZoomIn.springify().damping(13).stiffness(140)}
+          entering={reduce ? undefined : FadeIn.duration(140)}
           style={overlay.coverWrap}
         >
+          {/* Hard ink shadow as a real block behind the cover, so it can slide in. */}
+          <Animated.View style={[overlay.shadowBlock, shadowStyle]} pointerEvents="none" />
           <View style={overlay.coverFrame}>
             <BookCover url={book.coverUrl} title={book.title} width={172} />
           </View>
@@ -289,7 +382,7 @@ function BookAddedOverlay({
           </View>
         </Animated.View>
 
-        <Animated.View entering={reduce ? undefined : FadeIn.delay(220).duration(360)} style={overlay.textBlock}>
+        <Animated.View entering={reduce ? undefined : FadeIn.delay(330).duration(360)} style={overlay.textBlock}>
           <Text style={[overlay.kicker, { color: accent }]}>ADDED TO YOUR LIBRARY</Text>
           <Text style={overlay.title} numberOfLines={3}>{book.title}</Text>
           {book.authors.length > 0 ? (
@@ -355,9 +448,12 @@ const overlay = StyleSheet.create({
     backgroundColor: 'rgba(3,4,6,0.88)',
   },
   coverWrap: { alignItems: 'center', justifyContent: 'center' },
+  // Sits behind the (opaque) cover frame; the animation translates it out to the
+  // bottom-right so only the offset L-shape shows — a hard neubrutalist shadow.
+  shadowBlock: { ...StyleSheet.absoluteFillObject, backgroundColor: PALETTE.ink, borderRadius: 0 },
   coverFrame: {
     borderWidth: BORDER_WIDTH_THICK, borderColor: PALETTE.ink, backgroundColor: PALETTE.paper,
-    borderRadius: 0, ...SHADOW.card,
+    borderRadius: 0,
   },
   sticker: {
     position: 'absolute', top: -16, right: -16, width: 48, height: 48, borderRadius: 0,

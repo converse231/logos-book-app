@@ -14,6 +14,7 @@
 // dev build later.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { decode } from 'base64-arraybuffer';
 import type { LogosApi } from '../api';
 import type { LevelName, SubStatus, ThemePref, UserProfile } from '../types';
 import { supabase } from '@/lib/supabase';
@@ -34,12 +35,16 @@ function localTimezone(): { offsetMinutes: number; name: string } {
 }
 
 // Maps a public.users row (snake_case) → UserProfile (camelCase) the UI binds to.
-function rowToProfile(r: Record<string, any>): UserProfile {
+// `email` lives on auth.users, not this row — pass it in from the session.
+function rowToProfile(r: Record<string, any>, email: string | null = null): UserProfile {
   return {
     id: r.id,
+    email,
     username: r.username ?? null,
     displayName: r.display_name ?? null,
+    bio: r.bio ?? null,
     avatarUrl: r.avatar_url ?? null,
+    genrePrefs: r.genre_prefs ?? [],
     birthYear: r.birth_year,
     isMinor: r.is_minor,
     isUnder13: r.is_under_13,
@@ -59,6 +64,11 @@ async function currentUserId(): Promise<string | null> {
   return data.session?.user.id ?? null;
 }
 
+async function currentUserEmail(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.email ?? null;
+}
+
 // Only the B2 method group. Composed over the mock in services/supabase/index.ts,
 // so every not-yet-implemented method keeps falling through to the mock.
 export const authApi: Partial<LogosApi> = {
@@ -75,28 +85,51 @@ export const authApi: Partial<LogosApi> = {
   },
 
   async signUp(email, password, birthYear) {
-    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
-    if (error) throw error;
-    const userId = data.user?.id;
-    if (!userId) throw new Error('Sign-up returned no user.');
-    if (!data.session) {
-      // Confirmation is ON — no active session, so the users insert below would be
-      // rejected by RLS. Fail loud with the fix rather than a cryptic RLS error.
-      throw new Error(
-        'Sign-up created the auth user but no session was returned. Turn OFF ' +
-          '"Confirm email" in Supabase → Auth → Providers → Email for the email-first phase.'
-      );
+    const cleanEmail = email.trim();
+    // RESUMABLE onboarding: a prior attempt may have created the account (and an
+    // active session) but failed while flushing profile/prefs. Reuse that session
+    // instead of re-running signUp — which would error "User already registered"
+    // and trap the user on the profile screen forever.
+    let { data: { session } } = await supabase.auth.getSession();
+    let userId = session?.user.id ?? null;
+
+    if (!userId) {
+      const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
+      if (error) {
+        // The email may already exist (a prior partial attempt, or a reinstall).
+        // Try to sign in with the same credentials to recover and continue.
+        const { data: si } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        if (!si.session) throw error; // can't recover → surface the original signUp error
+        session = si.session;
+        userId = si.user?.id ?? null;
+      } else {
+        userId = data.user?.id ?? null;
+        if (!data.session) {
+          // Confirmation is ON — no active session, so the users insert below would
+          // be rejected by RLS. Fail loud with the fix.
+          throw new Error(
+            'Sign-up created the auth user but no session was returned. Turn OFF ' +
+              '"Confirm email" in Supabase → Auth → Providers → Email for the email-first phase.'
+          );
+        }
+        session = data.session;
+      }
     }
-    // Create the public.users row. Triggers fire: trg_set_age_flags fills
-    // is_minor/is_under_13 from birth_year; trg_provision_user seeds the
-    // streaks + notification_settings rows. RLS check: auth.uid() === id.
+    if (!userId) throw new Error('Sign-up returned no user.');
+
+    // UPSERT the public.users row (idempotent — a prior attempt may have inserted
+    // it). On first insert: trg_set_age_flags fills is_minor/is_under_13 from
+    // birth_year; trg_provision_user seeds streaks + notification_settings. RLS: auth.uid() === id.
     const tz = localTimezone();
-    const { error: insErr } = await supabase.from('users').insert({
-      id: userId,
-      birth_year: birthYear,
-      timezone_offset_minutes: tz.offsetMinutes,
-      timezone_name: tz.name,
-    });
+    const { error: insErr } = await supabase.from('users').upsert(
+      {
+        id: userId,
+        birth_year: birthYear,
+        timezone_offset_minutes: tz.offsetMinutes,
+        timezone_name: tz.name,
+      },
+      { onConflict: 'id' }
+    );
     if (insErr) throw insErr;
     return { userId };
   },
@@ -142,10 +175,26 @@ export const authApi: Partial<LogosApi> = {
     const patch: Record<string, any> = {};
     if (dataIn.username !== undefined) patch.username = dataIn.username;
     if (dataIn.displayName !== undefined) patch.display_name = dataIn.displayName;
+    if (dataIn.bio !== undefined) patch.bio = dataIn.bio;
     if (dataIn.theme !== undefined) patch.theme = dataIn.theme;
+    if (dataIn.avatarUrl !== undefined) patch.avatar_url = dataIn.avatarUrl;
     const { data, error } = await supabase.from('users').update(patch).eq('id', uid).select().single();
     if (error) throw error;
-    return rowToProfile(data);
+    return rowToProfile(data, await currentUserEmail());
+  },
+
+  // Uploads a base64 JPEG to the public `avatars` bucket at avatars/<uid>/avatar.jpg
+  // (upsert), returning a cache-busted public URL to store in users.avatar_url.
+  async uploadAvatar(base64: string) {
+    const uid = await currentUserId();
+    if (!uid) throw new Error('uploadAvatar requires an account.');
+    const path = `${uid}/avatar.jpg`;
+    const { error } = await supabase.storage
+      .from('avatars')
+      .upload(path, decode(base64), { contentType: 'image/jpeg', upsert: true });
+    if (error) throw error;
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    return `${data.publicUrl}?v=${Date.now()}`; // bust CDN cache (same path on re-upload)
   },
 
   async completeOnboarding() {
@@ -164,6 +213,6 @@ export const authApi: Partial<LogosApi> = {
     if (!uid) throw new Error('getProfile called with no session.');
     const { data, error } = await supabase.from('users').select('*').eq('id', uid).single();
     if (error) throw error;
-    return rowToProfile(data);
+    return rowToProfile(data, await currentUserEmail());
   },
 };

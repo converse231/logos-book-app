@@ -2,19 +2,25 @@ import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { track } from '@/lib/analytics';
 import { useAppStore } from '@/stores/appStore';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
+import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { ThemeToggle } from '@/components/onboarding/ThemeToggle';
 
@@ -35,9 +41,30 @@ export default function Profile() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [avatar, setAvatar] = useState<{ uri: string; base64: string } | null>(null);
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const pickAvatar = async () => {
+    Haptics.selectionAsync();
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      setError('Photo access is needed to choose a picture. You can add one later in Settings.');
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+    if (!res.canceled && res.assets[0]?.base64) {
+      setError(null);
+      setAvatar({ uri: res.assets[0].uri, base64: res.assets[0].base64 });
+    }
+  };
 
   const trimmed = username.trim();
   const nameValid = NAME_RE.test(trimmed);
@@ -59,11 +86,20 @@ export default function Profile() {
     try {
       // 1) Create the account (auth user + public.users row from birth_year).
       await api.signUp(email, password, birthYear);
-      // 2) Flush the buffered funnel choices as authenticated writes.
-      await api.updateProfile({ displayName: trimmed, theme });
+      // 2) Upload the avatar (if picked) — non-fatal, never block onboarding on it.
+      let avatarUrl: string | undefined;
+      if (avatar?.base64) {
+        try {
+          avatarUrl = await api.uploadAvatar(avatar.base64);
+        } catch {
+          avatarUrl = undefined;
+        }
+      }
+      // 3) Flush the buffered funnel choices as authenticated writes.
+      await api.updateProfile({ displayName: trimmed, theme, avatarUrl });
       await api.setGenrePrefs(genres);
       await api.setReadingGoal(new Date().getFullYear(), goalBooks);
-      // 3) Mark onboarding done so the boot redirect lands on home next launch.
+      // 4) Mark onboarding done so the boot redirect lands on home next launch.
       await api.completeOnboarding();
       track('onboarding_completed');
       // Cast: typed routes regenerate on first `expo start`; this is a valid route.
@@ -84,7 +120,7 @@ export default function Profile() {
         step={4}
         totalSteps={5}
         title="Last thing — who's reading?"
-        subtitle="Set your name and pick a theme. You can change both later in Settings."
+        subtitle="Add a photo, set your name, and pick a theme. You can change these later in Settings."
         onBack={() => router.back()}
         scroll
         footer={
@@ -97,6 +133,30 @@ export default function Profile() {
         }
       >
         <View style={styles.body}>
+          {/* Profile photo (optional) */}
+          <Pressable
+            onPress={pickAvatar}
+            accessibilityRole="button"
+            accessibilityLabel={avatar ? 'Change profile photo' : 'Add a profile photo'}
+            style={styles.avatarWrap}
+          >
+            <View style={styles.avatarBox}>
+              <View style={[styles.avatar, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
+                {avatar ? (
+                  <Image source={{ uri: avatar.uri }} style={styles.avatarImg} contentFit="cover" />
+                ) : (
+                  <Ionicons name="person" size={42} color={t.accent} />
+                )}
+              </View>
+              <View style={[styles.avatarBadge, { backgroundColor: t.accent, borderColor: t.border }]}>
+                <Ionicons name="camera" size={15} color={t.onAccent} />
+              </View>
+            </View>
+            <Text style={[styles.avatarHint, { color: t.textSec }]}>
+              {avatar ? 'CHANGE PHOTO' : 'ADD A PHOTO (OPTIONAL)'}
+            </Text>
+          </Pressable>
+
           {/* Name field */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: t.textSec }]}>YOUR NAME</Text>
@@ -152,18 +212,12 @@ export default function Profile() {
           {/* Password */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: t.textSec }]}>PASSWORD</Text>
-            <TextInput
+            <PasswordInput
               value={password}
               onChangeText={(v) => { setPassword(v); setError(null); }}
               placeholder="At least 6 characters"
-              placeholderTextColor={t.textTer}
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
               textContentType="newPassword"
               returnKeyType="done"
-              accessibilityLabel="Password"
-              style={[styles.input, { backgroundColor: t.bgSec, color: t.text, borderColor: t.border }]}
             />
             <Text style={[styles.helper, { color: t.textTer }]}>
               You'll use this to sign back in and keep your streak.
@@ -190,6 +244,18 @@ export default function Profile() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   body: { paddingHorizontal: 24, paddingTop: 20, gap: 28 },
+  avatarWrap: { alignItems: 'center', alignSelf: 'center', gap: 8 },
+  avatarBox: { width: 96, height: 96 },
+  avatar: {
+    width: 96, height: 96, borderRadius: 0, borderWidth: BORDER_WIDTH,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  avatarImg: { width: '100%', height: '100%' },
+  avatarBadge: {
+    position: 'absolute', bottom: -6, right: -6, width: 32, height: 32, borderRadius: 0,
+    borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center',
+  },
+  avatarHint: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
   field: { gap: 10 },
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2 },
   input: {

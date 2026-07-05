@@ -24,8 +24,11 @@ const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString()
 
 export const MOCK_USER: UserProfile = {
   id: 'mock-user-1',
+  email: 'alex@example.com',
   username: 'literaryathlete',
   displayName: 'Alex Reader',
+  bio: 'Chasing one more chapter. Sci-fi, literary fiction, the occasional thriller.',
+  genrePrefs: ['Science Fiction', 'Literary Fiction', 'Thriller'],
   avatarUrl: null,
   birthYear: 1995,
   isMinor: false,
@@ -337,7 +340,7 @@ export const MOCK_USER_BOOKS: UserBook[] = [
     userId: 'mock-user-1',
     book: bookById('book-8'),
     format: 'ebook',
-    status: 'want',
+    status: 'tbr',
     currentPage: 0,
     currentPositionMin: 0,
     pageCountOverride: null,
@@ -691,6 +694,7 @@ export const MOCK_HOME_DATA: HomeData = {
   user: {
     id: MOCK_USER.id,
     displayName: MOCK_USER.displayName,
+    avatarUrl: MOCK_USER.avatarUrl,
     levelName: MOCK_USER.levelName,
     level: MOCK_USER.level,
     totalXp: MOCK_USER.totalXp,

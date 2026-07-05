@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { PressBlock } from '@/components/shared/PressBlock';
 
 interface ErrorStateProps {
   onRetry: () => void;
@@ -25,22 +25,16 @@ export function ErrorState({
       </View>
       <Text style={[styles.title, { color: t.text }]}>{title}</Text>
       <Text style={[styles.message, { color: t.textSec }]}>{message}</Text>
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onRetry();
-        }}
-        accessibilityRole="button"
+      <PressBlock
+        onPress={onRetry}
+        haptic="light"
         accessibilityLabel="Try again"
-        style={({ pressed }) => [
-          styles.btn,
-          { backgroundColor: t.accent, borderColor: t.border },
-          pressed && styles.pressed,
-        ]}
+        containerStyle={styles.btnWrap}
+        style={[styles.btn, { backgroundColor: t.accent, borderColor: t.border }]}
       >
         <Ionicons name="refresh" size={18} color={t.onAccent} />
         <Text style={[styles.btnText, { color: t.onAccent }]}>TRY AGAIN</Text>
-      </Pressable>
+      </PressBlock>
     </View>
   );
 }
@@ -58,17 +52,16 @@ const styles = StyleSheet.create({
   },
   title: { fontFamily: FONTS.uiBold, fontSize: 19, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5 },
   message: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 300 },
+  btnWrap: { marginTop: 8 },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
     minHeight: 48,
     paddingHorizontal: 24,
     borderRadius: 0,
     borderWidth: BORDER_WIDTH_THICK,
-    marginTop: 8,
-    ...SHADOW.sm,
   },
-  pressed: { opacity: 0.85, transform: [{ translateX: 2 }, { translateY: 2 }] },
   btnText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1 },
 });

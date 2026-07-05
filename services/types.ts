@@ -6,10 +6,13 @@
 // ── Enums ────────────────────────────────────────────────────────────────────
 
 export type BookFormat = 'physical' | 'ebook' | 'audiobook';
-export type ReadingStatus = 'want' | 'reading' | 'finished' | 'dnf';
+/** 'want' = wishlist (don't own it yet); 'tbr' = own it, haven't started reading. */
+export type ReadingStatus = 'want' | 'tbr' | 'reading' | 'finished' | 'dnf';
 export type ThemePref = 'dark' | 'light' | 'system';
 export type SubStatus = 'free' | 'trialing' | 'active' | 'expired' | 'grace';
 export type SessionSource = 'live' | 'backdated' | 'offline_sync';
+/** Tester feedback categories (stored in public.feedback during the test phase). */
+export type FeedbackKind = 'bug' | 'feedback' | 'idea';
 export type InsightType =
   | 'TIME_OF_DAY'
   | 'PACE_TREND'
@@ -45,9 +48,12 @@ export type LevelName =
 
 export interface UserProfile {
   id: string;
+  email: string | null; // from auth.users (not the public.users row)
   username: string | null;
   displayName: string | null;
+  bio: string | null;
   avatarUrl: string | null;
+  genrePrefs: string[];
   birthYear: number;
   isMinor: boolean;
   isUnder13: boolean;
@@ -179,6 +185,19 @@ export interface ReadingInsight {
   wasShared: boolean;
 }
 
+export interface NotificationSettings {
+  enabled: boolean;            // master switch
+  dailyReminder: boolean;
+  dailyReminderHour: number;   // 0–23, local
+  atRiskAlerts: boolean;
+  weeklyDigest: boolean;
+  comebackAlerts: boolean;
+  socialAlerts: boolean;
+  insightAlerts: boolean;
+  quietHoursStart: number | null;
+  quietHoursEnd: number | null;
+}
+
 export interface ReadingGoal {
   id: string;
   userId: string;
@@ -232,7 +251,7 @@ export interface CompleteSessionResult {
 // ── Screen-level view models ──────────────────────────────────────────────────
 
 export interface HomeData {
-  user: Pick<UserProfile, 'id' | 'displayName' | 'levelName' | 'level' | 'totalXp'>;
+  user: Pick<UserProfile, 'id' | 'displayName' | 'avatarUrl' | 'levelName' | 'level' | 'totalXp'>;
   streak: StreakState;
   activeBook: UserBook | null;
   comeback: ComebackChallenge | null;
@@ -271,6 +290,10 @@ export interface BookSearchResult {
   publishedYear: number | null;
   genres: string[];
   description: string | null;
+  // ISBN-13 when the provider supplies it. Carried so addBook can enrich thin
+  // records from Open Library (page count / description / subjects) before the
+  // catalog upsert. Optional — Open-Library-only results often lack it.
+  isbn13?: string | null;
 }
 
 // ── AI recommendations (B6 / blueprint §17) ──────────────────────────────────

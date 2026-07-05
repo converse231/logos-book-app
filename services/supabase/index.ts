@@ -12,6 +12,8 @@
 //     B3 — libraryApi: library + search + reviews (+ ensure_book edge fn)
 //     B4 — sessionApi: completeSession (RPC) + home/stats/insights/goal reads
 //     B6 — aiApi:      aiRecommend (ai_recommend edge fn)
+//     B6 — bestsellerApi: getBestsellers (NYT cache, sync_bestsellers edge fn + cron)
+//     B5 — notificationApi: notification settings + push-token registration
 //   Still on the mock:
 //     (none of the LogosApi surface — B4b adds the MMKV offline queue around completeSession)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -23,6 +25,9 @@ import { libraryApi } from './library';
 import { sessionApi } from './sessions';
 import { aiApi } from './ai';
 import { accountApi } from './account';
+import { bestsellerApi } from './bestsellers';
+import { notificationApi } from './notifications';
+import { feedbackApi } from './feedback';
 
 // Real method groups, in B-phase order. Spread last-wins over the mock.
 export const liveApi: LogosApi = {
@@ -32,4 +37,7 @@ export const liveApi: LogosApi = {
   ...sessionApi,
   ...aiApi,
   ...accountApi,
+  ...bestsellerApi,
+  ...notificationApi,
+  ...feedbackApi,
 };

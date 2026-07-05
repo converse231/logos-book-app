@@ -1,0 +1,50 @@
+# EAS Build upload ignore list. When present, EAS uses THIS instead of
+# .gitignore to decide what to upload — so it must repeat the real ignores
+# AND exclude the agent/editor folders whose symlinks break the Windows
+# upload (EPERM creating symlinks in EAS's temp clone).
+
+# dependencies (EAS installs these in the cloud)
+node_modules/
+
+# Expo / build output
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# generated native folders (EAS prebuilds in the cloud)
+/ios
+/android
+.kotlin/
+
+# secrets / local env (build env comes from eas.json instead)
+.env
+.env.*
+!.env.example
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# typescript / metro / misc
+*.tsbuildinfo
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+
+# editor / agent tooling — contain symlinks that fail the Windows EAS upload
+.agents/
+.claude/
+.cursor/
+.vscode/
+.idea/
+.git/
+
+# repo-only dirs not needed by the app build.
+# NOTE: leading slash = root-only, so this does NOT touch services/supabase/.
+/supabase/
+/scripts/

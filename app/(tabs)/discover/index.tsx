@@ -1,367 +1,236 @@
-import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
+import { BookSearchResult, UserProfile } from '@/services/types';
+import { fetchAuthorPhoto, toSubject } from '@/lib/bookSearch';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
-import { BookCover } from '@/components/shared/BookCover';
 import { PressBlock } from '@/components/shared/PressBlock';
-import { SwipeDeck, type DeckCard } from '@/components/discover/SwipeDeck';
-import { track } from '@/lib/analytics';
+import { DiscoverRow } from '@/components/discover/DiscoverRow';
 
-const MOODS = ['Cozy', 'Mind-bending', 'Fast-paced', 'Light & funny', 'Epic', 'Dark', 'Hopeful', 'Romantic'];
-const BROWSE_CONTEXT = 'Surprise me — recommend based on my overall taste and reading history.';
+// NYT lists surfaced as carousels (encoded name → display title).
+const NYT_LISTS: { name: string; title: string }[] = [
+  { name: 'hardcover-fiction', title: 'NYT Bestsellers · Fiction' },
+  { name: 'hardcover-nonfiction', title: 'NYT Bestsellers · Nonfiction' },
+];
 
-// Normalized "title|author" key (drops subtitles after ':', collapses whitespace,
-// first author only) — used to filter out books already on the user's shelves.
-const bookKey = (title: string, author: string) => {
-  const t = title.toLowerCase().split(':')[0].replace(/\s+/g, ' ').trim();
-  const a = (author ?? '').toLowerCase().split(',')[0].replace(/\s+/g, ' ').trim();
-  return `${t}|${a}`;
-};
+const TOP_CATEGORIES = ['Fiction', 'Mystery', 'Thriller']; // populated with covers
+const MORE_CATEGORIES = ['Science Fiction', 'Fantasy', 'Romance', 'Nonfiction', 'Biography', 'History', 'Horror', 'Poetry', 'Self-Help'];
+const TOP_AUTHORS = ['Brandon Sanderson', 'Colleen Hoover', 'Stephen King', 'Sally Rooney', 'Haruki Murakami', 'Andy Weir', 'Emily Henry', 'Kazuo Ishiguro'];
 
-type Phase = 'setup' | 'loading' | 'deck';
-
-// Mood Reader (B6) — describe a vibe or just browse, then swipe through AI picks.
-// Right = wishlist (TBR), left = pass, tap = preview. Server returns 10/req
-// (token-cheap, 7-day cached); covers/synopsis resolved from the catalog.
+// Discover hub — Mood Reader banner + recommendation rows (For You, Trending),
+// the top 3 categories as cover carousels (+ a "More categories" toggle for the
+// rest), and top authors with Open Library headshots. Catalog data loads ONCE on
+// mount (it doesn't change per focus) to keep network calls down.
 export default function Discover() {
   const t = useTheme();
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
 
-  const [phase, setPhase] = useState<Phase>('setup');
-  const [mood, setMood] = useState<string | null>(null);
-  const [context, setContext] = useState('');
-  const [cards, setCards] = useState<DeckCard[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [wishCount, setWishCount] = useState(0);
-  const [preview, setPreview] = useState<DeckCard | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [forYou, setForYou] = useState<BookSearchResult[] | null>(null);
+  const [trending, setTrending] = useState<BookSearchResult[] | null>(null);
+  const [cats, setCats] = useState<Record<string, BookSearchResult[] | null>>(
+    Object.fromEntries(TOP_CATEGORIES.map((c) => [c, null]))
+  );
+  const [authorPhotos, setAuthorPhotos] = useState<Record<string, string | null>>({});
+  const [bestsellers, setBestsellers] = useState<Record<string, BookSearchResult[] | null>>(
+    Object.fromEntries(NYT_LISTS.map((l) => [l.name, null]))
+  );
+  const [moreOpen, setMoreOpen] = useState(false);
 
-  const generate = async (browse: boolean) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const moodArg = browse ? '' : (mood ?? context.trim());
-    const contextArg = browse ? BROWSE_CONTEXT : context.trim();
-    setPhase('loading');
-    setError(null);
-    setWishCount(0);
-    track('mood_reader_used', { mode: browse ? 'browse' : 'mood' });
-    try {
-      // Pull recs + the user's current shelves together; drop anything they already own.
-      const [result, owned] = await Promise.all([api.aiRecommend(moodArg, contextArg), api.getUserBooks()]);
-      const ownedKeys = new Set(owned.map((ub) => bookKey(ub.book.title, ub.book.authors?.[0] ?? '')));
-      const freshRecs = result.recs.filter((r) => !ownedKeys.has(bookKey(r.title, r.author)));
-      if (freshRecs.length === 0) {
-        setError(result.recs.length === 0 ? 'No picks this time — try another mood.' : 'You already own these — try another mood.');
-        setPhase('setup');
-        return;
-      }
-      // Resolve covers + synopsis from the catalog (parallel; null-safe per item).
-      const books = await Promise.all(
-        freshRecs.map(async (rec) => {
-          try {
-            const hits = await api.searchBooks(`${rec.title} ${rec.author}`);
-            return hits[0] ?? null;
-          } catch {
-            return null;
-          }
-        })
-      );
-      setCards(freshRecs.map((rec, i) => ({ rec, book: books[i] })));
-      setPhase('deck');
-    } catch (e: any) {
-      setError(e?.message ?? 'Could not get recommendations. Please try again.');
-      setPhase('setup');
-    }
+  useEffect(() => {
+    let alive = true;
+    api.getProfile().then((p) => {
+      if (!alive) return;
+      setProfile(p);
+      const genre = p.genrePrefs?.[0] ?? 'fiction';
+      api.searchBooks(`subject:${toSubject(genre)}`).then((r) => alive && setForYou(r)).catch(() => alive && setForYou([]));
+    }).catch(() => {});
+    api.getRecommendedBooks().then((r) => alive && setTrending(r)).catch(() => alive && setTrending([]));
+    NYT_LISTS.forEach((l) => {
+      api.getBestsellers(l.name)
+        .then((r) => alive && setBestsellers((prev) => ({ ...prev, [l.name]: r })))
+        .catch(() => alive && setBestsellers((prev) => ({ ...prev, [l.name]: [] })));
+    });
+    TOP_CATEGORIES.forEach((c) => {
+      api.searchBooks(`subject:${toSubject(c)}`).then((r) => alive && setCats((prev) => ({ ...prev, [c]: r }))).catch(() => alive && setCats((prev) => ({ ...prev, [c]: [] })));
+    });
+    Promise.all(TOP_AUTHORS.map(async (a) => [a, await fetchAuthorPhoto(a)] as const))
+      .then((pairs) => alive && setAuthorPhotos(Object.fromEntries(pairs)))
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [api]);
+
+  const topGenre = profile?.genrePrefs?.[0];
+  const openBook = (b: BookSearchResult) => {
+    Haptics.selectionAsync();
+    router.push(`/(modals)/add-book?q=${encodeURIComponent(`${b.title} ${b.authors[0] ?? ''}`.trim())}` as Href);
+  };
+  const browse = (title: string, q: string) => {
+    Haptics.selectionAsync();
+    router.push(`/(tabs)/discover/browse?title=${encodeURIComponent(title)}&q=${encodeURIComponent(q)}` as Href);
   };
 
-  const addToWishlist = async (card: DeckCard) => {
-    if (!card.book) {
-      router.push(`/(modals)/add-book?q=${encodeURIComponent(`${card.rec.title} ${card.rec.author}`)}` as Href);
-      return;
-    }
-    try {
-      await api.addBook(card.book, 'physical'); // status defaults to 'want' = wishlist
-      track('book_added', { source: 'mood_reader' });
-      setWishCount((c) => c + 1);
-    } catch {
-      setError('Could not add that to your wishlist — check your connection.');
-    }
-  };
-
-  const onSwipe = (card: DeckCard, dir: 'left' | 'right') => {
-    if (dir === 'right') addToWishlist(card);
-  };
-
-  // ── Deck phase ──────────────────────────────────────────────────────────────
-  if (phase === 'deck') {
-    return (
-      <ScreenBackground>
-        <View style={[styles.deckRoot, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }]}>
-          <View style={styles.deckBar}>
-            <Pressable
-              onPress={() => setPhase('setup')}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Back to moods"
-              style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
-            >
-              <Ionicons name="chevron-back" size={22} color={t.text} />
-            </Pressable>
-            <View style={[styles.wishPill, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-              <Ionicons name="heart" size={14} color={t.accent} />
-              <Text style={[styles.wishPillText, { color: t.text }]}>{wishCount} WANTED</Text>
-            </View>
-          </View>
-
-          {error ? (
-            <View style={[styles.errorBanner, { backgroundColor: t.bgSec, borderColor: t.danger }]}>
-              <Ionicons name="alert-circle" size={18} color={t.danger} />
-              <Text style={[styles.errorText, { color: t.danger }]}>{error}</Text>
-            </View>
-          ) : null}
-
-          <SwipeDeck
-            cards={cards}
-            onSwipe={onSwipe}
-            onTap={(card) => { Haptics.selectionAsync(); setPreview(card); }}
-            onMore={() => setPhase('setup')}
-          />
-        </View>
-
-        <PreviewSheet
-          card={preview}
-          onClose={() => setPreview(null)}
-          onWishlist={(card) => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); addToWishlist(card); setPreview(null); }}
-        />
-      </ScreenBackground>
-    );
-  }
-
-  // ── Setup + loading phase ─────────────────────────────────────────────────────
   return (
     <ScreenBackground>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 28 }]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.aiTag, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-            <Ionicons name="sparkles" size={13} color={t.accent} />
-            <Text style={[styles.aiTagText, { color: t.accent }]}>MOOD READER</Text>
-          </View>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 28 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[styles.title, { color: t.text }]}>Discover</Text>
 
-          <Text style={[styles.title, { color: t.text }]}>What are you{'\n'}in the mood for?</Text>
-          <Text style={[styles.subtitle, { color: t.textSec }]}>
-            Pick a vibe and swipe through picks — right to Want, left to pass. Or just browse your taste.
-          </Text>
-
-          {phase === 'loading' ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={t.accent} size="large" />
-              <Text style={[styles.loadingText, { color: t.textSec }]}>Finding books for you…</Text>
-            </View>
-          ) : (
-            <>
-              <View style={styles.chips}>
-                {MOODS.map((mo) => {
-                  const active = mood === mo;
-                  return (
-                    <Pressable
-                      key={mo}
-                      onPress={() => { Haptics.selectionAsync(); setMood(active ? null : mo); }}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      style={[styles.chip, { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : t.bgSec }]}
-                    >
-                      <Text style={[styles.chipText, { color: active ? t.accent : t.text }]}>{mo}</Text>
-                    </Pressable>
-                  );
-                })}
+        {/* Mood Reader banner */}
+        <View style={styles.padded}>
+          <PressBlock onPress={() => router.push('/(tabs)/discover/mood' as Href)} accessibilityLabel="Open Mood Reader" style={[styles.banner, { backgroundColor: t.accent, borderColor: t.border }]}>
+            <View style={styles.bannerText}>
+              <View style={styles.bannerTag}>
+                <Ionicons name="sparkles" size={13} color={t.onAccent} />
+                <Text style={[styles.bannerTagText, { color: t.onAccent }]}>MOOD READER</Text>
               </View>
+              <Text style={[styles.bannerTitle, { color: t.onAccent }]}>Find your next read by vibe</Text>
+              <Text style={[styles.bannerSub, { color: t.onAccent }]}>Pick a mood, swipe through picks →</Text>
+            </View>
+            <Ionicons name="arrow-forward-circle" size={36} color={t.onAccent} />
+          </PressBlock>
+        </View>
 
-              <TextInput
-                value={context}
-                onChangeText={setContext}
-                placeholder="e.g. a short, twisty thriller for a flight"
-                placeholderTextColor={t.textTer}
-                multiline
-                accessibilityLabel="Describe what you want to read"
-                style={[styles.input, { backgroundColor: t.bgSec, color: t.text, borderColor: t.border }]}
-              />
+        {/* For You */}
+        <DiscoverRow
+          title="For you"
+          subtitle={topGenre ? `Because you like ${topGenre}` : 'Picks to get you started'}
+          books={forYou ?? []}
+          loading={forYou === null}
+          onTapBook={openBook}
+          onSeeAll={() => browse(topGenre ? `For you · ${topGenre}` : 'For you', `subject:${toSubject(topGenre ?? 'fiction')}`)}
+        />
 
-              {error ? (
-                <View style={[styles.errorBanner, { backgroundColor: t.bgSec, borderColor: t.danger }]}>
-                  <Ionicons name="alert-circle" size={18} color={t.danger} />
-                  <Text style={[styles.errorText, { color: t.danger }]}>{error}</Text>
-                </View>
-              ) : null}
+        {/* Trending */}
+        <DiscoverRow
+          title="Trending now"
+          subtitle="What readers are picking up"
+          books={trending ?? []}
+          loading={trending === null}
+          onTapBook={openBook}
+          onSeeAll={() => browse('Trending', 'subject:fiction bestseller')}
+        />
 
-              <PressBlock
-                onPress={() => generate(false)}
-                disabled={!mood && context.trim().length === 0}
-                accessibilityLabel="Get picks for this mood"
-                containerStyle={styles.cta}
-                style={[styles.ctaInner, { backgroundColor: (mood || context.trim()) ? t.accent : t.bgTer }]}
-              >
-                <Ionicons name="sparkles" size={18} color={(mood || context.trim()) ? t.onAccent : t.textTer} />
-                <Text style={[styles.ctaText, { color: (mood || context.trim()) ? t.onAccent : t.textTer }]}>GET MY PICKS</Text>
-              </PressBlock>
+        {/* NYT Bestsellers — cached weekly server-side. Attribution required by ToS. */}
+        {NYT_LISTS.map((l) => (
+          <DiscoverRow
+            key={l.name}
+            title={l.title}
+            subtitle="Data provided by The New York Times"
+            books={bestsellers[l.name] ?? []}
+            loading={bestsellers[l.name] === null}
+            onTapBook={openBook}
+          />
+        ))}
 
-              <Pressable
-                onPress={() => generate(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Just browse based on my taste"
-                style={({ pressed }) => [styles.browseBtn, { borderColor: t.border }, pressed && { opacity: 0.7 }]}
-              >
-                <Ionicons name="shuffle" size={18} color={t.text} />
-                <Text style={[styles.browseText, { color: t.text }]}>Just browse my taste</Text>
-              </Pressable>
-            </>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {/* Browse by category — top 3 as carousels, rest behind a toggle */}
+        <Text style={[styles.sectionTitle, styles.padded, { color: t.text }]}>Browse by category</Text>
+        {TOP_CATEGORIES.map((c) => (
+          <DiscoverRow
+            key={c}
+            title={c}
+            books={cats[c] ?? []}
+            loading={cats[c] === null}
+            onTapBook={openBook}
+            onSeeAll={() => browse(c, `subject:${toSubject(c)}`)}
+          />
+        ))}
+
+        <View style={styles.section}>
+          <Pressable
+            onPress={() => { Haptics.selectionAsync(); setMoreOpen((v) => !v); }}
+            accessibilityRole="button"
+            accessibilityLabel={moreOpen ? 'Hide more categories' : 'Browse more categories'}
+            style={({ pressed }) => [styles.moreBtn, { borderColor: t.border, backgroundColor: t.bgSec }, pressed && { opacity: 0.7 }]}
+          >
+            <Ionicons name={moreOpen ? 'chevron-up' : 'apps-outline'} size={18} color={t.text} />
+            <Text style={[styles.moreBtnText, { color: t.text }]}>{moreOpen ? 'Show fewer' : 'Browse more categories'}</Text>
+          </Pressable>
+          {moreOpen ? (
+            <View style={styles.chips}>
+              {MORE_CATEGORIES.map((c) => (
+                <Pressable key={c} onPress={() => browse(c, `subject:${toSubject(c)}`)} accessibilityRole="button" accessibilityLabel={`Browse ${c}`} style={({ pressed }) => [styles.chip, { backgroundColor: t.bgSec, borderColor: t.border }, pressed && { opacity: 0.7 }]}>
+                  <Text style={[styles.chipText, { color: t.text }]}>{c}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+        </View>
+
+        {/* Top authors */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Top authors</Text>
+          <View style={styles.authorWrap}>
+            {TOP_AUTHORS.map((a) => (
+              <AuthorCard key={a} name={a} photo={authorPhotos[a]} onPress={() => browse(a, `inauthor:${a}`)} />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
     </ScreenBackground>
   );
 }
 
-// Tap-a-card preview — read the synopsis + the AI's reasoning before deciding,
-// so you're not judging by the cover. Wishlist from here without it counting as a swipe.
-function PreviewSheet({
-  card,
-  onClose,
-  onWishlist,
-}: {
-  card: DeckCard | null;
-  onClose: () => void;
-  onWishlist: (card: DeckCard) => void;
-}) {
+// Author tile with an Open Library headshot; falls back to the initial when there's
+// no photo (404 from `?default=false`) or the image fails to load.
+function AuthorCard({ name, photo, onPress }: { name: string; photo: string | null | undefined; onPress: () => void }) {
   const t = useTheme();
-  if (!card) return null;
-  const b = card.book;
-  const meta = [b?.publishedYear ? String(b.publishedYear) : null, b?.pageCount ? `${b.pageCount} pages` : null, b?.genres?.[0] ?? null]
-    .filter(Boolean)
-    .join(' · ');
-
+  const [failed, setFailed] = useState(false);
+  const showPhoto = !!photo && !failed;
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.sheetScrim} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button">
-        <Pressable style={[styles.sheet, { backgroundColor: t.bg, borderColor: t.border }]} onPress={() => {}}>
-          <View style={[styles.sheetHandle, { backgroundColor: t.border }]} />
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetBody}>
-            <View style={styles.sheetHead}>
-              <View style={[styles.coverFrame, { borderColor: t.border }]}>
-                <BookCover url={b?.coverUrl ?? null} title={card.rec.title} width={96} />
-              </View>
-              <View style={styles.sheetHeadText}>
-                <Text style={[styles.sheetTitle, { color: t.text }]}>{card.rec.title}</Text>
-                <Text style={[styles.sheetAuthor, { color: t.textSec }]}>{card.rec.author}</Text>
-                {meta ? <Text style={[styles.sheetMeta, { color: t.textTer }]}>{meta}</Text> : null}
-              </View>
-            </View>
-
-            <View style={[styles.whyBlock, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-              <Text style={[styles.whyLabel, { color: t.accent }]}>WHY THIS</Text>
-              <Text style={[styles.whyText, { color: t.text }]}>{card.rec.why}</Text>
-            </View>
-
-            {b?.description ? (
-              <Text style={[styles.descText, { color: t.textSec }]}>{b.description}</Text>
-            ) : (
-              <Text style={[styles.descText, { color: t.textTer }]}>No synopsis available for this edition.</Text>
-            )}
-          </ScrollView>
-
-          <View style={[styles.sheetActions, { borderTopColor: t.border }]}>
-            <Pressable
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              style={[styles.sheetCloseBtn, { borderColor: t.border }]}
-            >
-              <Text style={[styles.sheetCloseText, { color: t.text }]}>CLOSE</Text>
-            </Pressable>
-            <PressBlock
-              onPress={() => onWishlist(card)}
-              accessibilityLabel="Add to Want shelf"
-              containerStyle={styles.sheetAddWrap}
-              style={[styles.sheetAddBtn, { backgroundColor: t.accent }]}
-            >
-              <Ionicons name="heart" size={18} color={t.onAccent} />
-              <Text style={styles.sheetAddText}>WANT</Text>
-            </PressBlock>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Browse books by ${name}`}
+      style={({ pressed }) => [styles.authorCard, { backgroundColor: t.bgSec, borderColor: t.border }, pressed && { opacity: 0.7 }]}
+    >
+      <View style={[styles.authorGlyph, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
+        {showPhoto ? (
+          <Image source={{ uri: photo! }} style={styles.authorPhoto} contentFit="cover" onError={() => setFailed(true)} />
+        ) : (
+          <Text style={[styles.authorInitial, { color: t.accent }]}>{name.charAt(0)}</Text>
+        )}
+      </View>
+      <Text style={[styles.authorName, { color: t.text }]} numberOfLines={2}>{name}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { paddingHorizontal: 20, gap: 16 },
-  aiTag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, height: 30, borderRadius: 0, borderWidth: BORDER_WIDTH, alignSelf: 'flex-start' },
-  aiTagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5 },
-  title: { fontFamily: FONTS.displayBold, fontSize: 30, lineHeight: 34, letterSpacing: -0.5 },
-  subtitle: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, marginTop: -6 },
+  content: { gap: 22 },
+  padded: { paddingHorizontal: 18 },
+  title: { fontFamily: FONTS.displayBold, fontSize: 32, lineHeight: 36, paddingHorizontal: 18 },
+
+  banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 18, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
+  bannerText: { flex: 1, gap: 4 },
+  bannerTag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bannerTagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5, opacity: 0.85 },
+  bannerTitle: { fontFamily: FONTS.displayBold, fontSize: 22, lineHeight: 25 },
+  bannerSub: { fontFamily: FONTS.uiMedium, fontSize: 13, opacity: 0.9 },
+
+  section: { gap: 12, paddingHorizontal: 18 },
+  sectionTitle: { fontFamily: FONTS.displayBold, fontSize: 20, letterSpacing: -0.3 },
+  moreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  moreBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
-  input: { minHeight: 80, borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 14, fontFamily: FONTS.uiMedium, fontSize: 16, textAlignVertical: 'top' },
-  cta: { marginTop: 2 },
-  ctaInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: '#141414' },
-  ctaText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1 },
-  browseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, borderRadius: 0, borderWidth: BORDER_WIDTH },
-  browseText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
-  loadingBox: { alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 60 },
-  loadingText: { fontFamily: FONTS.uiMedium, fontSize: 15 },
 
-  // Deck phase
-  deckRoot: { flex: 1, paddingHorizontal: 20 },
-  deckBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  wishPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 0, borderWidth: BORDER_WIDTH },
-  wishPillText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
-
-  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, marginTop: 12 },
-  errorText: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 13, lineHeight: 18 },
-
-  // Preview sheet
-  sheetScrim: { flex: 1, backgroundColor: 'rgba(3,4,6,0.62)', justifyContent: 'flex-end' },
-  sheet: { maxHeight: '86%', borderTopWidth: BORDER_WIDTH_THICK, borderLeftWidth: BORDER_WIDTH_THICK, borderRightWidth: BORDER_WIDTH_THICK, borderRadius: 0, paddingTop: 10 },
-  sheetHandle: { width: 44, height: 5, borderRadius: 0, alignSelf: 'center', marginBottom: 14 },
-  sheetBody: { paddingHorizontal: 20, paddingBottom: 16, gap: 16 },
-  sheetHead: { flexDirection: 'row', gap: 14 },
-  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 0 },
-  sheetHeadText: { flex: 1, gap: 4, justifyContent: 'center' },
-  sheetTitle: { fontFamily: FONTS.displayBold, fontSize: 22, lineHeight: 26 },
-  sheetAuthor: { fontFamily: FONTS.mono, fontSize: 13 },
-  sheetMeta: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.4, marginTop: 2 },
-  whyBlock: { borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 14, gap: 4 },
-  whyLabel: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1.5 },
-  whyText: { fontFamily: FONTS.uiMedium, fontSize: 15, lineHeight: 21 },
-  descText: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 21 },
-  sheetActions: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderTopWidth: BORDER_WIDTH },
-  sheetCloseBtn: { flex: 1, height: 52, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  sheetCloseText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
-  sheetAddWrap: { flex: 1 },
-  sheetAddBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: '#141414' },
-  sheetAddText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1, color: '#FFFFFF' },
+  authorWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  authorCard: { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  authorGlyph: { width: 44, height: 44, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  authorPhoto: { width: '100%', height: '100%' },
+  authorInitial: { fontFamily: FONTS.displayBold, fontSize: 20 },
+  authorName: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 13, lineHeight: 16 },
 });

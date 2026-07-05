@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 import { BookCover } from '@/components/shared/BookCover';
+import { PressBlock } from '@/components/shared/PressBlock';
 import { AiBookRec, BookSearchResult } from '@/services/types';
 
 export interface DeckCard {
@@ -45,6 +46,11 @@ export function SwipeDeck({
   const [index, setIndex] = useState(0);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
+  // Blocks a second button fling while one is mid-flight, so a fast double-tap
+  // can't commit the same card twice or skip the next one. Cleared when a new
+  // touch begins (so grabbing a card can never wedge the deck).
+  const busy = useRef(false);
+  const unlock = () => { busy.current = false; };
 
   const commit = (dir: 'left' | 'right') => {
     const card = cards[index];
@@ -53,21 +59,25 @@ export function SwipeDeck({
     setIndex((i) => i + 1);
     tx.value = 0;
     ty.value = 0;
+    busy.current = false;
   };
 
   const fling = (dir: 'left' | 'right') => {
-    if (index >= cards.length) return;
+    if (busy.current || index >= cards.length) return;
+    busy.current = true;
     tx.value = withTiming(dir === 'right' ? FLING : -FLING, { duration: 230 }, (fin) => {
       if (fin) runOnJS(commit)(dir);
     });
   };
 
   const handleTap = () => {
+    if (busy.current) return;
     const card = cards[index];
     if (card) onTap(card);
   };
 
   const pan = Gesture.Pan()
+    .onBegin(() => { runOnJS(unlock)(); })
     .onUpdate((e) => {
       tx.value = e.translationX;
       ty.value = e.translationY * 0.35;
@@ -111,15 +121,15 @@ export function SwipeDeck({
         <Text style={[styles.emptyBody, { color: t.textSec }]}>
           You went through all {cards.length}. Want a fresh set?
         </Text>
-        <Pressable
+        <PressBlock
           onPress={onMore}
-          accessibilityRole="button"
           accessibilityLabel="Get fresh picks"
+          containerStyle={styles.moreBtnWrap}
           style={[styles.moreBtn, { backgroundColor: t.accent, borderColor: t.border }]}
         >
           <Ionicons name="sparkles" size={16} color={t.onAccent} />
           <Text style={[styles.moreText, { color: t.onAccent }]}>NEW PICKS</Text>
-        </Pressable>
+        </PressBlock>
       </View>
     );
   }
@@ -227,9 +237,10 @@ const styles = StyleSheet.create({
   emptyGlyph: { width: 72, height: 72, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontFamily: FONTS.displayBold, fontSize: 24, textAlign: 'center' },
   emptyBody: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, textAlign: 'center' },
+  moreBtnWrap: { marginTop: 6 },
   moreBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6,
-    paddingHorizontal: 20, height: 50, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, ...SHADOW.card,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingHorizontal: 20, height: 50, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK,
   },
   moreText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1 },
 });

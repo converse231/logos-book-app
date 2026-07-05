@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  LayoutChangeEvent,
   Platform,
   Pressable,
   Share,
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
@@ -20,20 +20,14 @@ import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/t
 import { useApi } from '@/services/ApiContext';
 import { useSessionStore } from '@/stores/sessionStore';
 import { CardVariant } from '@/services/types';
-import { ShareCardCanvas, CardStats } from '@/components/shared/ShareCardCanvas';
+import { ShareCardCanvas, CardStats, CardLayout } from '@/components/shared/ShareCardCanvas';
 import { PressBlock } from '@/components/shared/PressBlock';
 
 type Mode = 'transparent' | 'dark';
 type SaveStatus = 'idle' | 'working' | 'saved' | 'denied' | 'error';
 
 const CAPTURE_WIDTH = 1080; // off-screen render width → crisp 1080×1350 export
-
-const VARIANTS: { key: CardVariant; label: string; enabled: boolean }[] = [
-  { key: 'session', label: 'Session', enabled: true },
-  { key: 'streak', label: 'Streak', enabled: false },
-  { key: 'book_finished', label: 'Finished', enabled: false },
-  { key: 'year_in_books', label: 'Year', enabled: false },
-];
+const CARD_RATIO = 1.25;    // 4:5 — keep in sync with ShareCardCanvas
 
 // Share composer (blueprint Section 10/15). Two outputs from one canvas:
 //   • Overlay — a transparent, text-only PNG meant to be dropped over the user's
@@ -47,12 +41,18 @@ export default function ShareCard() {
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
-  const { width: screenW } = useWindowDimensions();
+  const [area, setArea] = useState({ w: 0, h: 0 });
 
   const result = useSessionStore((s) => s.lastResult);
   const active = useSessionStore((s) => s.active);
+  // Re-share mode: opened from a past session's detail with its stats as params.
+  const params = useLocalSearchParams<{
+    title?: string; cover?: string; format?: string; pages?: string; minutes?: string; pph?: string;
+  }>();
+  const reshare = params.pages !== undefined;
   const [levelName, setLevelName] = useState('Reader');
-  const [mode, setMode] = useState<Mode>('transparent');
+  const mode: Mode = 'transparent'; // overlay only — the dark "Card" option was removed
+  const [layout, setLayout] = useState<CardLayout>('feature');
   const [variant] = useState<CardVariant>('session');
   const [status, setStatus] = useState<SaveStatus>('idle');
 
@@ -67,9 +67,9 @@ export default function ShareCard() {
   // reset transient feedback when the user changes the design
   useEffect(() => {
     setStatus('idle');
-  }, [mode, variant]);
+  }, [layout, variant]);
 
-  if (!result) {
+  if (!result && !reshare) {
     return (
       <View style={[styles.fallback, { backgroundColor: t.bg }]}>
         <Text style={[styles.fallbackText, { color: t.textSec }]}>Nothing to share yet.</Text>
@@ -80,9 +80,17 @@ export default function ShareCard() {
     );
   }
 
-  const minutes = Math.max(1, Math.round(result.durationSeconds / 60));
-  const pages = result.pagesRead ?? 0;
-  const pph = result.pph ?? Math.round((pages / (result.durationSeconds / 3600)) * 10) / 10;
+  // Stats come from the re-share params (a past session) or the last live result.
+  const pages = reshare ? Number(params.pages) : (result!.pagesRead ?? 0);
+  const minutes = reshare
+    ? Number(params.minutes)
+    : Math.max(1, Math.round(result!.durationSeconds / 60));
+  const pph = reshare
+    ? Number(params.pph)
+    : (result!.pph ?? Math.round((pages / (result!.durationSeconds / 3600)) * 10) / 10);
+  const bookTitle = reshare ? params.title : active?.bookTitle;
+  const bookCoverUrl = reshare ? (params.cover || null) : (active?.coverUrl ?? null);
+  const bookFormat = (reshare ? params.format : active?.format) as CardStats['format'];
 
   const stats: CardStats = {
     headline: String(pages),
@@ -91,12 +99,22 @@ export default function ShareCard() {
       { label: 'minutes', value: String(minutes) },
       { label: 'pages/hr', value: String(pph) },
     ],
-    bookTitle: active?.bookTitle,
-    bookCoverUrl: active?.coverUrl ?? null,
-    format: active?.format,
+    bookTitle,
+    bookCoverUrl,
+    format: bookFormat,
   };
 
-  const previewW = Math.min(screenW - 80, 300);
+  // Size the card to fit the measured preview area by BOTH width and height, so it
+  // can never overflow into the controls above/below it.
+  const previewW = useMemo(() => {
+    if (!area.w || !area.h) return 0;
+    const byWidth = area.w - 28;
+    const byHeight = (area.h - 28) / CARD_RATIO;
+    return Math.max(120, Math.min(byWidth, byHeight, 300));
+  }, [area]);
+
+  const onPreviewLayout = (e: LayoutChangeEvent) =>
+    setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
 
   const capture = () =>
     captureRef(shotRef, {
@@ -172,59 +190,34 @@ export default function ShareCard() {
         </Pressable>
       </View>
 
-      {/* Mode toggle */}
-      <View style={[styles.toggle, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-        <ToggleSeg
-          label="Overlay"
-          active={mode === 'transparent'}
-          onPress={() => setMode('transparent')}
-          accent={t.accent}
-          textSec={t.textSec}
-        />
-        <ToggleSeg
-          label="Card"
-          active={mode === 'dark'}
-          onPress={() => setMode('dark')}
-          accent={t.accent}
-          textSec={t.textSec}
-        />
+      {/* Preview — bounded to the available area so it never overflows. */}
+      <View style={styles.previewArea} onLayout={onPreviewLayout}>
+        {previewW > 0 ? (
+          <View style={[styles.previewBox, { width: previewW + 20 }]}>
+            {mode === 'transparent' ? <Checkerboard /> : null}
+            <View style={styles.cardWrap}>
+              <ShareCardCanvas
+                variant={variant}
+                mode={mode}
+                layout={layout}
+                stats={stats}
+                levelName={levelName}
+                width={previewW}
+              />
+            </View>
+          </View>
+        ) : null}
       </View>
 
-      {/* Preview */}
-      <View style={styles.previewArea}>
-        <View style={[styles.previewBox, { width: previewW + 24 }]}>
-          {mode === 'transparent' ? <Checkerboard /> : null}
-          <View style={styles.cardWrap}>
-            <ShareCardCanvas
-              variant={variant}
-              mode={mode}
-              stats={stats}
-              levelName={levelName}
-              width={previewW}
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* Variant chips */}
-      <View style={styles.chips}>
-        {VARIANTS.map((v) => (
-          <View
-            key={v.key}
-            style={[
-              styles.chip,
-              {
-                borderColor: v.key === variant ? t.accent : t.border,
-                backgroundColor: v.key === variant ? t.accentMuted : 'transparent',
-                opacity: v.enabled ? 1 : 0.4,
-              },
-            ]}
-          >
-            <Text style={[styles.chipText, { color: v.key === variant ? t.accent : t.textSec }]}>
-              {v.label}
-            </Text>
-          </View>
-        ))}
+      {/* Controls */}
+      <View style={styles.controls}>
+        <SegGroup
+          label="STYLE"
+          value={layout}
+          options={[{ key: 'feature', label: 'Feature' }, { key: 'stats', label: 'Stats' }]}
+          onChange={(v) => setLayout(v as CardLayout)}
+          t={t}
+        />
       </View>
 
       {/* Actions */}
@@ -275,6 +268,7 @@ export default function ShareCard() {
           ref={shotRef}
           variant={variant}
           mode={mode}
+          layout={layout}
           stats={stats}
           levelName={levelName}
           width={CAPTURE_WIDTH}
@@ -284,28 +278,40 @@ export default function ShareCard() {
   );
 }
 
-function ToggleSeg({
+// A labeled, compact segmented control: "STYLE  [ Feature | Stats ]".
+function SegGroup({
   label,
-  active,
-  onPress,
-  accent,
-  textSec,
+  value,
+  options,
+  onChange,
+  t,
 }: {
   label: string;
-  active: boolean;
-  onPress: () => void;
-  accent: string;
-  textSec: string;
+  value: string;
+  options: { key: string; label: string }[];
+  onChange: (key: string) => void;
+  t: ReturnType<typeof useTheme>;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      style={[styles.seg, active && { backgroundColor: accent }]}
-    >
-      <Text style={[styles.segText, { color: active ? PALETTE.onAccent : textSec }]}>{label}</Text>
-    </Pressable>
+    <View style={styles.segGroup}>
+      <Text style={[styles.segGroupLabel, { color: t.textSec }]}>{label}</Text>
+      <View style={[styles.segTrack, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+        {options.map((o) => {
+          const active = o.key === value;
+          return (
+            <Pressable
+              key={o.key}
+              onPress={() => { Haptics.selectionAsync(); onChange(o.key); }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              style={[styles.segItem, active && { backgroundColor: t.accent }]}
+            >
+              <Text style={[styles.segItemText, { color: active ? PALETTE.onAccent : t.textSec }]}>{o.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -337,19 +343,22 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
   title: { fontFamily: FONTS.uiBold, fontSize: 22 },
   closeBtn: { width: 40, height: 40, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  toggle: { flexDirection: 'row', marginHorizontal: 20, marginTop: 16, padding: 4, borderRadius: 0, borderWidth: BORDER_WIDTH, gap: 4 },
-  seg: { flex: 1, minHeight: 44, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
-  segText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
-  previewArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  previewBox: { borderRadius: 0, overflow: 'hidden', padding: 12, alignItems: 'center', justifyContent: 'center' },
+
+  previewArea: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingVertical: 12, marginTop: 12 },
+  previewBox: { borderRadius: 0, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
   cardWrap: {},
   checker: { ...StyleSheet.absoluteFillObject },
   checkerRow: { flex: 1, flexDirection: 'row' },
   checkerCell: { flex: 1 },
-  chips: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingHorizontal: 20, paddingBottom: 8 },
-  chip: { paddingHorizontal: 14, height: 36, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
-  footer: { paddingHorizontal: 24, gap: 12 },
+
+  controls: { paddingHorizontal: 20, paddingTop: 6, gap: 10 },
+  segGroup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  segGroupLabel: { width: 92, fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
+  segTrack: { flex: 1, flexDirection: 'row', height: 42, padding: 3, gap: 3, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  segItem: { flex: 1, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  segItemText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
+
+  footer: { paddingHorizontal: 24, paddingTop: 14, gap: 12 },
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,
     borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,

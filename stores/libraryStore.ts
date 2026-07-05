@@ -6,6 +6,7 @@ import { BookFormat } from '@/services/types';
 // the shelf react instantly, the same pattern sessionStore uses for the tracker.
 export type LibrarySort = 'recent' | 'title' | 'author' | 'progress';
 export type FormatFilter = 'all' | BookFormat;
+export type LibraryView = 'grid' | 'list';
 
 export const SORT_LABELS: Record<LibrarySort, string> = {
   recent: 'Recently added',
@@ -25,19 +26,25 @@ interface LibraryState {
   sort: LibrarySort;
   formatFilter: FormatFilter;
   favoritesOnly: boolean;
+  view: LibraryView;
   setSort: (sort: LibrarySort) => void;
   setFormatFilter: (f: FormatFilter) => void;
   setFavoritesOnly: (v: boolean) => void;
+  setView: (view: LibraryView) => void;
   reset: () => void;
 }
 
+// `view` is a display preference, not a filter — it's intentionally NOT in
+// DEFAULTS (so the filter "active" dot ignores it) and survives reset().
 const DEFAULTS = { sort: 'recent' as LibrarySort, formatFilter: 'all' as FormatFilter, favoritesOnly: false };
 
 export const useLibraryStore = create<LibraryState>((set) => ({
   ...DEFAULTS,
+  view: 'grid',
   setSort: (sort) => set({ sort }),
   setFormatFilter: (formatFilter) => set({ formatFilter }),
   setFavoritesOnly: (favoritesOnly) => set({ favoritesOnly }),
+  setView: (view) => set({ view }),
   reset: () => set({ ...DEFAULTS }),
 }));
 

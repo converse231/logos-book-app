@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
@@ -27,7 +28,7 @@ const GROUPS: { title: string; items: MenuItem[] }[] = [
     items: [
       { icon: 'bar-chart', label: 'Stats', sub: 'Heatmap, pace, lifetime totals', href: '/(tabs)/stats' as Href },
       { icon: 'flag', label: 'Reading goal', sub: 'Set your target for the year', href: '/(modals)/goal-edit' as Href, tint: 'gold' },
-      { icon: 'bookmarks', label: 'To be read', sub: 'Your want-to-read shelf', href: '/(tabs)/library/tbr' as Href },
+      { icon: 'bookmarks', label: 'To be read', sub: 'Books you own, not started yet', href: '/(tabs)/library/tbr' as Href },
     ],
   },
   {
@@ -35,6 +36,12 @@ const GROUPS: { title: string; items: MenuItem[] }[] = [
     items: [
       { icon: 'person', label: 'Profile', sub: 'Achievements and identity', href: '/(tabs)/profile' as Href },
       { icon: 'settings', label: 'Settings', sub: 'Theme, notifications, privacy', href: '/(tabs)/profile/settings' as Href },
+    ],
+  },
+  {
+    title: 'Feedback',
+    items: [
+      { icon: 'chatbubble-ellipses', label: 'Send feedback', sub: 'Bugs, ideas, or anything on your mind', href: '/(modals)/feedback?kind=feedback' as Href },
     ],
   },
 ];
@@ -79,7 +86,11 @@ export default function More() {
           <Pressable onPress={() => router.push('/(tabs)/profile' as Href)} accessibilityRole="button" accessibilityLabel="Open profile">
             <Card padded glow style={styles.identity}>
               <View style={[styles.avatar, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-                <Text style={[styles.avatarText, { color: t.accent }]}>{initials}</Text>
+                {profile?.avatarUrl ? (
+                  <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+                ) : (
+                  <Text style={[styles.avatarText, { color: t.accent }]}>{initials}</Text>
+                )}
               </View>
               <View style={styles.identityInfo}>
                 <Text style={[styles.name, { color: t.text }]} numberOfLines={1}>
@@ -173,7 +184,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 16 },
   title: { fontFamily: FONTS.displayBold, fontSize: 32, lineHeight: 36 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  avatar: { width: 56, height: 56, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 56, height: 56, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImg: { width: '100%', height: '100%' },
   avatarText: { fontFamily: FONTS.uiBold, fontSize: 22 },
   identityInfo: { flex: 1, gap: 3 },
   name: { fontFamily: FONTS.displayBold, fontSize: 22, lineHeight: 26 },

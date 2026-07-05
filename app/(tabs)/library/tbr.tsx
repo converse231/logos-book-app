@@ -12,7 +12,8 @@ import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { BookGridCard } from '@/components/library/BookGridCard';
 
-// To Be Read — the want-to-read shelf (user_books status='want').
+// To Be Read — books already owned but not yet started (user_books status='tbr').
+// Distinct from the wishlist ("Want" — don't own it yet).
 export default function TBR() {
   const t = useTheme();
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function TBR() {
     useCallback(() => {
       let alive = true;
       setError(false);
-      api.getUserBooks('want')
+      api.getUserBooks('tbr')
         .then((b) => alive && setBooks(b))
         .catch(() => alive && setError(true));
       return () => {
@@ -100,7 +101,7 @@ export default function TBR() {
               </View>
               <Text style={[styles.emptyTitle, { color: t.text }]}>Nothing on the list yet</Text>
               <Text style={[styles.emptyBody, { color: t.textSec }]}>
-                Mark books as &ldquo;Want&rdquo; and they will line up here.
+                Mark books as &ldquo;TBR&rdquo; and they will line up here.
               </Text>
             </View>
           }

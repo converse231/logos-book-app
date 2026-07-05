@@ -8,26 +8,47 @@ interface SessionControlBarProps {
   isPaused: boolean;
   canStop: boolean;
   stopUnlocksInSec?: number;
+  /** Show the "cancel session" affordance (only in the opening window — a mistaken
+   *  start can be dropped without ever recording a session). */
+  showCancel?: boolean;
   onTogglePause: () => void;
   onStop: () => void;
+  onCancel?: () => void;
 }
 
 // Glass control bar pinned in the bottom thumb zone (blueprint #5). Stop is
 // locked for the first 2 minutes to prevent accidental aborts; while locked it
 // shows a countdown and stays a real (disabled) target — never hidden, so it
 // remains reachable to screen readers. Translucent fill instead of BlurView
-// (cheap on Android; blueprint allows rgba).
+// (cheap on Android; blueprint allows rgba). A short-lived Cancel (danger) sits
+// on the left during the opening seconds so a mis-started session leaves no trace.
 export function SessionControlBar({
   isPaused,
   canStop,
   stopUnlocksInSec = 0,
+  showCancel = false,
   onTogglePause,
   onStop,
+  onCancel,
 }: SessionControlBarProps) {
   const t = useTheme();
 
   return (
     <View style={[styles.bar, { backgroundColor: t.glass, borderColor: t.border }]}>
+      {showCancel && onCancel ? (
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onCancel();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel session without saving"
+          style={[styles.cancel, { borderColor: t.danger }]}
+        >
+          <Ionicons name="close" size={24} color={t.danger} />
+        </Pressable>
+      ) : null}
+
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -79,6 +100,14 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: BORDER_WIDTH_THICK,
     ...SHADOW.card,
+  },
+  cancel: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 52,
+    minHeight: 52,
+    borderRadius: 0,
+    borderWidth: BORDER_WIDTH,
   },
   secondary: {
     flexDirection: 'row',

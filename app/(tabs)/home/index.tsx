@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -7,10 +7,12 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
-import { HomeData, Review, StatsData, UserBook } from '@/services/types';
+import { HomeData, ReadingSession, Review, StatsData, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Card } from '@/components/shared/Card';
@@ -19,9 +21,13 @@ import { ProgressBar } from '@/components/shared/ProgressBar';
 import { LevelNameBadge } from '@/components/shared/LevelNameBadge';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { RefreshingOverlay, HIDDEN_SPINNER } from '@/components/shared/RefreshingOverlay';
 import { SectionHeader } from '@/components/home/SectionHeader';
 import { ChallengeCard, ChallengeCardProps } from '@/components/home/ChallengeCard';
 import { ReviewQuoteCard } from '@/components/home/ReviewQuoteCard';
+import { ReadTodayCard } from '@/components/home/ReadTodayCard';
+import { localDateString } from '@/stores/sessionStore';
+import { drainQueue } from '@/lib/sessionQueue';
 
 interface FeaturedReviews {
   book: UserBook;
@@ -41,11 +47,17 @@ export default function Home() {
   const [featured, setFeatured] = useState<FeaturedReviews | null>(null);
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       setError(false);
+      // Flush any sessions captured offline; if some synced, reload so the
+      // streak / XP / stats reflect them. (No-op + terminates when the queue is empty.)
+      drainQueue(api).then((synced) => {
+        if (alive && synced > 0) setNonce((n) => n + 1);
+      });
       Promise.all([api.getHomeData(), api.getUserBooks(), api.getStats()])
         .then(([h, s, st]) => {
           if (!alive) return;
@@ -59,12 +71,19 @@ export default function Home() {
             });
           }
         })
-        .catch(() => alive && setError(true));
+        .catch(() => alive && setError(true))
+        .finally(() => setRefreshing(false));
       return () => {
         alive = false;
       };
     }, [api, nonce])
   );
+
+  // Pull-to-refresh: re-run the whole load (which also drains the offline queue).
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setNonce((n) => n + 1);
+  }, []);
 
   if (error && (!data || !shelf || !stats)) {
     return (
@@ -82,12 +101,39 @@ export default function Home() {
     );
   }
 
-  const wantBooks = shelf.filter((b) => b.status === 'want');
+  const tbrBooks = shelf.filter((b) => b.status === 'tbr');
   const booksFinished = stats.booksFinished;
   const goalPct = data.goal ? Math.min(1, booksFinished / data.goal.goalBooks) : 0;
   const initials = (data.user.displayName ?? 'R').trim().charAt(0).toUpperCase();
+  // Daily check-in: which recent local-dates have a session, and is today done.
+  const readDates = new Set(data.recentSessions.map((s) => s.localDate));
+  const readToday = readDates.has(localDateString());
   const startActive = () =>
     data.activeBook ? router.push(`/session/${data.activeBook.id}` as Href) : router.push('/(tabs)/library' as Href);
+
+  // Recent sessions preview: last few sessions with their book (resolved from the shelf).
+  const bookByUserBookId = new Map(shelf.map((b) => [b.id, b]));
+  const recentSessions = data.recentSessions.slice(0, 3);
+  const openSession = (s: ReadingSession) => {
+    Haptics.selectionAsync();
+    const ub = bookByUserBookId.get(s.userBookId);
+    router.push({
+      pathname: '/session/detail',
+      params: {
+        sessionId: s.id,
+        title: ub?.book.title ?? 'A book',
+        cover: ub?.book.coverUrl ?? '',
+        format: s.format,
+        startedAt: s.startedAt,
+        durationSeconds: String(s.durationSeconds),
+        pagesRead: s.pagesRead != null ? String(s.pagesRead) : '',
+        minutesListened: s.minutesListened != null ? String(s.minutesListened) : '',
+        pph: s.pph != null ? String(s.pph) : '',
+        isPersonalBest: s.isPersonalBest ? '1' : '',
+        xpAwarded: String(s.xpAwarded),
+      },
+    } as unknown as Href);
+  };
 
   // Challenges — surfaced from real gamification state, most urgent first.
   const challenges: ChallengeCardProps[] = [];
@@ -143,6 +189,9 @@ export default function Home() {
       <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 28 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} {...HIDDEN_SPINNER} />
+        }
       >
         {/* Header */}
         <Reveal index={0} reduce={reduce}>
@@ -153,7 +202,11 @@ export default function Home() {
               accessibilityLabel="Open profile"
               style={[styles.avatar, { backgroundColor: t.accentMuted, borderColor: t.accent }]}
             >
-              <Text style={[styles.avatarText, { color: t.accent }]}>{initials}</Text>
+              {data.user.avatarUrl ? (
+                <Image source={{ uri: data.user.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+              ) : (
+                <Text style={[styles.avatarText, { color: t.accent }]}>{initials}</Text>
+              )}
             </Pressable>
             <View style={styles.headerText}>
               <Text style={[styles.greeting, { color: t.textSec }]}>{timeGreeting()}</Text>
@@ -191,7 +244,18 @@ export default function Home() {
             <View style={styles.firstRow}>
               <View style={[styles.streakCell, { borderColor: t.border, backgroundColor: t.bgTer }]}>
                 <Text style={[styles.cellLabel, { color: t.textSec }]}>STREAK</Text>
-                <Ionicons name="flame" size={26} color={data.streak.isAtRisk ? t.gold : t.ember} />
+                {reduce ? (
+                  <Ionicons name="flame" size={26} color={data.streak.isAtRisk ? t.gold : t.ember} />
+                ) : (
+                  <Image
+                    source={require('@/assets/fire.webp')}
+                    style={styles.streakFlame}
+                    autoplay
+                    contentFit="contain"
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                  />
+                )}
                 <Text style={[styles.streakCount, { color: t.text }]}>{data.streak.currentStreak}</Text>
                 <Text style={[styles.streakUnit, { color: t.textSec }]}>
                   {data.streak.currentStreak === 1 ? 'day' : 'days'}
@@ -231,8 +295,18 @@ export default function Home() {
           </Card>
         </Reveal>
 
-        {/* 2 — Shelf Builder (level / XP) */}
+        {/* Daily check-in — "I read today" streak saver */}
         <Reveal index={3} reduce={reduce}>
+          <ReadTodayCard
+            readDates={readDates}
+            readToday={readToday}
+            activeBook={data.activeBook}
+            onLog={() => router.push('/(modals)/read-today' as Href)}
+          />
+        </Reveal>
+
+        {/* 2 — Shelf Builder (level / XP) */}
+        <Reveal index={4} reduce={reduce}>
           <Card padded style={styles.levelCard}>
             <LevelNameBadge levelName={data.user.levelName} context="home" />
             <View style={styles.xpWrap}>
@@ -288,15 +362,14 @@ export default function Home() {
               <Text style={[styles.emptyText, { color: t.textSec }]}>
                 No active book. Add one from your library to start a session.
               </Text>
-              <Pressable
+              <PressBlock
                 onPress={() => router.push('/(modals)/add-book' as Href)}
-                accessibilityRole="button"
                 accessibilityLabel="Add a book"
-                style={[styles.emptyCta, { backgroundColor: t.accent }]}
+                style={[styles.emptyCta, { backgroundColor: t.accent, borderColor: t.border }]}
               >
                 <Ionicons name="add" size={18} color={t.onAccent} />
                 <Text style={[styles.emptyCtaText, { color: t.onAccent }]}>Add a book</Text>
-              </Pressable>
+              </PressBlock>
             </Card>
           )}
         </Reveal>
@@ -306,11 +379,11 @@ export default function Home() {
           <View style={styles.section}>
             <SectionHeader
               title="Up next"
-              actionLabel={wantBooks.length > 0 ? 'See all' : undefined}
-              onAction={wantBooks.length > 0 ? () => router.push('/(tabs)/library/tbr' as Href) : undefined}
+              actionLabel={tbrBooks.length > 0 ? 'See all' : undefined}
+              onAction={tbrBooks.length > 0 ? () => router.push('/(tabs)/library/tbr' as Href) : undefined}
             />
             <Carousel>
-              {wantBooks.map((b) => (
+              {tbrBooks.map((b) => (
                 <Pressable
                   key={b.id}
                   onPress={() => router.push(`/(tabs)/library/${b.id}` as Href)}
@@ -325,7 +398,7 @@ export default function Home() {
                 </Pressable>
               ))}
               <Pressable
-                onPress={() => router.push('/(modals)/add-book' as Href)}
+                onPress={() => router.push('/(modals)/add-book?status=tbr' as Href)}
                 accessibilityRole="button"
                 accessibilityLabel="Add a book to your list"
                 style={({ pressed }) => [styles.addTile, { borderColor: t.border }, pressed && styles.pressed]}
@@ -337,9 +410,33 @@ export default function Home() {
           </View>
         </Reveal>
 
-        {/* 5 — Reviews */}
-        {featured ? (
+        {/* 5 — Recent sessions */}
+        {recentSessions.length > 0 ? (
           <Reveal index={6} reduce={reduce}>
+            <View style={styles.section}>
+              <SectionHeader
+                title="Recent sessions"
+                actionLabel="See all"
+                onAction={() => router.push('/session/history' as Href)}
+              />
+              <View style={styles.sessionList}>
+                {recentSessions.map((s) => (
+                  <RecentSessionRow
+                    key={s.id}
+                    session={s}
+                    book={bookByUserBookId.get(s.userBookId)}
+                    onPress={() => openSession(s)}
+                    t={t}
+                  />
+                ))}
+              </View>
+            </View>
+          </Reveal>
+        ) : null}
+
+        {/* 6 — Reviews */}
+        {featured ? (
+          <Reveal index={7} reduce={reduce}>
             <View style={styles.section}>
               <SectionHeader
                 title="What readers are saying"
@@ -364,8 +461,8 @@ export default function Home() {
           </Reveal>
         ) : null}
 
-        {/* 6 — Challenges */}
-        <Reveal index={7} reduce={reduce}>
+        {/* 7 — Challenges */}
+        <Reveal index={8} reduce={reduce}>
           <View style={styles.section}>
             <SectionHeader title="Challenges" />
             <Carousel>
@@ -376,6 +473,7 @@ export default function Home() {
           </View>
         </Reveal>
       </ScrollView>
+      <RefreshingOverlay refreshing={refreshing} top={insets.top + 8} />
     </ScreenBackground>
   );
 }
@@ -396,6 +494,43 @@ function HomeStat({ value, label, t }: { value: string; label: string; t: Return
         {label}
       </Text>
     </View>
+  );
+}
+
+// Compact recent-session row for the home preview (taps into the session detail).
+function RecentSessionRow({
+  session,
+  book,
+  onPress,
+  t,
+}: {
+  session: ReadingSession;
+  book?: UserBook;
+  onPress: () => void;
+  t: ReturnType<typeof useTheme>;
+}) {
+  const isAudio = session.format === 'audiobook';
+  const minutes = Math.max(1, Math.round(session.durationSeconds / 60));
+  const primary = isAudio
+    ? `${session.minutesListened ?? minutes} min listened`
+    : `${session.pagesRead ?? 0} ${(session.pagesRead ?? 0) === 1 ? 'page' : 'pages'} · ${minutes} min`;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${book?.book.title ?? 'A book'}, ${primary}`}
+      style={({ pressed }) => [styles.sessionRow, { borderColor: t.border, backgroundColor: t.bgSec }, pressed && styles.pressed]}
+    >
+      <View style={[styles.sessionCoverFrame, { borderColor: t.border }]}>
+        <BookCover url={book?.book.coverUrl ?? null} title={book?.book.title ?? 'Book'} format={session.format} width={34} />
+      </View>
+      <View style={styles.sessionInfo}>
+        <Text style={[styles.sessionTitle, { color: t.text }]} numberOfLines={1}>{book?.book.title ?? 'A book'}</Text>
+        <Text style={[styles.sessionStats, { color: t.textSec }]} numberOfLines={1}>{primary}</Text>
+      </View>
+      {session.isPersonalBest ? <Ionicons name="trophy" size={14} color={t.gold} /> : null}
+      <Ionicons name="chevron-forward" size={16} color={t.textTer} />
+    </Pressable>
   );
 }
 
@@ -464,7 +599,8 @@ const styles = StyleSheet.create({
   skelHeaderText: { flex: 1, gap: 6 },
   skelRow: { flexDirection: 'row', gap: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 46, height: 46, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 46, height: 46, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImg: { width: '100%', height: '100%' },
   avatarText: { fontFamily: FONTS.uiBold, fontSize: 19 },
   headerText: { flex: 1, gap: 1 },
   greeting: { fontFamily: FONTS.uiRegular, fontSize: 14 },
@@ -486,6 +622,7 @@ const styles = StyleSheet.create({
     ...SHADOW.sm,
   },
   cellLabel: { fontFamily: FONTS.uiBold, fontSize: 10, letterSpacing: 1, marginBottom: 2 },
+  streakFlame: { width: 32, height: 32 },
   streakCount: { fontFamily: FONTS.uiBold, fontSize: 30, lineHeight: 34, fontVariant: ['tabular-nums'], marginTop: 2 },
   streakUnit: { fontFamily: FONTS.uiMedium, fontSize: 12 },
   statsCell: { flex: 1, justifyContent: 'center', gap: 14 },
@@ -528,10 +665,16 @@ const styles = StyleSheet.create({
   startBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent },
   emptyActive: { gap: 14, alignItems: 'center' },
   emptyText: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
-  emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, height: 46, borderRadius: 0 },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 46, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
   emptyCtaText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   section: { gap: 14 },
+  sessionList: { gap: 8 },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 0, borderWidth: 2 },
+  sessionCoverFrame: { borderWidth: 2, borderRadius: 0 },
+  sessionInfo: { flex: 1, gap: 2 },
+  sessionTitle: { fontFamily: FONTS.uiBold, fontSize: 14 },
+  sessionStats: { fontFamily: FONTS.mono, fontSize: 11 },
   carousel: { marginHorizontal: -18 },
   carouselContent: { paddingHorizontal: 18, gap: 12 },
   tbrItem: { width: 96, gap: 6 },

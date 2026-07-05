@@ -11,6 +11,7 @@ import {
   BookSearchResult,
   CompleteSessionResult,
   HomeData,
+  NotificationSettings,
   QueuedSession,
   ReadingGoal,
   ReadingInsight,
@@ -39,6 +40,19 @@ import {
 const delay = (ms = 300) => new Promise<void>(r => setTimeout(r, ms));
 
 let _user: UserProfile = { ...MOCK_USER };
+
+let _notifSettings: NotificationSettings = {
+  enabled: true,
+  dailyReminder: true,
+  dailyReminderHour: 20,
+  atRiskAlerts: true,
+  weeklyDigest: true,
+  comebackAlerts: true,
+  socialAlerts: true,
+  insightAlerts: true,
+  quietHoursStart: 22,
+  quietHoursEnd: 8,
+};
 
 export const mockApi: LogosApi = {
   // ── Auth ────────────────────────────────────────────────────────────────
@@ -81,9 +95,16 @@ export const mockApi: LogosApi = {
       ..._user,
       username: data.username ?? _user.username,
       displayName: data.displayName ?? _user.displayName,
+      bio: data.bio !== undefined ? data.bio : _user.bio,
       theme: (data.theme as ThemePref) ?? _user.theme,
+      avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : _user.avatarUrl,
     };
     return { ..._user };
+  },
+
+  async uploadAvatar(base64: string) {
+    await delay(400);
+    return `data:image/jpeg;base64,${base64}`; // in-memory preview for the mock
   },
 
   async completeOnboarding() {
@@ -176,10 +197,23 @@ export const mockApi: LogosApi = {
     return MOCK_RECOMMENDED.map((b) => ({ ...b }));
   },
 
-  async updateBookStatus(userBookId: string, status: ReadingStatus) {
+  async getBestsellers(_list?: string) {
+    await delay(250);
+    // Reuse the catalog as a stand-in "bestseller" list for the frontend phase.
+    return MOCK_RECOMMENDED.slice(0, 10).map((b) => ({ ...b }));
+  },
+
+  async updateBookStatus(userBookId: string, status: ReadingStatus, finishedAt?: string | null) {
     await delay();
     const found = MOCK_USER_BOOKS.find((b) => b.id === userBookId) ?? MOCK_USER_BOOK;
-    return { ...found, status } as UserBook;
+    const updated = {
+      ...found,
+      status,
+      finishedAt: status === 'finished' ? (finishedAt ?? new Date().toISOString()) : found.finishedAt,
+    } as UserBook;
+    const i = MOCK_USER_BOOKS.findIndex((b) => b.id === userBookId);
+    if (i >= 0) MOCK_USER_BOOKS[i] = updated; // in-session persistence
+    return updated;
   },
 
   async updateCurrentPage(_userBookId: string, _page: number) {
@@ -190,6 +224,15 @@ export const mockApi: LogosApi = {
     await delay(200);
     const i = MOCK_USER_BOOKS.findIndex((b) => b.id === userBookId);
     if (i >= 0) MOCK_USER_BOOKS.splice(i, 1); // in-session removal so the shelf updates
+  },
+
+  async setFavorite(userBookId: string, isFavorite: boolean) {
+    await delay(150);
+    const found = MOCK_USER_BOOKS.find((b) => b.id === userBookId) ?? MOCK_USER_BOOK;
+    const updated = { ...found, isFavorite } as UserBook;
+    const i = MOCK_USER_BOOKS.findIndex((b) => b.id === userBookId);
+    if (i >= 0) MOCK_USER_BOOKS[i] = updated; // in-session persistence
+    return updated;
   },
 
   // ── Sessions ────────────────────────────────────────────────────────────
@@ -236,6 +279,12 @@ export const mockApi: LogosApi = {
       insight: !hit && Math.random() < 0.3 ? { ...MOCK_INSIGHT, id: 'insight-' + Date.now() } : null,
       milestoneVariant: hit ? hit.variant : null,
     };
+  },
+
+  async deleteSession(_sessionId: string): Promise<void> {
+    // Mock history isn't persisted, so there's nothing to remove — the real impl
+    // deletes the row + reverses its XP server-side.
+    await delay(400);
   },
 
   // ── Reading goal ─────────────────────────────────────────────────────────
@@ -292,6 +341,22 @@ export const mockApi: LogosApi = {
     return (MOCK_REVIEWS[bookId] ?? []).map((r) => ({ ...r }));
   },
 
+  // ── Notifications ────────────────────────────────────────────────────────────
+  async getNotificationSettings() {
+    await delay(120);
+    return { ..._notifSettings };
+  },
+
+  async updateNotificationSettings(patch) {
+    await delay(150);
+    _notifSettings = { ..._notifSettings, ...patch };
+    return { ..._notifSettings };
+  },
+
+  async registerPushToken(_token: string) {
+    await delay(100); // no-op in mock
+  },
+
   // ── Account ────────────────────────────────────────────────────────────────
   async exportData() {
     await delay(400);
@@ -300,6 +365,11 @@ export const mockApi: LogosApi = {
 
   async deleteAccount() {
     await delay(300);
+  },
+
+  async submitFeedback(_input: { kind: string; message: string }) {
+    // Mock: accept and discard — the real impl writes to public.feedback.
+    await delay(500);
   },
 
   // ── AI ───────────────────────────────────────────────────────────────────
