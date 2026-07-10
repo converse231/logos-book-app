@@ -105,8 +105,10 @@ export default function Home() {
   const booksFinished = stats.booksFinished;
   const goalPct = data.goal ? Math.min(1, booksFinished / data.goal.goalBooks) : 0;
   const initials = (data.user.displayName ?? 'R').trim().charAt(0).toUpperCase();
-  // Daily check-in: which recent local-dates have a session, and is today done.
-  const readDates = new Set(data.recentSessions.map((s) => s.localDate));
+  // Daily check-in: every local-date with a session (heatmapDays covers all read
+  // days; recentSessions is only the last 7 sessions, so multi-session days there
+  // drop earlier read days off the week strip).
+  const readDates = new Set(stats.heatmapDays.map((d) => d.date));
   const readToday = readDates.has(localDateString());
   const startActive = () =>
     data.activeBook ? router.push(`/session/${data.activeBook.id}` as Href) : router.push('/(tabs)/library' as Href);

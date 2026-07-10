@@ -91,6 +91,8 @@ export interface LogosApi {
   // ── Reviews ───────────────────────────────────────────────────────────────
   writeReview(bookId: string, rating: number, body?: string, spoiler?: boolean): Promise<Review>;
   getReviews(bookId: string): Promise<Review[]>;
+  /** The caller's own reviews (newest first), for the profile compilation. */
+  getMyReviews(): Promise<Review[]>;
 
   // ── AI (B6) ─────────────────────────────────────────────────────────────────
   /** Mood/context → Claude book recommendations (server-side, cached 7 days). */

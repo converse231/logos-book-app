@@ -9,7 +9,7 @@ import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { StarRating } from '@/components/library/StarRating';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 
-const MAX = 1000;
+const MAX = 3000;
 
 // Write / edit a review (blueprint Section 3). Minors are kept off the public
 // feed — the server enforces it (RLS + trigger); here we only surface the state.

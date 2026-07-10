@@ -538,7 +538,7 @@ export default function BookDetail() {
               </Text>
             )}
 
-            {reviews.map((r) => (
+            {reviews.filter((r) => r.body?.trim()).map((r) => (
               <ReviewRow
                 key={r.id}
                 review={r}

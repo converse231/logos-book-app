@@ -9,12 +9,13 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
-import { Badge, HomeData, ReadingGoal, StatsData, UserBook, UserProfile } from '@/services/types';
+import { Badge, HomeData, ReadingGoal, Review, StatsData, UserBook, UserProfile } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { Card } from '@/components/shared/Card';
 import { LevelNameBadge } from '@/components/shared/LevelNameBadge';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { BadgeGrid } from '@/components/stats/BadgeGrid';
+import { ReviewQuoteCard } from '@/components/home/ReviewQuoteCard';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StreakCalendar } from '@/components/profile/StreakCalendar';
@@ -40,6 +41,7 @@ export default function Profile() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [goal, setGoal] = useState<ReadingGoal | null>(null);
   const [userBooks, setUserBooks] = useState<UserBook[] | null>(null);
+  const [myReviews, setMyReviews] = useState<Review[]>([]);
   const [scope, setScope] = useState<Scope>('year');
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
@@ -54,14 +56,16 @@ export default function Profile() {
         api.getStats(),
         api.getGoal(new Date().getFullYear()),
         api.getUserBooks(),
+        api.getMyReviews(),
       ])
-        .then(([p, h, s, g, ub]) => {
+        .then(([p, h, s, g, ub, mr]) => {
           if (!alive) return;
           setProfile(p);
           setHome(h);
           setStats(s);
           setGoal(g);
           setUserBooks(ub);
+          setMyReviews(mr);
         })
         .catch(() => alive && setError(true));
       return () => { alive = false; };
@@ -97,6 +101,12 @@ export default function Profile() {
 
   const initials = (profile.displayName ?? 'R').trim().charAt(0).toUpperCase();
   const earnedBadges = stats.badges.filter((b): b is Badge => !!b.unlockedAt);
+  // My written reviews, resolved to their shelf book for cover/title/nav.
+  // ponytail: reviews for books removed from the shelf are dropped (no book to link).
+  const bookById = new Map(userBooks.map((ub) => [ub.book.id, ub]));
+  const writtenReviews = myReviews
+    .filter((r) => r.body?.trim() && bookById.has(r.bookId))
+    .map((r) => ({ review: r, book: bookById.get(r.bookId)! }));
   const booksFinished = stats.booksFinished;
   const goalPct = goal ? Math.min(1, booksFinished / goal.goalBooks) : 0;
   const scopeWord = scope === 'year' ? 'this year' : 'all time';
@@ -289,6 +299,29 @@ export default function Profile() {
             </Card>
           </Reveal>
         ) : null}
+
+        {/* Your reviews — a compilation of the reviews you've written */}
+        {writtenReviews.length > 0 ? (
+          <Reveal i={9} reduce={reduce}>
+            <View style={styles.block}>
+              <Text style={[styles.sectionTitle, { color: t.text }]}>Your reviews</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reviewsRow}>
+                {writtenReviews.map(({ review, book }) => (
+                  <ReviewQuoteCard
+                    key={review.id}
+                    bookTitle={book.book.title}
+                    coverUrl={book.book.coverUrl}
+                    format={book.format}
+                    rating={review.rating}
+                    body={review.body ?? ''}
+                    author={book.book.authors[0] ?? ''}
+                    onPress={() => router.push(`/(tabs)/library/${book.id}` as Href)}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          </Reveal>
+        ) : null}
       </ScrollView>
     </ScreenBackground>
   );
@@ -397,5 +430,6 @@ const styles = StyleSheet.create({
   badgeSection: { gap: 14 },
   badgeHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { fontFamily: FONTS.uiBold, fontSize: 17 },
+  reviewsRow: { gap: 12, paddingRight: 4, paddingVertical: 2 },
   seeAll: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
 });

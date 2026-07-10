@@ -341,6 +341,15 @@ export const mockApi: LogosApi = {
     return (MOCK_REVIEWS[bookId] ?? []).map((r) => ({ ...r }));
   },
 
+  async getMyReviews() {
+    await delay();
+    return Object.values(MOCK_REVIEWS)
+      .flat()
+      .filter((r) => r.userId === _user.id)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .map((r) => ({ ...r }));
+  },
+
   // ── Notifications ────────────────────────────────────────────────────────────
   async getNotificationSettings() {
     await delay(120);

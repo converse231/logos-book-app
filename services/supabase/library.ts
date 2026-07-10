@@ -235,6 +235,17 @@ export const libraryApi: Partial<LogosApi> = {
     return mapReview(data, prof ?? undefined);
   },
 
+  async getMyReviews() {
+    const uid = await requireUid();
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r) => mapReview(r)); // own reviews → no name join needed
+  },
+
   async getReviews(bookId: string) {
     // RLS returns public reviews + the caller's own. Order newest first.
     const { data, error } = await supabase
