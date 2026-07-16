@@ -30,7 +30,7 @@ export function ProgressBar({
   const t = useTheme();
   const reduceMotion = useReducedMotion();
   const pct = Math.max(0, Math.min(1, max > 0 ? value / max : 0));
-  const radius = 0; // brutalism — sharp corners
+  const radius = height / 2; // soft-brutalism — fully-rounded pill track
 
   const [trackWidth, setTrackWidth] = useState(0);
   const fillPx = useSharedValue(0);

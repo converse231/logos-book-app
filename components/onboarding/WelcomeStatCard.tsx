@@ -98,11 +98,11 @@ function Stat({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 22, gap: 18, ...SHADOW.card },
+  card: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 22, gap: 18, ...SHADOW.card },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   overlineRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   overline: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
-  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 0, borderWidth: 1 },
+  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, borderWidth: 1 },
   pillText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 0.6 },
   flameRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   flameWrap: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },

@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   frame: {
     width: FRAME,
     height: FRAME,
-    borderRadius: 0,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.03)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -146,12 +146,12 @@ const styles = StyleSheet.create({
   tr: { top: 10, right: 10, borderTopWidth: 3, borderRightWidth: 3 },
   bl: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3 },
   br: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3 },
-  scanLine: { position: 'absolute', top: 12, left: 18, right: 18, height: 2, borderRadius: 0, opacity: 0.85 },
+  scanLine: { position: 'absolute', top: 12, left: 18, right: 18, height: 2, borderRadius: 14, opacity: 0.85 },
   hint: { fontFamily: FONTS.uiMedium, fontSize: 15, color: 'rgba(255,255,255,0.85)', textAlign: 'center', maxWidth: 280 },
   permWrap: { alignItems: 'center', gap: 18 },
   permBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, height: 48,
-    borderRadius: 0, borderWidth: 2,
+    borderRadius: 14, borderWidth: 2,
   },
   permBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   actions: {},

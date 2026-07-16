@@ -137,7 +137,7 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 24, gap: 28 },
-  backBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   header: { gap: 10 },
   title: { fontFamily: FONTS.displayBold, fontSize: 34, lineHeight: 38, letterSpacing: -0.5 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 16, lineHeight: 22 },
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   field: { gap: 10 },
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2 },
   input: {
-    minHeight: 52, borderRadius: 0, borderWidth: 1, paddingHorizontal: 16,
+    minHeight: 52, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16,
     fontFamily: FONTS.uiMedium, fontSize: 17,
   },
   error: { fontFamily: FONTS.uiMedium, fontSize: 13 },

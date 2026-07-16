@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   padded: { paddingHorizontal: 18 },
   title: { fontFamily: FONTS.displayBold, fontSize: 32, lineHeight: 36, paddingHorizontal: 18 },
 
-  banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 18, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
+  banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 18, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
   bannerText: { flex: 1, gap: 4 },
   bannerTag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   bannerTagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5, opacity: 0.85 },
@@ -221,15 +221,15 @@ const styles = StyleSheet.create({
 
   section: { gap: 12, paddingHorizontal: 18 },
   sectionTitle: { fontFamily: FONTS.displayBold, fontSize: 20, letterSpacing: -0.3 },
-  moreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  moreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: BORDER_WIDTH },
   moreBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  chip: { paddingHorizontal: 14, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
 
   authorWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  authorCard: { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 0, borderWidth: BORDER_WIDTH },
-  authorGlyph: { width: 44, height: 44, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  authorCard: { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  authorGlyph: { width: 44, height: 44, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   authorPhoto: { width: '100%', height: '100%' },
   authorInitial: { fontFamily: FONTS.displayBold, fontSize: 20 },
   authorName: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 13, lineHeight: 16 },

@@ -92,13 +92,13 @@ export default function Browse() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 18, paddingBottom: 10 },
-  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontFamily: FONTS.displayBold, fontSize: 22, letterSpacing: -0.4, textAlign: 'center', textTransform: 'uppercase' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14, gap: 10 },
   gridContent: { paddingHorizontal: 14, gap: 16 },
   gridRow: { gap: 10 },
   cell: { flex: 1 / 3, gap: 5, maxWidth: '33%' },
-  coverFrame: { borderWidth: 2, borderRadius: 0, alignSelf: 'flex-start' },
+  coverFrame: { borderWidth: 2, borderRadius: 14, alignSelf: 'flex-start' },
   bookTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 12, lineHeight: 15 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   emptyText: { fontFamily: FONTS.uiRegular, fontSize: 15 },

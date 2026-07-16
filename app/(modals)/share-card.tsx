@@ -2,8 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   Pressable,
+  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -16,7 +19,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { useSessionStore } from '@/stores/sessionStore';
 import { CardVariant } from '@/services/types';
@@ -58,6 +61,7 @@ export default function ShareCard() {
 
   // Off-screen, full-resolution target that the capture reads from.
   const shotRef = useRef<View>(null);
+  const styleScrollRef = useRef<ScrollView>(null);
   const [perm, requestPerm] = MediaLibrary.usePermissions();
 
   useEffect(() => {
@@ -92,6 +96,12 @@ export default function ShareCard() {
   const bookCoverUrl = reshare ? (params.cover || null) : (active?.coverUrl ?? null);
   const bookFormat = (reshare ? params.format : active?.format) as CardStats['format'];
 
+  // Page Trail context — only a live paged session knows where in the book it sat.
+  // (Re-shares don't carry startPage/pageCount, so the trail falls back to Feature.)
+  const trailPageCount = reshare ? null : (active?.pageCount ?? null);
+  const trailStart = reshare || active?.startPage == null ? null : active.startPage;
+  const trailEnd = trailStart != null ? trailStart + pages : null;
+
   const stats: CardStats = {
     headline: String(pages),
     headlineUnit: pages === 1 ? 'page read' : 'pages read',
@@ -102,6 +112,35 @@ export default function ShareCard() {
     bookTitle,
     bookCoverUrl,
     format: bookFormat,
+    pageCount: trailPageCount,
+    startPage: trailStart,
+    endPage: trailEnd,
+  };
+
+  // The style carousel — one page per card style. Swiping the preview left/right
+  // picks the style (a 4-up segmented control couldn't fit its labels on Android).
+  const LAYOUTS: { key: CardLayout; label: string }[] = [
+    { key: 'feature', label: 'Feature' },
+    { key: 'emblem', label: 'Feature · No cover' },
+    { key: 'stats', label: 'Stats' },
+    { key: 'statsEmblem', label: 'Stats · No cover' },
+    ...(trailPageCount ? [{ key: 'trail' as CardLayout, label: 'Trail' }] : []),
+  ];
+  const idx = Math.max(0, LAYOUTS.findIndex((l) => l.key === layout));
+
+  const onStyleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!area.w) return;
+    const i = Math.round(e.nativeEvent.contentOffset.x / area.w);
+    const next = LAYOUTS[Math.max(0, Math.min(LAYOUTS.length - 1, i))];
+    if (next && next.key !== layout) {
+      Haptics.selectionAsync();
+      setLayout(next.key);
+    }
+  };
+
+  const goToStyle = (i: number) => {
+    if (!area.w) return;
+    styleScrollRef.current?.scrollTo({ x: i * area.w, animated: true });
   };
 
   // Size the card to fit the measured preview area by BOTH width and height, so it
@@ -190,34 +229,63 @@ export default function ShareCard() {
         </Pressable>
       </View>
 
-      {/* Preview — bounded to the available area so it never overflows. */}
+      {/* Preview — a swipeable carousel, one page per style. */}
       <View style={styles.previewArea} onLayout={onPreviewLayout}>
-        {previewW > 0 ? (
-          <View style={[styles.previewBox, { width: previewW + 20 }]}>
-            {mode === 'transparent' ? <Checkerboard /> : null}
-            <View style={styles.cardWrap}>
-              <ShareCardCanvas
-                variant={variant}
-                mode={mode}
-                layout={layout}
-                stats={stats}
-                levelName={levelName}
-                width={previewW}
-              />
-            </View>
-          </View>
+        {previewW > 0 && area.w > 0 ? (
+          <ScrollView
+            ref={styleScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onStyleScrollEnd}
+            style={styles.carousel}
+            contentContainerStyle={styles.carouselContent}
+          >
+            {LAYOUTS.map((l) => (
+              <View key={l.key} style={[styles.page, { width: area.w }]}>
+                <View style={[styles.previewBox, { width: previewW + 20 }]}>
+                  {mode === 'transparent' ? <Checkerboard /> : null}
+                  <View style={styles.cardWrap}>
+                    <ShareCardCanvas
+                      variant={variant}
+                      mode={mode}
+                      layout={l.key}
+                      stats={stats}
+                      levelName={levelName}
+                      width={previewW}
+                    />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
         ) : null}
       </View>
 
-      {/* Controls */}
+      {/* Style indicator — name + dots (tap a dot to jump) */}
       <View style={styles.controls}>
-        <SegGroup
-          label="STYLE"
-          value={layout}
-          options={[{ key: 'feature', label: 'Feature' }, { key: 'stats', label: 'Stats' }]}
-          onChange={(v) => setLayout(v as CardLayout)}
-          t={t}
-        />
+        <Text style={[styles.styleName, { color: t.text }]}>{LAYOUTS[idx]?.label}</Text>
+        <View style={styles.dots}>
+          {LAYOUTS.map((l, i) => (
+            <Pressable
+              key={l.key}
+              onPress={() => goToStyle(i)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={`${l.label} style`}
+              accessibilityState={{ selected: i === idx }}
+            >
+              <View
+                style={[
+                  styles.dot,
+                  i === idx
+                    ? { backgroundColor: t.accent, width: 22 }
+                    : { backgroundColor: t.textTer, opacity: 0.4 },
+                ]}
+              />
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       {/* Actions */}
@@ -278,43 +346,6 @@ export default function ShareCard() {
   );
 }
 
-// A labeled, compact segmented control: "STYLE  [ Feature | Stats ]".
-function SegGroup({
-  label,
-  value,
-  options,
-  onChange,
-  t,
-}: {
-  label: string;
-  value: string;
-  options: { key: string; label: string }[];
-  onChange: (key: string) => void;
-  t: ReturnType<typeof useTheme>;
-}) {
-  return (
-    <View style={styles.segGroup}>
-      <Text style={[styles.segGroupLabel, { color: t.textSec }]}>{label}</Text>
-      <View style={[styles.segTrack, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-        {options.map((o) => {
-          const active = o.key === value;
-          return (
-            <Pressable
-              key={o.key}
-              onPress={() => { Haptics.selectionAsync(); onChange(o.key); }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              style={[styles.segItem, active && { backgroundColor: t.accent }]}
-            >
-              <Text style={[styles.segItemText, { color: active ? PALETTE.onAccent : t.textSec }]}>{o.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 // Lightweight checkerboard so transparency reads in the preview.
 function Checkerboard() {
   const cols = 7;
@@ -326,7 +357,7 @@ function Checkerboard() {
           {Array.from({ length: cols }).map((_, c) => (
             <View
               key={c}
-              style={[styles.checkerCell, { backgroundColor: (r + c) % 2 === 0 ? '#E5E0D2' : '#F4F1E8' }]}
+              style={[styles.checkerCell, { backgroundColor: (r + c) % 2 === 0 ? '#E5E0D2' : '#F6EEDF' }]}
             />
           ))}
         </View>
@@ -342,26 +373,27 @@ const styles = StyleSheet.create({
   fallbackLink: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
   title: { fontFamily: FONTS.uiBold, fontSize: 22 },
-  closeBtn: { width: 40, height: 40, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 
-  previewArea: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingVertical: 12, marginTop: 12 },
-  previewBox: { borderRadius: 0, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
+  previewArea: { flex: 1, overflow: 'hidden', paddingVertical: 12, marginTop: 12 },
+  carousel: { flex: 1 },
+  carouselContent: { alignItems: 'center' },
+  page: { alignItems: 'center', justifyContent: 'center' },
+  previewBox: { borderRadius: 14, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
   cardWrap: {},
   checker: { ...StyleSheet.absoluteFillObject },
   checkerRow: { flex: 1, flexDirection: 'row' },
   checkerCell: { flex: 1 },
 
-  controls: { paddingHorizontal: 20, paddingTop: 6, gap: 10 },
-  segGroup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  segGroupLabel: { width: 92, fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
-  segTrack: { flex: 1, flexDirection: 'row', height: 42, padding: 3, gap: 3, borderRadius: 0, borderWidth: BORDER_WIDTH },
-  segItem: { flex: 1, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
-  segItemText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
+  controls: { paddingHorizontal: 20, paddingTop: 6, gap: 10, alignItems: 'center' },
+  styleName: { fontFamily: FONTS.uiBold, fontSize: 16, ...NO_FONT_PAD },
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
 
   footer: { paddingHorizontal: 24, paddingTop: 14, gap: 12 },
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,
-    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
   },
   saveText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.8, color: PALETTE.onAccent },
   btnBusy: { opacity: 0.7 },
@@ -371,7 +403,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     minHeight: 50,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH,
   },
   shareText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.5 },

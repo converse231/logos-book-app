@@ -181,6 +181,7 @@ export default function Settings() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 6, paddingBottom: insets.bottom + 28 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
       >
         <View style={styles.topBar}>
           <Pressable
@@ -511,13 +512,13 @@ function formatHour(h: number): string {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 12 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   topBarSpacer: { width: 42, height: 42 },
   title: { fontFamily: FONTS.uiBold, fontSize: 18 },
   sectionTitle: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginTop: 14, marginBottom: 10, marginLeft: 4 },
 
   themePicker: { flexDirection: 'row', padding: 6, gap: 4 },
-  themeOption: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, borderRadius: 0, borderWidth: 1 },
+  themeOption: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, borderRadius: 14, borderWidth: 1 },
   themeLabel: { fontFamily: FONTS.uiSemiBold, fontSize: 12 },
 
   notifRow: {
@@ -533,15 +534,15 @@ const styles = StyleSheet.create({
   },
   hourLabel: { fontFamily: FONTS.uiMedium, fontSize: 14 },
   hourStepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  hourBtn: { width: 34, height: 34, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  hourBtn: { width: 34, height: 34, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   hourValue: { fontFamily: FONTS.mono, fontSize: 14, minWidth: 76, textAlign: 'center' },
 
   profileInputs: { gap: 18 },
   avatarRow: { alignItems: 'center', alignSelf: 'center', gap: 8 },
   avatarBox: { width: 80, height: 80 },
-  avatar: { width: 80, height: 80, borderRadius: 0, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatar: { width: 80, height: 80, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImg: { width: '100%', height: '100%' },
-  avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 28, height: 28, borderRadius: 0, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   avatarHint: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   inputGroup: { gap: 6 },
   inputLabel: { fontFamily: FONTS.uiMedium, fontSize: 12, letterSpacing: 0.3 },
@@ -553,7 +554,7 @@ const styles = StyleSheet.create({
   },
   usernameInput: { flex: 1 },
   bioInput: {
-    minHeight: 72, borderRadius: 0, borderWidth: 1, padding: 12, marginTop: 4,
+    minHeight: 72, borderRadius: 14, borderWidth: 1, padding: 12, marginTop: 4,
     fontFamily: FONTS.uiMedium, fontSize: 15, textAlignVertical: 'top',
   },
   bioCount: { fontFamily: FONTS.mono, fontSize: 11, alignSelf: 'flex-end' },

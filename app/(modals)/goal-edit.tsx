@@ -55,7 +55,7 @@ export default function GoalEdit() {
   const close = () => router.back();
 
   return (
-    <SheetScaffold title={`${year} Reading Goal`} onClose={close}>
+    <SheetScaffold title={`${year} Reading Goal`} onClose={close} scroll>
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.wrap}>
           <View style={styles.stepperWrap}>
@@ -136,16 +136,16 @@ const styles = StyleSheet.create({
   presetsWrap: { gap: 10 },
   presetsLabel: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1 },
   presets: { flexDirection: 'row', gap: 10 },
-  preset: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 0, borderWidth: 1, gap: 2 },
+  preset: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 14, borderWidth: 1, gap: 2 },
   presetValue: { fontFamily: FONTS.uiBold, fontSize: 22, fontVariant: ['tabular-nums'] },
   presetLabel: { fontFamily: FONTS.uiMedium, fontSize: 11 },
-  projCard: { borderRadius: 0, borderWidth: StyleSheet.hairlineWidth, padding: 16, gap: 12 },
+  projCard: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 16, gap: 12 },
   projTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   projRows: { gap: 10 },
   projRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   projLabel: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 13 },
   projValue: { fontFamily: FONTS.uiSemiBold, fontSize: 14, fontVariant: ['tabular-nums'] },
-  crunch: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 0 },
+  crunch: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 14 },
   crunchText: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 12, lineHeight: 17 },
   estimate: { fontFamily: FONTS.uiRegular, fontSize: 12 },
   prev: { fontFamily: FONTS.uiRegular, fontSize: 13, textAlign: 'center', marginTop: -6 },

@@ -67,12 +67,12 @@ export function BookCover({
 }
 
 const styles = StyleSheet.create({
-  wrap: { overflow: 'hidden', borderRadius: 0, borderWidth: BORDER_WIDTH },
+  wrap: { overflow: 'hidden', borderRadius: 14, borderWidth: BORDER_WIDTH },
   image: { width: '100%', height: '100%' },
   placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 8, gap: 6 },
   placeholderTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 11, textAlign: 'center' },
   badge: {
-    position: 'absolute', bottom: 0, left: 0, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 0,
+    position: 'absolute', bottom: 0, left: 0, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 14,
   },
   badgeText: { fontFamily: FONTS.monoBold, fontSize: 9, color: '#FFFFFF', letterSpacing: 0.4, textTransform: 'uppercase' },
 });

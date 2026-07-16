@@ -163,12 +163,12 @@ function shortDate(iso: string): string {
 
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingBottom: 10 },
-  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   spacer: { width: 42, height: 42 },
   title: { fontFamily: FONTS.uiBold, fontSize: 18 },
   list: { paddingHorizontal: 18, gap: 10, paddingTop: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 0, borderWidth: BORDER_WIDTH },
-  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 0 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 14 },
   rowInfo: { flex: 1, gap: 3 },
   rowTitle: { fontFamily: FONTS.uiBold, fontSize: 15 },
   rowStats: { fontFamily: FONTS.mono, fontSize: 12 },

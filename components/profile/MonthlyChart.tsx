@@ -45,14 +45,14 @@ export function MonthlyChart({ bars }: { bars: ChartBar[] }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 14 },
+  card: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 14 },
   row: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 4 },
   col: { flex: 1, alignItems: 'center', gap: 4 },
   value: { fontFamily: FONTS.monoBold, fontSize: 10, fontVariant: ['tabular-nums'] },
   barTrack: { height: MAX_BAR_H, justifyContent: 'flex-end', width: '100%', alignItems: 'center' },
-  bar: { width: '78%', borderRadius: 0, borderWidth: BORDER_WIDTH },
-  barEmpty: { width: '78%', height: 3, borderRadius: 0 },
+  bar: { width: '78%', borderRadius: 14, borderWidth: BORDER_WIDTH },
+  barEmpty: { width: '78%', height: 3, borderRadius: 14 },
   label: { fontFamily: FONTS.mono, fontSize: 9, letterSpacing: 0.2 },
-  empty: { borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 18, alignItems: 'center' },
+  empty: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 18, alignItems: 'center' },
   emptyText: { fontFamily: FONTS.uiRegular, fontSize: 14, textAlign: 'center' },
 });

@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   fab: {
     width: FAB_SIZE,
     height: FAB_SIZE,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH_THICK,
     alignItems: 'center',
     justifyContent: 'center',

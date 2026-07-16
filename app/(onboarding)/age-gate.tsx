@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   signInLink: { alignItems: 'center', paddingVertical: 2 },
   signInText: { fontFamily: FONTS.uiRegular, fontSize: 14 },
   blockedRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 },
-  blockedIcon: { width: 80, height: 80, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  blockedIcon: { width: 80, height: 80, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   blockedTitle: { fontFamily: FONTS.displayBold, fontSize: 30, lineHeight: 36, textAlign: 'center' },
   blockedBody: { fontFamily: FONTS.uiRegular, fontSize: 16, lineHeight: 24, textAlign: 'center' },
 });

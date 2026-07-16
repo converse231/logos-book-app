@@ -125,14 +125,14 @@ export function StreakCalendar({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 12, gap: 8 },
+  card: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 12, gap: 8 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
-  navBtn: { width: 32, height: 32, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  navBtn: { width: 32, height: 32, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   monthLabel: { fontFamily: FONTS.displayBold, fontSize: 16, letterSpacing: -0.3, textTransform: 'uppercase' },
   weekRow: { flexDirection: 'row' },
   weekday: { flex: 1, textAlign: 'center', fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5, paddingVertical: 2 },
   cell: { flex: 1, aspectRatio: 1, padding: 2 },
-  day: { flex: 1, borderRadius: 0, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  day: { flex: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   cover: { width: '100%', height: '100%' },
   readBlock: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
   dayNum: { fontFamily: FONTS.mono, fontSize: 12, fontVariant: ['tabular-nums'] },

@@ -2,98 +2,109 @@
 // Extend this file as the design is refined; never hardcode colour / shadow /
 // timing values in components.
 //
-// VISUAL LANGUAGE — NEUBRUTALISM (light).
-// Off-white paper substrate, near-black ink, FLAT reward-colour blocks
-// (blue / coral / gold / magenta), thick ink borders, SHARP 90° corners, and
-// HARD offset drop-shadows (no blur). No gradients, no glass/blur, no soft
-// shadows. Type is Space Grotesk (headers/UI) + JetBrains Mono (data/labels).
+// VISUAL LANGUAGE — PAPER & INK (soft-brutalism, light-first).
+// Warm oat-paper substrate, warm soft-black ink, FLAT reward-colour blocks
+// (coral / marigold / ember / lilac), thick ink borders, SOFTLY-ROUNDED corners,
+// and HARD offset drop-shadows warmed to ink (no blur on most surfaces; the
+// hero Card adds a whisper of ambient depth). The bones of neubrutalism —
+// ink borders + offset shadows — kept; the temperature warmed and corners
+// rounded so it reads like a well-loved reading journal that keeps score.
+// Type is Space Grotesk (headers/UI) + JetBrains Mono (data/labels) +
+// Cormorant Garamond (editorial serif for hero display moments only).
 
 // ─── Palette (primitives) ───────────────────────────────────────────────────
 
 export const PALETTE = {
-  // Dark substrate (dark-mode fallback — light is the primary mode)
-  bg:      '#161616',
-  bgSec:   '#1E1E1E',
-  bgTer:   '#2A2A2A',
+  // Warm-dark substrate (dark-mode fallback — light is the primary mode)
+  bg:      '#1B1712',
+  bgSec:   '#241E17',
+  bgTer:   '#2F2718',
 
   // Brand — FLAT reward blocks (shared across light/dark; never gradients)
-  accent:  '#FF3D1F', // vermilion — actions, CTAs, active states (aviation/hazard energy)
-  gold:    '#FFC53D', // marigold — XP, levels, achievements (black text on fill)
-  ember:   '#FF8A1E', // amber — streak flame (warm, distinct from the vermilion primary)
-  level:   '#E5327A', // magenta — level-up / celebration pops
+  accent:  '#F0764F', // coral — actions, CTAs, active states (warm, inviting)
+  gold:    '#F3C24C', // marigold — XP, levels, achievements (ink text on fill)
+  ember:   '#F2913F', // amber — streak flame (warm, distinct from the coral primary)
+  level:   '#9A7BD6', // lilac — level-up / celebration pops
 
   // Ink / paper primitives
-  ink:     '#141414', // borders + text on light substrate
-  paper:   '#F4F1E8', // off-white documentation paper
+  ink:     '#241E19', // warm soft-black — borders + text + hard shadow
+  paper:   '#F6EEDF', // warm oat documentation paper
 
   // Text (dark-mode)
-  text:    '#F4F2EC',
-  textSec: '#ADA89C',
-  textTer: '#736E62',
+  text:    '#F4EFE3',
+  textSec: '#B3AA98',
+  textTer: '#7E7566',
 
   // Semantic
-  danger:  '#E5484D', // distinct red (crimson on light) — never the vermilion primary
-  warning: '#FF9F1C',
-  success: '#FF3D1F', // alias for accent
+  danger:  '#C1352A', // deep brick-crimson — cooler/deeper than the warm coral primary
+  warning: '#E0912F',
+  success: '#F0764F', // alias for accent
 
-  // Block tints (kept names for compatibility; now flat pale blocks, no glow)
-  accentAlpha10: 'rgba(255,61,31,0.10)',
-  accentAlpha16: 'rgba(255,61,31,0.16)',
-  accentAlpha18: 'rgba(255,61,31,0.20)',
-  goldAlpha06:   'rgba(255,197,61,0.12)',
+  // Block tints (kept names for compatibility; flat pale blocks, no glow)
+  accentAlpha10: 'rgba(240,118,79,0.10)',
+  accentAlpha16: 'rgba(240,118,79,0.16)',
+  accentAlpha18: 'rgba(240,118,79,0.20)',
+  goldAlpha06:   'rgba(243,194,60,0.12)',
 
   // Surfaces
-  glass:      '#1E1E1E',   // SOLID surface (session control bar) — no translucency
-  cardBorder: '#141414',   // ink border
-  onAccent:   '#FFFFFF',   // text / icons on the vivid accent fills
+  glass:      '#241E17',   // SOLID surface (session control bar) — no translucency
+  cardBorder: '#241E19',   // ink border
+  onAccent:   '#241E19',   // INK text / icons on the warm coral fills (Paper & Ink signature)
 
   // Accent "gradient" — flattened to a single colour (kept keys for compatibility)
-  accentGradStart: '#FF3D1F',
-  accentGradEnd:   '#FF3D1F',
+  accentGradStart: '#F0764F',
+  accentGradEnd:   '#F0764F',
 
-  // Skeleton shimmer (light substrate)
-  skeletonBase:    '#E9E4D6',
-  skeletonShimmer: '#DBD4C2',
+  // Skeleton shimmer (warm light substrate)
+  skeletonBase:    '#EDE4D2',
+  skeletonShimmer: '#E1D7C3',
 
   // Share card
   cardTransparentBadgeBg: 'rgba(255,255,255,0.22)',
-  cardDarkBadgeBg: '#FFC53D',
-  cardDarkBg:      '#141414',
+  cardDarkBadgeBg: '#F3C24C',
+  cardDarkBg:      '#241E19',
 
   // System
-  shadowColor: '#141414',
-  overlay:     'rgba(20,18,16,0.55)',
+  shadowColor: '#241E19',
+  overlay:     'rgba(28,22,16,0.55)',
 } as const;
 
-// Background "gradients" — flattened to a single flat fill per mode (brutalism
-// rejects gradients). Kept as 3-stop shapes so existing call-sites still type.
+// Background "gradients" — flattened to a single flat fill per mode (soft-brutalism
+// still rejects gradients on the substrate). Kept as 3-stop shapes so existing
+// call-sites still type.
 export const BG_GRADIENT = {
-  colors:    ['#161616', '#161616', '#161616'] as const,
+  colors:    ['#1B1712', '#1B1712', '#1B1712'] as const,
   locations: [0, 0.5, 1] as const,
 } as const;
 
 export const BG_GRADIENT_LIGHT = {
-  colors:    ['#F4F1E8', '#F4F1E8', '#F4F1E8'] as const,
+  colors:    ['#F6EEDF', '#F6EEDF', '#F6EEDF'] as const,
   locations: [0, 0.5, 1] as const,
 } as const;
 
 // ─── Typography ─────────────────────────────────────────────────────────────
 
 // Font families — must match the keys loaded via useFonts in app/_layout.tsx.
-// Space Grotesk → all headers + UI + body (grotesk, set UPPERCASE for impact on
-//   structural headers). JetBrains Mono → data, metadata, labels, numerics,
-//   "telemetry" readouts (tabular by nature; pair with letter-spacing).
+// Schibsted Grotesk → all headers + UI + body (a warm editorial grotesk; set
+//   UPPERCASE for impact on structural labels). JetBrains Mono → data, metadata,
+//   labels, numerics, "telemetry" readouts (tabular by nature; pair with
+//   letter-spacing). Fraunces → editorial serif with optical sizing for HERO
+//   DISPLAY moments only (greetings, section titles, celebration headlines,
+//   book-ish blurbs ≥18px). Never for small UI/labels.
 export const FONTS = {
-  displayMedium:   'SpaceGrotesk_500Medium',
-  displaySemiBold: 'SpaceGrotesk_600SemiBold',
-  displayBold:     'SpaceGrotesk_700Bold',
-  uiRegular:       'SpaceGrotesk_400Regular',
-  uiMedium:        'SpaceGrotesk_500Medium',
-  uiSemiBold:      'SpaceGrotesk_600SemiBold',
-  uiBold:          'SpaceGrotesk_700Bold',
+  displayMedium:   'SchibstedGrotesk_500Medium',
+  displaySemiBold: 'SchibstedGrotesk_600SemiBold',
+  displayBold:     'SchibstedGrotesk_700Bold',
+  uiRegular:       'SchibstedGrotesk_400Regular',
+  uiMedium:        'SchibstedGrotesk_500Medium',
+  uiSemiBold:      'SchibstedGrotesk_600SemiBold',
+  uiBold:          'SchibstedGrotesk_700Bold',
   mono:            'JetBrainsMono_400Regular',
   monoMedium:      'JetBrainsMono_500Medium',
   monoBold:        'JetBrainsMono_700Bold',
+  serif:           'Fraunces_600SemiBold',
+  serifMedium:     'Fraunces_500Medium',
+  serifBold:       'Fraunces_700Bold',
 } as const;
 
 export const FONT_SIZE = {
@@ -137,36 +148,56 @@ export const SPACING = {
   16: 64,
 } as const;
 
-// Brutalism: SHARP corners everywhere. `full` is retained only for the few
-// intentionally-circular elements (avatars, FAB, the streak-flame ring).
+// Soft-brutalism: gently ROUNDED corners (the cozy warmth over neubrutalism's
+// sharp 90°). Scale by element weight — small tags → sm, cards/sheets → card/xl,
+// pills/avatars → full. The shared primitives read from here; screen styles that
+// still hardcode a radius should migrate to these tokens over time.
 export const RADIUS = {
-  sm:   0,
-  md:   0,
-  lg:   0,
-  card: 0,
-  xl:   0,
-  full: 9999,
+  sm:   10,   // chips, small tags, tight controls
+  md:   14,   // buttons, inputs, tiles, list rows (the universal default)
+  lg:   18,   // prominent controls, medium surfaces
+  card: 20,   // the standard Card surface
+  xl:   26,   // sheets, hero surfaces, celebration cards
+  full: 9999, // avatars, FAB, pills, the streak-flame ring
 } as const;
 
 // Structural borders — thick, solid ink. Spread or read per component.
 export const BORDER_WIDTH = 2;
 export const BORDER_WIDTH_THICK = 3;
-export const INK = '#141414';
+export const INK = '#241E19';
+
+// Android adds extra vertical padding inside a text's line box, which makes
+// single-line labels sit slightly high in fixed-height pills / buttons / tabs
+// (iOS ignores this). Spread into those single-line text styles so they centre
+// identically on both platforms. Do NOT use on multi-line / large display text
+// (it can clip tall ascenders/descenders when line-height is tight).
+export const NO_FONT_PAD = { includeFontPadding: false } as const;
 
 // ─── Elevation / Shadow ──────────────────────────────────────────────────────
 // HARD offset shadows (no blur) via the RN `boxShadow` prop (New Architecture).
 // Spread into StyleSheet.create() objects, e.g. `...SHADOW.card`. These render
-// on the light substrate; the shared Card recomputes the colour per-theme.
+// on the warm light substrate; the shared Card recomputes the colour per-theme
+// and adds a whisper of ambient depth on top of the hard offset.
 
 export const SHADOW = {
-  card: { boxShadow: '4px 4px 0px #141414' },
-  sm:   { boxShadow: '2px 2px 0px #141414' },
-  lg:   { boxShadow: '6px 6px 0px #141414' },
+  card: { boxShadow: '4px 4px 0px #241E19' },
+  sm:   { boxShadow: '2px 3px 0px #241E19' },
+  lg:   { boxShadow: '6px 6px 0px #241E19' },
 } as const;
 
-// Helper for theme-aware hard shadows (light → ink, dark → black).
+// Helper for theme-aware hard shadows (light → warm ink, dark → black).
 export function hardShadow(color: string, offset = 4): { boxShadow: string } {
   return { boxShadow: `${offset}px ${offset}px 0px ${color}` };
+}
+
+// Hero shadow: the hard ink offset PLUS a whisper of warm ambient depth beneath.
+// Reserved for the primary Card surface so big blocks feel like paper lifted off
+// the page, without the flat harshness of a pure offset. Keep off small/dense
+// tiles (perf + hierarchy).
+export function softStackShadow(color: string, offset = 4): { boxShadow: string } {
+  return {
+    boxShadow: `${offset}px ${offset}px 0px ${color}, 0px ${offset * 3}px ${offset * 4.5}px -${offset * 2.5}px rgba(36,30,25,0.30)`,
+  };
 }
 
 // ─── Animation ───────────────────────────────────────────────────────────────
@@ -228,25 +259,25 @@ export interface ThemeTokens {
 }
 
 export const LIGHT_TOKENS: ThemeTokens = {
-  bg:      '#F4F1E8',  // warm documentation paper
-  bgSec:   '#FFFFFF',  // white blocks
-  bgTer:   '#ECE7DA',  // inset cream
-  accent:  '#FF3D1F',
-  gold:    '#F5A623',  // vivid amber-gold for text/icons (bright #FFC53D for fills/stars)
+  bg:      '#F6EEDF',  // warm oat paper
+  bgSec:   '#FCF8ED',  // warm cream card (not stark white — softer, premium)
+  bgTer:   '#F0E6D3',  // inset cream
+  accent:  '#F0764F',  // coral
+  gold:    '#C8892C',  // readable marigold for text/icons (bright #F3C24C for fills/stars)
   ember:   '#D9730F',  // readable amber for text/icons on light
-  level:   '#D62E6F',  // deeper magenta for text on light
-  text:    '#141414',
-  textSec: '#57534A',
-  textTer: '#8B8678',
-  danger:  '#B81414',  // deep crimson — distinct from the vermilion primary
+  level:   '#8257C7',  // readable lilac-violet for text on light
+  text:    '#241E19',  // warm soft-black ink
+  textSec: '#6E6250',  // warm secondary
+  textTer: '#9A8E79',  // warm tertiary
+  danger:  '#B4271B',  // deep crimson — distinct from the coral primary
   warning: '#B5701A',
-  success: '#FF3D1F',
-  border:  '#141414',  // INK — bold black borders everywhere
-  ink:     '#141414',
-  overlay: 'rgba(20,18,16,0.55)',
-  glass:       '#FFFFFF',
-  accentMuted: '#FFE0D8',  // pale vermilion selection block
-  onAccent:    '#FFFFFF',
+  success: '#F0764F',
+  border:  '#241E19',  // INK — bold warm-black borders everywhere
+  ink:     '#241E19',
+  overlay: 'rgba(28,22,16,0.55)',
+  glass:       '#FCF8ED',
+  accentMuted: '#FBE0D3',  // pale coral selection block
+  onAccent:    '#241E19',  // INK text on the warm coral fills (Paper & Ink signature)
   mode: 'light',
 } as const;
 
@@ -254,21 +285,21 @@ export const DARK_TOKENS: ThemeTokens = {
   bg:      PALETTE.bg,
   bgSec:   PALETTE.bgSec,
   bgTer:   PALETTE.bgTer,
-  accent:  '#FF5436',  // brighter vermilion on the dark substrate
+  accent:  '#F6875D',  // brighter coral on the warm-dark substrate
   gold:    PALETTE.gold,
-  ember:   PALETTE.ember,
-  level:   PALETTE.level,
+  ember:   '#FF9A45',
+  level:   '#B79BE6',  // lighter lilac on dark
   text:    PALETTE.text,
   textSec: PALETTE.textSec,
   textTer: PALETTE.textTer,
-  danger:  '#E5484D',  // true red — distinct from the orange-red primary
+  danger:  '#E5675A',  // warmer red on dark — still distinct from coral
   warning: PALETTE.warning,
-  success: '#FF5436',
-  border:  '#454239',  // visible compartmentalization on dark
+  success: '#F6875D',
+  border:  '#4A4030',  // visible warm compartmentalization on dark
   ink:     '#000000',
   overlay: 'rgba(0,0,0,0.62)',
   glass:       PALETTE.glass,
-  accentMuted: 'rgba(255,84,54,0.22)',
-  onAccent:    PALETTE.onAccent,
+  accentMuted: 'rgba(246,135,93,0.20)',
+  onAccent:    '#201A13',  // near-ink text on the coral fills (consistent with light)
   mode: 'dark',
 } as const;

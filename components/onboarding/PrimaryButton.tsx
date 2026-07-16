@@ -7,7 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH_THICK, RADIUS, NO_FONT_PAD } from '@/theme/tokens';
 
 interface PrimaryButtonProps {
   label: string;
@@ -109,10 +109,10 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   outer: { position: 'relative' },
-  shadowBlock: { position: 'absolute', top: OFFSET, left: OFFSET, right: -OFFSET, bottom: -OFFSET },
+  shadowBlock: { position: 'absolute', top: OFFSET, left: OFFSET, right: -OFFSET, bottom: -OFFSET, borderRadius: RADIUS.lg },
   button: {
     minHeight: 52,
-    borderRadius: 0,
+    borderRadius: RADIUS.lg,
     borderWidth: BORDER_WIDTH_THICK,
     alignItems: 'center',
     justifyContent: 'center',
@@ -120,6 +120,6 @@ const styles = StyleSheet.create({
   },
   content: { flexDirection: 'row', alignItems: 'center' },
   spinner: { marginRight: 8 },
-  label: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1 },
+  label: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, ...NO_FONT_PAD },
   disabled: { opacity: 0.45 },
 });

@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 24 },
   heading: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, gap: 10 },
   titleUi: { fontFamily: FONTS.uiBold, fontSize: 28, lineHeight: 32, letterSpacing: -0.3, textTransform: 'uppercase' },
-  titleDisplay: { fontFamily: FONTS.displayBold, fontSize: 38, lineHeight: 42, letterSpacing: -0.5, textTransform: 'uppercase' },
+  titleDisplay: { fontFamily: FONTS.serifBold, fontSize: 44, lineHeight: 46, letterSpacing: 0 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 16, lineHeight: 23 },
   footer: { paddingHorizontal: 24, paddingTop: 8, gap: 12 },
 });

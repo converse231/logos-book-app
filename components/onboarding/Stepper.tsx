@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   container: { gap: 10 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
   btn: {
-    width: 56, height: 56, borderRadius: 0, borderWidth: BORDER_WIDTH,
+    width: 56, height: 56, borderRadius: 14, borderWidth: BORDER_WIDTH,
     alignItems: 'center', justifyContent: 'center',
   },
   disabled: { opacity: 0.4 },

@@ -57,8 +57,8 @@ function BookListCardImpl({ userBook, onPress }: BookListCardProps) {
 export const BookListCard = memo(BookListCardImpl);
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 0, borderWidth: BORDER_WIDTH },
-  coverFrame: { borderWidth: 1, borderRadius: 0 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  coverFrame: { borderWidth: 1, borderRadius: 14 },
   info: { flex: 1, gap: 2 },
   title: { fontFamily: FONTS.uiBold, fontSize: 15, lineHeight: 19 },
   author: { fontFamily: FONTS.uiRegular, fontSize: 12 },

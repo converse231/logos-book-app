@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
@@ -54,7 +54,9 @@ export default function SessionDetail() {
 
   const subStats: { label: string; value: string }[] = [
     { label: 'minutes', value: String(minutes) },
-    ...(!isAudio && pph != null ? [{ label: 'pages/hr', value: String(pph) }] : []),
+    // Pace is a whole number on the readout — "736.36 pages/hr" wraps the tile and
+    // reads like false precision.
+    ...(!isAudio && pph != null ? [{ label: 'pages/hr', value: String(Math.round(pph)) }] : []),
     { label: 'XP', value: `+${xp}` },
   ];
 
@@ -175,8 +177,17 @@ export default function SessionDetail() {
             <View style={styles.statRow}>
               {subStats.map((s) => (
                 <View key={s.label} style={[styles.statTile, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-                  <Text style={[styles.statValue, { color: t.text }]}>{s.value}</Text>
-                  <Text style={[styles.statLabel, { color: t.textSec }]}>{s.label.toUpperCase()}</Text>
+                  <Text
+                    style={[styles.statValue, { color: t.text }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.6}
+                  >
+                    {s.value}
+                  </Text>
+                  <Text style={[styles.statLabel, { color: t.textSec }]} numberOfLines={1}>
+                    {s.label.toUpperCase()}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -207,35 +218,39 @@ function longDate(iso?: string): string {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 18 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   spacer: { width: 42, height: 42 },
   topTitle: { fontFamily: FONTS.uiBold, fontSize: 18 },
 
   bookRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 0 },
+  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 14 },
   bookInfo: { flex: 1, gap: 6 },
   bookTitle: { fontFamily: FONTS.displayBold, fontSize: 20, lineHeight: 24 },
   date: { fontFamily: FONTS.mono, fontSize: 12 },
-  pbBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 8, height: 24, borderRadius: 0 },
+  pbBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 8, height: 24, borderRadius: 14 },
   pbText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 0.8, color: INK },
 
-  heroCard: { alignItems: 'center', paddingVertical: 28, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
+  heroCard: { alignItems: 'center', paddingVertical: 28, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
   hero: { fontFamily: FONTS.uiBold, fontSize: 76, lineHeight: 80, fontVariant: ['tabular-nums'] },
   heroUnit: { fontFamily: FONTS.mono, fontSize: 13, letterSpacing: 1.5, marginTop: 2 },
 
-  checkInCard: { alignItems: 'center', gap: 10, paddingVertical: 30, paddingHorizontal: 24, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
+  checkInCard: { alignItems: 'center', gap: 10, paddingVertical: 30, paddingHorizontal: 24, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
   checkInTitle: { fontFamily: FONTS.uiBold, fontSize: 22, letterSpacing: 1 },
   checkInSub: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 300 },
 
-  statRow: { flexDirection: 'row', gap: 12 },
-  statTile: { flex: 1, alignItems: 'center', paddingVertical: 18, borderRadius: 0, borderWidth: BORDER_WIDTH },
-  statValue: { fontFamily: FONTS.uiBold, fontSize: 26, fontVariant: ['tabular-nums'] },
-  statLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1, marginTop: 4 },
+  statRow: { flexDirection: 'row', gap: 12, alignItems: 'stretch' },
+  statTile: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 18, paddingHorizontal: 8, minHeight: 92,
+    borderRadius: 14, borderWidth: BORDER_WIDTH,
+  },
+  statValue: { fontFamily: FONTS.uiBold, fontSize: 26, fontVariant: ['tabular-nums'], ...NO_FONT_PAD },
+  statLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1, marginTop: 4, ...NO_FONT_PAD },
 
   shareWrap: { marginTop: 4 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56,
-    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
   },
   shareText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent },
 });

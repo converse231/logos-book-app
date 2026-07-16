@@ -22,6 +22,7 @@ import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { ReadingInsightCard } from '@/components/session/ReadingInsightCard';
 import { BookCover } from '@/components/shared/BookCover';
+import { Sparkle } from '@/components/shared/Sparkle';
 
 // The Duolingo moment (blueprint Section 5 timeline). The book cover is the hero —
 // it springs in, big, under a hard ink shadow with a celebration stamp — then the
@@ -115,7 +116,7 @@ export default function SessionComplete() {
         <Reveal d={d(120)} reduce={reduce}>
           <View style={styles.titleBlock}>
             <Text style={[styles.title, { color: isPB ? t.gold : t.text }]}>
-              {isPB ? 'PERSONAL BEST' : 'SESSION COMPLETE'}
+              {isPB ? 'Personal best' : 'Session complete'}
             </Text>
             {active?.bookTitle ? (
               <Text style={[styles.bookCtx, { color: t.textSec }]} numberOfLines={1}>
@@ -212,6 +213,9 @@ function CoverHero({
 
   return (
     <Animated.View style={[styles.coverWrap, style]}>
+      <Sparkle size={28} color={PALETTE.gold} delay={0} style={styles.sparkTL} />
+      <Sparkle size={20} color={PALETTE.level} delay={320} style={styles.sparkR} />
+      <Sparkle size={18} color={PALETTE.ember} delay={640} style={styles.sparkBL} />
       <View style={styles.coverShadow}>
         <BookCover url={coverUrl} title={title} format={format} width={160} />
       </View>
@@ -267,19 +271,22 @@ const styles = StyleSheet.create({
   coverWrap: { alignSelf: 'center', position: 'relative', marginBottom: 4 },
   coverShadow: { ...SHADOW.lg },
   coverSticker: {
-    position: 'absolute', top: -14, right: -14, width: 42, height: 42, borderRadius: 0,
+    position: 'absolute', top: -14, right: -14, width: 42, height: 42, borderRadius: 21,
     borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center',
   },
+  sparkTL: { position: 'absolute', top: -6, left: -12, zIndex: 2 },
+  sparkR: { position: 'absolute', top: 74, right: -16, zIndex: 2 },
+  sparkBL: { position: 'absolute', bottom: 26, left: -8, zIndex: 2 },
 
   // Title block
   titleBlock: { alignItems: 'center', gap: 4 },
-  title: { fontFamily: FONTS.displayBold, fontSize: 28, letterSpacing: -0.5, textAlign: 'center' },
+  title: { fontFamily: FONTS.serifBold, fontSize: 38, lineHeight: 40, letterSpacing: 0, textAlign: 'center' },
   bookCtx: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.6, textAlign: 'center', maxWidth: 280 },
 
   // One row of stat cards
   cardRow: { flexDirection: 'row', alignSelf: 'stretch', gap: 10 },
   card: {
-    flex: 1, borderRadius: 0, borderWidth: BORDER_WIDTH, ...SHADOW.sm,
+    flex: 1, borderRadius: 14, borderWidth: BORDER_WIDTH, ...SHADOW.sm,
     paddingVertical: 18, paddingHorizontal: 8, minHeight: 96,
     alignItems: 'center', justifyContent: 'center', gap: 6,
   },
@@ -288,18 +295,18 @@ const styles = StyleSheet.create({
   cardLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5, textAlign: 'center' },
 
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: BORDER_WIDTH },
   badgeText: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 0.5 },
 
   actions: { paddingHorizontal: 24, gap: 12 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,
-    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
   },
   shareBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent },
   doneBtn: {
     minHeight: 50, alignItems: 'center', justifyContent: 'center',
-    borderRadius: 0, borderWidth: BORDER_WIDTH,
+    borderRadius: 14, borderWidth: BORDER_WIDTH,
   },
   doneText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
 });

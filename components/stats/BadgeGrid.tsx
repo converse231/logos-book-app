@@ -46,7 +46,7 @@ function BadgeMedallion({ badge, onPress }: { badge: Badge; onPress?: (b: Badge)
         <Ionicons
           name={badge.iconName as keyof typeof Ionicons.glyphMap}
           size={26}
-          color={unlocked ? '#141414' : t.textTer}
+          color={unlocked ? '#241E19' : t.textTer}
         />
         {!unlocked && ratio === 0 ? (
           <View style={[styles.lock, { backgroundColor: t.bgSec, borderColor: t.border }]}>
@@ -82,13 +82,13 @@ const styles = StyleSheet.create({
   medallion: {
     width: 60,
     height: 60,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOW.sm,
   },
-  lock: { position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  lock: { position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   name: { fontFamily: FONTS.uiBold, fontSize: 12, textAlign: 'center' },
   status: { fontFamily: FONTS.monoMedium, fontSize: 10, letterSpacing: 0.5 },
   progress: { width: '90%', alignItems: 'center', gap: 3 },

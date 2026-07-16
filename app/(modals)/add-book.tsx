@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,9 +13,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
-import { BookFormat, BookSearchResult, ReadingStatus } from '@/services/types';
+import { BookFormat, BookSearchResult, ReadingStatus, UserBook } from '@/services/types';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { BookCover } from '@/components/shared/BookCover';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
@@ -38,6 +38,24 @@ const SHELVES: { key: ReadingStatus; label: string; icon: keyof typeof Ionicons.
   { key: 'finished', label: 'Finished', icon: 'checkmark-circle-outline' },
 ];
 
+// Friendly shelf names for the "already on your shelf" flag on search rows.
+const SHELF_LABEL: Record<ReadingStatus, string> = {
+  want: 'Wishlist',
+  tbr: 'On your TBR',
+  reading: 'Reading',
+  finished: 'Finished',
+  dnf: 'Set aside',
+};
+
+// "already owned" status green — a semantic done/owned colour, separate from the
+// reward accent palette.
+const OWNED_GREEN = '#5E8C4F';
+
+// Normalised title+author key so the same book from a different source (Google vs
+// Open Library, no shared id) still matches what's already on the shelf.
+const normKey = (title: string, authors: string[]) =>
+  `${title}|${authors[0] ?? ''}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+
 // Add-to-shelf flow (blueprint Section 3). Step 1: browse recommendations or
 // search the catalog. Step 2: pick a format and confirm. The mock persists the
 // add in-session so the shelf reflects it immediately on return.
@@ -52,6 +70,7 @@ export default function AddBook() {
   const [query, setQuery] = useState(q ?? '');
   const [results, setResults] = useState<BookSearchResult[]>([]);
   const [recommended, setRecommended] = useState<BookSearchResult[]>([]);
+  const [owned, setOwned] = useState<UserBook[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<BookSearchResult | null>(null);
   const [format, setFormat] = useState<BookFormat>('physical');
@@ -68,14 +87,32 @@ export default function AddBook() {
   const reqId = useRef(0);
   const reduce = useReducedMotion();
 
-  // Recommendations to fill the screen before any query.
+  // Recommendations to fill the screen before any query, plus the user's shelf so
+  // search rows can flag books they already have.
   useEffect(() => {
     let alive = true;
     api.getRecommendedBooks().then((r) => alive && setRecommended(r));
+    api.getUserBooks().then((b) => alive && setOwned(b)).catch(() => {});
     return () => {
       alive = false;
     };
   }, [api]);
+
+  // Index the shelf by every id we might match a search result on.
+  const ownedLookup = useMemo(() => {
+    const m = new Map<string, UserBook>();
+    for (const ub of owned) {
+      if (ub.book.googleBooksId) m.set(`g:${ub.book.googleBooksId}`, ub);
+      if (ub.book.isbn13) m.set(`i:${ub.book.isbn13}`, ub);
+      m.set(`t:${normKey(ub.book.title, ub.book.authors)}`, ub);
+    }
+    return m;
+  }, [owned]);
+
+  const findOwned = (r: BookSearchResult): UserBook | undefined =>
+    (r.googleBooksId ? ownedLookup.get(`g:${r.googleBooksId}`) : undefined) ??
+    (r.isbn13 ? ownedLookup.get(`i:${r.isbn13}`) : undefined) ??
+    ownedLookup.get(`t:${normKey(r.title, r.authors)}`);
 
   // Debounced live search; the latest request wins to avoid out-of-order results.
   useEffect(() => {
@@ -140,29 +177,48 @@ export default function AddBook() {
   const showingResults = query.trim().length > 0;
   const listData = showingResults ? results : recommended;
 
-  const renderRow = ({ item }: { item: BookSearchResult }) => (
-    <Pressable
-      onPress={() => {
-        Haptics.selectionAsync();
-        setSelected(item);
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={`${item.title} by ${item.authors.join(', ')}`}
-      style={({ pressed }) => [styles.resultRow, pressed && { opacity: 0.7 }]}
-    >
-      <BookCover url={item.coverUrl} title={item.title} width={44} />
-      <View style={styles.resultInfo}>
-        <Text style={[styles.resultTitle, { color: t.text }]} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <Text style={[styles.resultAuthor, { color: t.textSec }]} numberOfLines={1}>
-          {item.authors.join(', ')}
-          {item.publishedYear ? ` · ${item.publishedYear}` : ''}
-        </Text>
-      </View>
-      <Ionicons name="add-circle-outline" size={22} color={t.accent} />
-    </Pressable>
-  );
+  const renderRow = ({ item }: { item: BookSearchResult }) => {
+    const ownedBook = findOwned(item);
+    return (
+      <Pressable
+        onPress={() => {
+          Haptics.selectionAsync();
+          setSelected(item);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={
+          ownedBook
+            ? `${item.title} by ${item.authors.join(', ')}. Already on your shelf: ${SHELF_LABEL[ownedBook.status]}`
+            : `${item.title} by ${item.authors.join(', ')}`
+        }
+        style={({ pressed }) => [styles.resultRow, pressed && { opacity: 0.7 }]}
+      >
+        <BookCover url={item.coverUrl} title={item.title} width={44} />
+        <View style={styles.resultInfo}>
+          <Text style={[styles.resultTitle, { color: t.text }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={[styles.resultAuthor, { color: t.textSec }]} numberOfLines={1}>
+            {item.authors.join(', ')}
+            {item.publishedYear ? ` · ${item.publishedYear}` : ''}
+          </Text>
+          {ownedBook ? (
+            <View style={styles.ownedChip}>
+              <Ionicons name="checkmark-circle" size={13} color={OWNED_GREEN} />
+              <Text style={[styles.ownedText, { color: OWNED_GREEN }]} numberOfLines={1}>
+                On your shelf · {SHELF_LABEL[ownedBook.status]}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <Ionicons
+          name={ownedBook ? 'checkmark-circle' : 'add-circle-outline'}
+          size={22}
+          color={ownedBook ? OWNED_GREEN : t.accent}
+        />
+      </Pressable>
+    );
+  };
 
   return (
     <>
@@ -408,7 +464,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     height: 50,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
   },
@@ -424,6 +480,8 @@ const styles = StyleSheet.create({
   resultInfo: { flex: 1, gap: 2 },
   resultTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   resultAuthor: { fontFamily: FONTS.uiRegular, fontSize: 13 },
+  ownedChip: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  ownedText: { fontFamily: FONTS.uiSemiBold, fontSize: 11, letterSpacing: 0.2 },
 
   confirm: { gap: 16, paddingBottom: 4 },
   selectedRow: { flexDirection: 'row', gap: 14 },
@@ -433,11 +491,11 @@ const styles = StyleSheet.create({
   changeLink: { fontFamily: FONTS.uiSemiBold, fontSize: 13, marginTop: 4 },
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1 },
   formatRow: { flexDirection: 'row', gap: 10 },
-  formatPill: { flex: 1, gap: 6, height: 72, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  formatText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
+  formatPill: { flex: 1, gap: 6, height: 72, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  formatText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
   errorBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12,
-    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK,
+    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK,
   },
   errorText: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 13, lineHeight: 18 },
 });
@@ -450,18 +508,18 @@ const overlay = StyleSheet.create({
   coverWrap: { alignItems: 'center', justifyContent: 'center' },
   // Sits behind the (opaque) cover frame; the animation translates it out to the
   // bottom-right so only the offset L-shape shows — a hard neubrutalist shadow.
-  shadowBlock: { ...StyleSheet.absoluteFillObject, backgroundColor: PALETTE.ink, borderRadius: 0 },
+  shadowBlock: { ...StyleSheet.absoluteFillObject, backgroundColor: PALETTE.ink, borderRadius: 14 },
   coverFrame: {
     borderWidth: BORDER_WIDTH_THICK, borderColor: PALETTE.ink, backgroundColor: PALETTE.paper,
-    borderRadius: 0,
+    borderRadius: 14,
   },
   sticker: {
-    position: 'absolute', top: -16, right: -16, width: 48, height: 48, borderRadius: 0,
+    position: 'absolute', top: -16, right: -16, width: 48, height: 48, borderRadius: 14,
     borderWidth: BORDER_WIDTH_THICK, borderColor: PALETTE.ink, alignItems: 'center', justifyContent: 'center',
   },
   textBlock: { alignItems: 'center', gap: 8 },
   kicker: { fontFamily: FONTS.monoBold, fontSize: 12, letterSpacing: 2, textAlign: 'center' },
-  title: { fontFamily: FONTS.displayBold, fontSize: 26, lineHeight: 30, color: '#F4F1E8', textAlign: 'center' },
+  title: { fontFamily: FONTS.displayBold, fontSize: 26, lineHeight: 30, color: '#F6EEDF', textAlign: 'center' },
   author: { fontFamily: FONTS.uiMedium, fontSize: 15, color: 'rgba(244,241,232,0.7)', textAlign: 'center' },
   hint: { fontFamily: FONTS.mono, fontSize: 12, letterSpacing: 0.5, color: 'rgba(244,241,232,0.5)', textTransform: 'uppercase' },
 });

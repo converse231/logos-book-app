@@ -127,16 +127,16 @@ const starShadow = {
 } as const;
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 0, overflow: 'hidden' },
-  darkBg: { backgroundColor: '#141414' },
+  card: { borderRadius: 14, overflow: 'hidden' },
+  darkBg: { backgroundColor: '#241E19' },
   transparentBg: { backgroundColor: 'transparent' },
   glow: {
     position: 'absolute', top: '20%', left: '15%', right: '15%', height: '50%',
-    borderRadius: 0, backgroundColor: 'rgba(255,61,31,0.10)',
+    borderRadius: 14, backgroundColor: 'rgba(255,61,31,0.10)',
   },
   inner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   coverWrap: {
-    borderRadius: 0,
+    borderRadius: 14,
     shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8,
   },
   starRow: { flexDirection: 'row', alignItems: 'center' },

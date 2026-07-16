@@ -74,7 +74,7 @@ export default function Feedback() {
   }
 
   return (
-    <SheetScaffold title="Send feedback" onClose={close}>
+    <SheetScaffold title="Send feedback" onClose={close} scroll>
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.wrap}>
           <View style={styles.seg}>
@@ -128,18 +128,18 @@ const styles = StyleSheet.create({
   seg: { flexDirection: 'row', gap: 8 },
   segItem: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 12, borderRadius: 0, borderWidth: 1,
+    paddingVertical: 12, borderRadius: 14, borderWidth: 1,
   },
   segLabel: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   input: {
-    minHeight: 128, borderRadius: 0, borderWidth: 1, padding: 14,
+    minHeight: 128, borderRadius: 14, borderWidth: 1, padding: 14,
     fontFamily: FONTS.uiMedium, fontSize: 15, lineHeight: 21, textAlignVertical: 'top',
   },
   count: { fontFamily: FONTS.mono, fontSize: 11, alignSelf: 'flex-end', marginTop: -6 },
   note: { fontFamily: FONTS.uiRegular, fontSize: 12, textAlign: 'center', lineHeight: 17 },
 
   sentWrap: { alignItems: 'center', gap: 12, paddingVertical: 12, paddingBottom: 20 },
-  sentIcon: { width: 72, height: 72, borderRadius: 0, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  sentIcon: { width: 72, height: 72, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   sentTitle: { fontFamily: FONTS.displayBold, fontSize: 22 },
   sentBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 300, marginBottom: 4 },
 });

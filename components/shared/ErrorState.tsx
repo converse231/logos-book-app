@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 48,
     paddingHorizontal: 24,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH_THICK,
   },
   btnText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1 },

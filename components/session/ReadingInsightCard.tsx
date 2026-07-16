@@ -25,14 +25,16 @@ interface ReadingInsightCardProps {
 const CARD_H = 200;
 const AUTO_MS = 6000;
 
+// Each insight type owns a distinct hue, harmonised to the Paper & Ink palette
+// (warm, cozy, still legible as an accent border + text on the card).
 const TYPE_COLOR: Record<InsightType, string> = {
-  TIME_OF_DAY: '#FF8A1E',   // coral
-  PACE_TREND: '#FF3D1F',    // blue
-  GENRE_SPEED: '#FFC53D',   // gold
-  CONSISTENCY: '#2FA84F',   // green
-  PAGE_MILESTONE: '#E5327A', // magenta
-  BEST_SESSION: '#FF9F1C',  // orange
-  BOOK_PACE: '#00B3A6',     // teal
+  TIME_OF_DAY: '#F2913F',    // amber
+  PACE_TREND: '#F0764F',     // coral
+  GENRE_SPEED: '#D99A2B',    // marigold
+  CONSISTENCY: '#6E9A5E',    // sage
+  PAGE_MILESTONE: '#9A7BD6', // lilac
+  BEST_SESSION: '#D9730F',   // deep amber
+  BOOK_PACE: '#4E9E93',      // dusty teal
 };
 
 // Variable-reward reveal (blueprint 4A/6). Slides up from the bottom over the
@@ -132,14 +134,14 @@ const styles = StyleSheet.create({
     right: 12,
     bottom: 24,
     minHeight: CARD_H,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH_THICK,
     padding: 18,
     gap: 10,
     ...SHADOW.card,
   },
   grabber: { alignItems: 'center', marginTop: -6, marginBottom: 2 },
-  grabberBar: { width: 40, height: 4, borderRadius: 0 },
+  grabberBar: { width: 40, height: 4, borderRadius: 14 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.2 },
   body: { fontFamily: FONTS.displaySemiBold, fontSize: 22, lineHeight: 28, flex: 1 },
@@ -147,7 +149,7 @@ const styles = StyleSheet.create({
   hint: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.5 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 16, minHeight: 40, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK,
+    paddingHorizontal: 16, minHeight: 40, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK,
   },
   shareText: { fontFamily: FONTS.uiBold, fontSize: 14, color: '#FFFFFF', letterSpacing: 0.5 },
 });

@@ -57,7 +57,7 @@ function Stat({ value, label, color, sub }: { value: string; label: string; colo
 const fmt = (n: number) => n.toLocaleString('en-US');
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 0, borderWidth: BORDER_WIDTH, padding: 20, gap: 14, ...SHADOW.card },
+  card: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 20, gap: 14, ...SHADOW.card },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.2 },
   headline: { fontFamily: FONTS.monoBold, fontSize: 32, fontVariant: ['tabular-nums'] },

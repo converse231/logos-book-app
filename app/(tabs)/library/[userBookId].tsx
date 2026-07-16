@@ -6,7 +6,7 @@ import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, Review, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -770,29 +770,29 @@ const styles = StyleSheet.create({
   skelIdentity: { alignItems: 'center', gap: 8 },
   skelChips: { flexDirection: 'row', gap: 8 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roundBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
   hero: { alignItems: 'center', justifyContent: 'flex-end', paddingTop: 8, marginBottom: 2 },
   heroArc: { position: 'absolute', bottom: 0, left: 28, right: 28, height: 150, borderTopLeftRadius: 0, borderTopRightRadius: 0 },
-  heroGlow: { position: 'absolute', top: 0, left: 44, right: 44, height: 220, borderRadius: 0, opacity: 0 },
+  heroGlow: { position: 'absolute', top: 0, left: 44, right: 44, height: 220, borderRadius: 14, opacity: 0 },
   coverShadow: {
-    borderRadius: 0,
-    ...({ boxShadow: '4px 4px 0px #141414' } as const),
+    borderRadius: 14,
+    ...({ boxShadow: '4px 4px 0px #241E19' } as const),
   },
 
   ctaWrap: { position: 'relative' },
   cta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56,
-    borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: INK, backgroundColor: PALETTE.accent,
+    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK, backgroundColor: PALETTE.accent,
   },
-  ctaText: { fontFamily: FONTS.uiBold, fontSize: 16, letterSpacing: 1, color: PALETTE.onAccent },
-  finishedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 0 },
+  ctaText: { fontFamily: FONTS.uiBold, fontSize: 16, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
+  finishedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 14 },
   finishedText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   identity: { alignItems: 'center', gap: 5, paddingHorizontal: 8 },
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metaDot: { width: 3, height: 3, borderRadius: 0 },
+  metaDot: { width: 3, height: 3, borderRadius: 14 },
   metaText: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   title: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 32, textAlign: 'center', marginTop: 4 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 14, textAlign: 'center', lineHeight: 19 },
@@ -801,21 +801,21 @@ const styles = StyleSheet.create({
 
   chipScroll: { marginHorizontal: -18 },
   chipRow: { paddingHorizontal: 18, gap: 8, alignItems: 'center' },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 0 },
-  chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 14 },
+  chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
 
-  rateCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  rateCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 14, borderWidth: BORDER_WIDTH },
   rateLeft: { gap: 7 },
   rateLabel: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1 },
   rateHint: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
-  reviewLink: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 38, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  reviewLink: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 38, borderRadius: 14, borderWidth: BORDER_WIDTH },
   reviewLinkText: { fontFamily: FONTS.uiBold, fontSize: 13 },
 
   statusRow: { flexDirection: 'row', gap: 8 },
-  statusPill: { flex: 1, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  statusText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
+  statusPill: { flex: 1, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  statusText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
 
-  finishDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, paddingHorizontal: 14, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  finishDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, paddingHorizontal: 14, borderRadius: 14, borderWidth: BORDER_WIDTH },
   finishDateText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14 },
 
   progressBlock: { gap: 8 },
@@ -823,17 +823,17 @@ const styles = StyleSheet.create({
 
   tabs: { flexDirection: 'row', gap: 22, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'transparent' },
   tab: { paddingBottom: 10, borderBottomWidth: 2 },
-  tabText: { fontFamily: FONTS.uiSemiBold, fontSize: 16 },
+  tabText: { fontFamily: FONTS.uiSemiBold, fontSize: 16, ...NO_FONT_PAD },
 
   tabBody: { gap: 14, marginTop: -2 },
   body: { fontFamily: FONTS.uiRegular, fontSize: 14.5, lineHeight: 22 },
   moreLink: { fontFamily: FONTS.uiSemiBold, fontSize: 13, marginTop: -6 },
   detailWrap: { gap: 10 },
   detailGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
-  dTile: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 0, borderWidth: StyleSheet.hairlineWidth },
+  dTile: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth },
   dTileHalf: { width: '48.5%' },
   dTileWide: { width: '100%' },
-  dIcon: { width: 32, height: 32, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  dIcon: { width: 32, height: 32, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   dText: { flex: 1, gap: 1 },
   dValue: { fontFamily: FONTS.uiBold, fontSize: 15 },
   dLabel: { fontFamily: FONTS.uiMedium, fontSize: 11.5 },
@@ -849,8 +849,8 @@ const styles = StyleSheet.create({
   reviewDate: { fontFamily: FONTS.uiRegular, fontSize: 12 },
   reviewBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },
   spoiler: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
-  writeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 0, borderWidth: 1, marginTop: 4 },
+  writeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, borderWidth: 1, marginTop: 4 },
   writeText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
-  removeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 0, borderWidth: BORDER_WIDTH, marginTop: 20 },
+  removeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: BORDER_WIDTH, marginTop: 20 },
   removeText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 });

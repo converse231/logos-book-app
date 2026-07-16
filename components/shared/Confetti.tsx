@@ -26,7 +26,7 @@ export function Confetti({ fire, particleCount = 80, colors }: ConfettiProps) {
   const t = useTheme();
   const { width, height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
-  const palette = colors ?? [t.accent, t.gold, '#FFFFFF', '#FF8A1E', '#E5327A'];
+  const palette = colors ?? [t.accent, t.gold, '#FFF7EC', '#F2913F', '#9A7BD6'];
 
   const particles = useMemo(() => {
     const rand = (a: number, b: number) => a + Math.random() * (b - a);
@@ -133,5 +133,5 @@ function Particle({ startX, startY, vx, vy, size, color, delay, spin, gravity, f
 }
 
 const styles = StyleSheet.create({
-  particle: { position: 'absolute', borderRadius: 0 },
+  particle: { position: 'absolute', borderRadius: 14 },
 });

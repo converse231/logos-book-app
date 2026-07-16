@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   addTile: {
     width: COVER_W,
     height: COVER_H,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: 2,
     borderStyle: 'dashed',
     alignItems: 'center',

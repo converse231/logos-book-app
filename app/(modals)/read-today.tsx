@@ -184,12 +184,12 @@ export default function ReadToday() {
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 20 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, height: 30, borderRadius: 0, borderWidth: BORDER_WIDTH },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, height: 30, borderRadius: 14, borderWidth: BORDER_WIDTH },
   tagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5 },
-  closeBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 16 },
-  doneIcon: { width: 72, height: 72, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  doneIcon: { width: 72, height: 72, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   heading: { alignItems: 'center', gap: 6, marginTop: 24 },
   title: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 32, textAlign: 'center', letterSpacing: -0.5 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, textAlign: 'center', maxWidth: 300 },
@@ -200,9 +200,9 @@ const styles = StyleSheet.create({
   selAuthor: { fontFamily: FONTS.mono, fontSize: 13, textAlign: 'center' },
 
   footer: { gap: 12 },
-  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
   errorText: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 13, lineHeight: 18 },
   emptyBtnWrap: { marginTop: 8 },
-  logBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, paddingHorizontal: 20, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, borderColor: '#141414' },
+  logBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, paddingHorizontal: 20, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19' },
   logBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: '#FFFFFF' },
 });

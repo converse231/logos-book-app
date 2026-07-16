@@ -12,15 +12,21 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  useAnimatedKeyboard,
+  useAnimatedStyle,
+  useReducedMotion,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { Mascot } from '@/components/shared/Mascot';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { BookGridCard } from '@/components/library/BookGridCard';
@@ -51,6 +57,14 @@ export default function Library() {
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
   const { width } = useWindowDimensions();
+
+  // Lift the bottom-anchored search dock above the keyboard. Driven by Reanimated's
+  // useAnimatedKeyboard on BOTH platforms — it takes control of the Android keyboard
+  // when mounted, so we must apply the height there too (not just iOS).
+  const keyboard = useAnimatedKeyboard();
+  const dockStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -keyboard.height.value }],
+  }));
 
   const [books, setBooks] = useState<UserBook[] | null>(null);
   const [statusTab, setStatusTab] = useState<StatusTab>('all');
@@ -215,7 +229,7 @@ export default function Library() {
       {/* Bottom-anchored search (thumb zone), lifted above the centre FAB.
           Hidden until the shelf has loaded — searching nothing is pointless. */}
       {books ? (
-        <View style={[styles.searchDock, { bottom: 24 }]} pointerEvents="box-none">
+        <Animated.View style={[styles.searchDock, { bottom: 24 }, dockStyle]} pointerEvents="box-none">
           <View style={[styles.searchBar, { backgroundColor: t.bgSec, borderColor: t.border }]}>
             <Ionicons name="search" size={18} color={t.textSec} />
             <TextInput
@@ -242,7 +256,7 @@ export default function Library() {
             <Ionicons name="options-outline" size={20} color={filterActive ? t.accent : t.text} />
             {filterActive ? <View style={[styles.filterDot, { backgroundColor: t.accent, borderColor: t.bgSec }]} /> : null}
           </Pressable>
-        </View>
+        </Animated.View>
       ) : null}
 
       <RefreshingOverlay refreshing={refreshing} top={insets.top + 8} />
@@ -355,9 +369,7 @@ function EmptyState({
   const copy = EMPTY_COPY[shelfEmpty ? 'all' : statusTab];
   return (
     <View style={styles.empty}>
-      <View style={[styles.emptyIcon, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-        <Ionicons name={copy.icon} size={28} color={t.textSec} />
-      </View>
+      <Mascot size={116} sparkle />
       <Text style={[styles.emptyTitle, { color: t.text }]}>{copy.title}</Text>
       <Text style={[styles.emptyBody, { color: t.textSec }]}>{copy.body}</Text>
       <PressBlock
@@ -399,23 +411,23 @@ const styles = StyleSheet.create({
   header: { gap: 16 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   titleText: { gap: 1 },
-  title: { fontFamily: FONTS.displayBold, fontSize: 32, lineHeight: 36 },
+  title: { fontFamily: FONTS.serifBold, fontSize: 38, lineHeight: 40 },
   count: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   headerActions: { flexDirection: 'row', gap: 10, marginBottom: 2 },
-  iconBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     height: 42,
     paddingHorizontal: 14,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: 1,
   },
-  addBtnText: { fontFamily: FONTS.uiBold, fontSize: 14 },
+  addBtnText: { fontFamily: FONTS.uiBold, fontSize: 14, ...NO_FONT_PAD },
   tabs: { gap: 8, paddingRight: 18 },
-  tab: { paddingHorizontal: 16, height: 36, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  tabText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
+  tab: { paddingHorizontal: 16, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  tabText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
 
   searchDock: { position: 'absolute', left: 18, right: 18, flexDirection: 'row', gap: 10 },
   searchBar: {
@@ -424,29 +436,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     height: 52,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
-    ...({ boxShadow: '4px 4px 0px #141414' } as const),
+    ...({ boxShadow: '4px 4px 0px #241E19' } as const),
   },
   searchInput: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 15, padding: 0 },
   filterBtn: {
     width: 52,
     height: 52,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-    ...({ boxShadow: '4px 4px 0px #141414' } as const),
+    ...({ boxShadow: '4px 4px 0px #241E19' } as const),
   },
-  filterDot: { position: 'absolute', top: 9, right: 9, width: 9, height: 9, borderRadius: 0, borderWidth: 1.5 },
+  filterDot: { position: 'absolute', top: 9, right: 9, width: 9, height: 9, borderRadius: 14, borderWidth: 1.5 },
 
   empty: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 56, gap: 12 },
-  emptyIcon: { width: 64, height: 64, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: { width: 64, height: 64, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontFamily: FONTS.uiBold, fontSize: 19 },
   emptyBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   emptyCtaWrap: { marginTop: 6 },
-  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 48, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 48, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
   emptyCtaText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },

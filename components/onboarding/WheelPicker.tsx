@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   band: {
     height: ITEM_HEIGHT,
     marginHorizontal: 24,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: 2,
   },
   item: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },

@@ -92,7 +92,7 @@ function presetLabel(p: number): string {
 const styles = StyleSheet.create({
   body: { paddingHorizontal: 24, paddingTop: 16, gap: 24 },
   presets: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
-  preset: { paddingHorizontal: 16, height: 40, borderRadius: 0, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  preset: { paddingHorizontal: 16, height: 40, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   presetText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   estimate: { fontFamily: FONTS.uiRegular, fontSize: 13, textAlign: 'center', marginTop: -12 },
 });

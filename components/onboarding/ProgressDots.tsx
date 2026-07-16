@@ -52,5 +52,5 @@ function Dot({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { height: 8, borderRadius: 0 },
+  dot: { height: 8, borderRadius: 14 },
 });

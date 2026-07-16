@@ -53,11 +53,11 @@ export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
 }
 
 const styles = StyleSheet.create({
-  track: { flexDirection: 'row', borderRadius: 0, borderWidth: 2, padding: 4, gap: 4 },
+  track: { flexDirection: 'row', borderRadius: 14, borderWidth: 2, padding: 4, gap: 4 },
   segment: {
     flex: 1,
     minHeight: 48,
-    borderRadius: 0,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,

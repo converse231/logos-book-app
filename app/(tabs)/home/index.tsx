@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, NO_FONT_PAD } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { HomeData, ReadingSession, Review, StatsData, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -142,7 +142,7 @@ export default function Home() {
   if (data.comeback) {
     const daysLeft = Math.max(0, Math.ceil((new Date(data.comeback.expiresAt).getTime() - Date.now()) / 86400000));
     challenges.push({
-      tone: 'gold',
+      tone: 'ember',
       icon: 'flash',
       kicker: 'Comeback',
       title: `Restore your ${data.comeback.streakAtBreak}-day streak`,
@@ -155,7 +155,7 @@ export default function Home() {
     // While a comeback is active the streak is broken, so the "extend streak"
     // card would contradict it — the comeback card above covers the streak.
     challenges.push({
-      tone: 'emerald',
+      tone: 'ember',
       icon: 'flame',
       kicker: 'Streak',
       title: data.streak.isAtRisk ? `Save your ${data.streak.currentStreak}-day streak` : `Extend your ${data.streak.currentStreak}-day streak`,
@@ -165,7 +165,7 @@ export default function Home() {
   }
   if (data.almostThere) {
     challenges.push({
-      tone: 'emerald',
+      tone: 'lilac',
       icon: 'ribbon',
       kicker: 'Milestone',
       title: data.almostThere.label,
@@ -316,6 +316,7 @@ export default function Home() {
                 value={data.user.totalXp - data.prevLevelXp}
                 max={Math.max(1, data.xpToNextLevel - data.prevLevelXp)}
                 height={6}
+                accent={PALETTE.gold}
               />
               <Text style={[styles.xpText, { color: t.textSec }]}>
                 {data.user.totalXp.toLocaleString()} XP · Level {data.user.level}
@@ -577,12 +578,12 @@ function HomeSkeleton({ topInset }: { topInset: number }) {
       scrollEnabled={false}
     >
       <View style={styles.header}>
-        <Skeleton width={46} height={46} radius={23} />
+        <Skeleton width={46} height={46} radius={14} />
         <View style={styles.skelHeaderText}>
           <Skeleton width={90} height={12} />
           <Skeleton width={150} height={22} />
         </View>
-        <Skeleton width={42} height={42} radius={21} />
+        <Skeleton width={42} height={42} radius={14} />
       </View>
       <Skeleton width="100%" height={150} radius={22} />
       <Skeleton width="100%" height={84} radius={22} />
@@ -601,13 +602,13 @@ const styles = StyleSheet.create({
   skelHeaderText: { flex: 1, gap: 6 },
   skelRow: { flexDirection: 'row', gap: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 46, height: 46, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatar: { width: 46, height: 46, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImg: { width: '100%', height: '100%' },
   avatarText: { fontFamily: FONTS.uiBold, fontSize: 19 },
   headerText: { flex: 1, gap: 1 },
-  greeting: { fontFamily: FONTS.uiRegular, fontSize: 14 },
-  name: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 32 },
-  iconBtn: { width: 42, height: 42, borderRadius: 0, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  greeting: { fontFamily: FONTS.uiSemiBold, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase' },
+  name: { fontFamily: FONTS.serif, fontSize: 33, lineHeight: 37 },
+  iconBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   atRisk: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   atRiskText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14, lineHeight: 19 },
 
@@ -616,7 +617,7 @@ const styles = StyleSheet.create({
   streakCell: {
     width: 92,
     borderWidth: BORDER_WIDTH,
-    borderRadius: 0,
+    borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -658,22 +659,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     minHeight: 54,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH_THICK,
     borderColor: INK,
     backgroundColor: PALETTE.accent,
   },
   startBtnSpacing: { marginTop: 16 },
-  startBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent },
+  startBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
   emptyActive: { gap: 14, alignItems: 'center' },
   emptyText: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
-  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 46, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 46, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
   emptyCtaText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   section: { gap: 14 },
   sessionList: { gap: 8 },
-  sessionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 0, borderWidth: 2 },
-  sessionCoverFrame: { borderWidth: 2, borderRadius: 0 },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: 2 },
+  sessionCoverFrame: { borderWidth: 2, borderRadius: 14 },
   sessionInfo: { flex: 1, gap: 2 },
   sessionTitle: { fontFamily: FONTS.uiBold, fontSize: 14 },
   sessionStats: { fontFamily: FONTS.mono, fontSize: 11 },
@@ -685,7 +686,7 @@ const styles = StyleSheet.create({
   addTile: {
     width: 96,
     height: 96 / 0.66,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: 1,
     borderStyle: 'dashed',
     alignItems: 'center',

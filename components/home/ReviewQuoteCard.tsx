@@ -50,7 +50,7 @@ export function ReviewQuoteCard({ bookTitle, coverUrl, format, rating, body, aut
 const styles = StyleSheet.create({
   card: {
     width: 288,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH,
     padding: 16,
     gap: 12,

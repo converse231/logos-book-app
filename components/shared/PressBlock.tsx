@@ -7,6 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
+import { RADIUS } from '@/theme/tokens';
 
 interface PressBlockProps {
   onPress: () => void;
@@ -20,6 +21,9 @@ interface PressBlockProps {
   containerStyle?: StyleProp<ViewStyle>;
   disabled?: boolean;
   offset?: number; // hard-shadow depth (px) the block presses into
+  /** Corner radius of the shadow block — match the front block's radius so the
+   *  offset shadow's corners line up. Defaults to the universal soft radius. */
+  radius?: number;
   haptic?: 'medium' | 'light' | 'none';
   accessibilityLabel?: string;
   accessibilityState?: { disabled?: boolean; busy?: boolean; selected?: boolean };
@@ -38,6 +42,7 @@ export function PressBlock({
   containerStyle,
   disabled = false,
   offset = 4,
+  radius = RADIUS.md,
   haptic = 'medium',
   accessibilityLabel,
   accessibilityState,
@@ -75,7 +80,7 @@ export function PressBlock({
           pointerEvents="none"
           style={[
             styles.shadow,
-            { top: offset, left: offset, right: -offset, bottom: -offset, backgroundColor: t.ink },
+            { top: offset, left: offset, right: -offset, bottom: -offset, backgroundColor: t.ink, borderRadius: radius },
             shadowStyle,
           ]}
         />

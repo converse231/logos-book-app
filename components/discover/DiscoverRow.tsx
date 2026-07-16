@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 18, gap: 12 },
   skelRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 18 },
   item: { width: COVER_W, gap: 5 },
-  coverFrame: { borderWidth: 2, borderRadius: 0 },
+  coverFrame: { borderWidth: 2, borderRadius: 14 },
   bookTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 12, lineHeight: 15 },
   bookAuthor: { fontFamily: FONTS.mono, fontSize: 10 },
 });

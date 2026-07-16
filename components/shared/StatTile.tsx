@@ -8,22 +8,26 @@ interface StatTileProps {
   value: string;
   delta?: string;
   icon?: keyof typeof Ionicons.glyphMap;
+  /** Reward hue for the icon + delta so a bento of tiles reads as a palette,
+   *  not a wall of coral. Defaults to the coral accent. */
+  color?: string;
 }
 
 // Single bento metric tile (blueprint #14). Tabular value figures so columns of
 // tiles don't reflow as numbers change.
-export function StatTile({ label, value, delta, icon }: StatTileProps) {
+export function StatTile({ label, value, delta, icon, color }: StatTileProps) {
   const t = useTheme();
+  const tint = color ?? t.accent;
   return (
     <View style={[styles.tile, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-      {icon ? <Ionicons name={icon} size={18} color={t.accent} style={styles.icon} /> : null}
+      {icon ? <Ionicons name={icon} size={18} color={tint} style={styles.icon} /> : null}
       <Text style={[styles.value, { color: t.text }]} numberOfLines={1}>
         {value}
       </Text>
       <Text style={[styles.label, { color: t.textSec }]} numberOfLines={1}>
         {label}
       </Text>
-      {delta ? <Text style={[styles.delta, { color: t.accent }]}>{delta}</Text> : null}
+      {delta ? <Text style={[styles.delta, { color: tint }]}>{delta}</Text> : null}
     </View>
   );
 }
@@ -31,7 +35,7 @@ export function StatTile({ label, value, delta, icon }: StatTileProps) {
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    borderRadius: 0,
+    borderRadius: 14,
     borderWidth: BORDER_WIDTH,
     padding: 14,
     gap: 2,

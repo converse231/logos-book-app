@@ -62,7 +62,7 @@ export default function Review() {
   };
 
   return (
-    <SheetScaffold title="Write a review" onClose={close}>
+    <SheetScaffold title="Write a review" onClose={close} scroll>
       <View style={styles.wrap}>
         {title ? (
           <Text style={[styles.book, { color: t.textSec }]} numberOfLines={1}>
@@ -138,11 +138,11 @@ const styles = StyleSheet.create({
   book: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   ratingBlock: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   ratingHint: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
-  inputWrap: { borderRadius: 0, borderWidth: StyleSheet.hairlineWidth, padding: 14, minHeight: 104 },
+  inputWrap: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 14, minHeight: 104 },
   input: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, minHeight: 76, padding: 0 },
   counter: { fontFamily: FONTS.uiRegular, fontSize: 11, textAlign: 'right', marginTop: -8, fontVariant: ['tabular-nums'] },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   toggleText: { fontFamily: FONTS.uiMedium, fontSize: 14 },
-  notice: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 0 },
+  notice: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14 },
   noticeText: { flex: 1, fontFamily: FONTS.uiRegular, fontSize: 13, lineHeight: 18 },
 });

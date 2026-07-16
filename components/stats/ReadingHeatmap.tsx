@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: 12 },
   grid: { flexDirection: 'row', gap: GAP },
   col: { gap: GAP },
-  cell: { width: CELL, height: CELL, borderRadius: 0 },
+  cell: { width: CELL, height: CELL, borderRadius: 14 },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
   legendText: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5, marginHorizontal: 2 },
-  legendCell: { width: 11, height: 11, borderRadius: 0 },
+  legendCell: { width: 11, height: 11, borderRadius: 14 },
 });

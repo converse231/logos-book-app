@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, PALETTE, NO_FONT_PAD } from '@/theme/tokens';
 import { LevelName } from '@/services/types';
 
 interface LevelNameBadgeProps {
@@ -27,11 +27,14 @@ export function LevelNameBadge({
   if (context === 'share_card') {
     // On the share canvas: gold block (black ink text) in dark mode, translucent
     // chip on transparent backgrounds. No border so it sits cleanly over photos.
-    bg = mode === 'transparent' ? 'rgba(255,255,255,0.22)' : '#FFC53D';
-    fg = mode === 'transparent' ? '#FFFFFF' : '#141414';
+    bg = mode === 'transparent' ? 'rgba(255,255,255,0.22)' : '#F3C24C';
+    fg = mode === 'transparent' ? '#FFFFFF' : '#241E19';
   } else {
-    bg = t.accentMuted;
-    fg = t.accent;
+    // The level name IS the XP/level identity, and gold owns levels — so the
+    // badge is a solid marigold pill with ink text (not coral). High contrast,
+    // and it brings gold into the home/stats surfaces where coral used to rule.
+    bg = PALETTE.gold;
+    fg = '#241E19';
     bordered = true;
   }
 
@@ -57,8 +60,8 @@ export function LevelNameBadge({
 }
 
 const styles = StyleSheet.create({
-  pill: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 0 },
+  pill: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14 },
   pillSm: { paddingHorizontal: 10, paddingVertical: 4 },
-  text: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 1 },
+  text: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 1, ...NO_FONT_PAD },
   textSm: { fontSize: 10, letterSpacing: 0.8 },
 });

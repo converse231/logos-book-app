@@ -19,6 +19,7 @@ import { FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { Confetti } from '@/components/shared/Confetti';
 import { CountUp } from '@/components/onboarding/CountUp';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { Sparkle } from '@/components/shared/Sparkle';
 
 type Variant = 'normal' | 'bigger' | 'cinematic' | 'legendary';
 
@@ -140,6 +141,9 @@ function FireStreak({ count, ember, reduce }: { count: number; ember: string; re
           importantForAccessibility="no-hide-descendants"
         />
       )}
+      <Sparkle size={30} color={PALETTE.gold} delay={0} style={styles.sparkA} />
+      <Sparkle size={22} color={PALETTE.level} delay={300} style={styles.sparkB} />
+      <Sparkle size={20} color={PALETTE.accent} delay={620} style={styles.sparkC} />
       {/* Number nudged into the flame's belly (lower-centre of the silhouette). */}
       <View style={[styles.fireNumberSlot, { paddingTop: SIZE * 0.28 }]} pointerEvents="none">
         <CountUp
@@ -164,6 +168,9 @@ const styles = StyleSheet.create({
   kicker: { fontFamily: FONTS.monoBold, fontSize: 12, letterSpacing: 2, marginBottom: 12, textAlign: 'center' },
 
   fireWrap: { alignItems: 'center', justifyContent: 'center' },
+  sparkA: { position: 'absolute', top: 6, left: 0, zIndex: 2 },
+  sparkB: { position: 'absolute', top: 36, right: 4, zIndex: 2 },
+  sparkC: { position: 'absolute', bottom: 52, right: 18, zIndex: 2 },
   fireNumberSlot: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   fireNumber: {
     fontFamily: FONTS.monoBold, fontVariant: ['tabular-nums'], textAlign: 'center',
@@ -171,8 +178,8 @@ const styles = StyleSheet.create({
   },
 
   label: { fontFamily: FONTS.monoMedium, fontSize: 14, letterSpacing: 2, marginTop: 12 },
-  blurb: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 28, maxWidth: 300 },
+  blurb: { fontFamily: FONTS.serifMedium, fontSize: 20, lineHeight: 26, textAlign: 'center', marginTop: 26, maxWidth: 320 },
   footer: { paddingHorizontal: 24 },
-  cta: { minHeight: 54, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
-  ctaText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: '#141414' },
+  cta: { minHeight: 54, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
+  ctaText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: '#241E19' },
 });

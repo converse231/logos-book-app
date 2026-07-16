@@ -28,7 +28,7 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
-  title: { flex: 1, fontFamily: FONTS.displayBold, fontSize: 22, lineHeight: 24, textTransform: 'uppercase', letterSpacing: -0.5 },
+  title: { flex: 1, fontFamily: FONTS.serifBold, fontSize: 26, lineHeight: 28, letterSpacing: 0 },
   action: { flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 2, paddingBottom: 2 },
   actionText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase' },
 });

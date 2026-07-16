@@ -10,6 +10,7 @@ import { useApi } from '@/services/ApiContext';
 import { HomeData, ReadingSession, StatsData, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { Mascot } from '@/components/shared/Mascot';
 import { Card } from '@/components/shared/Card';
 import { BookCover } from '@/components/shared/BookCover';
 import { StatTile } from '@/components/shared/StatTile';
@@ -22,7 +23,7 @@ import { BadgeGrid } from '@/components/stats/BadgeGrid';
 import { AlmostThereBanner } from '@/components/gamification/AlmostThereBanner';
 import { RefreshingOverlay, HIDDEN_SPINNER } from '@/components/shared/RefreshingOverlay';
 
-type Tile = { icon: keyof typeof Ionicons.glyphMap; value: string; label: string };
+type Tile = { icon: keyof typeof Ionicons.glyphMap; value: string; label: string; color: string };
 
 export default function Stats() {
   const t = useTheme();
@@ -80,12 +81,12 @@ export default function Stats() {
   }
 
   const tiles: Tile[] = [
-    { icon: 'reader', value: stats.lifetimePages.toLocaleString(), label: 'Pages read' },
-    { icon: 'time', value: `${stats.lifetimeHours}h`, label: 'Time read' },
-    { icon: 'library', value: `${stats.booksFinished}`, label: 'Books finished' },
-    { icon: 'speedometer', value: stats.avgPph != null ? `${stats.avgPph}` : '—', label: 'Avg pages/hr' },
-    { icon: 'flame', value: `${stats.currentStreak}`, label: 'Current streak' },
-    { icon: 'trophy', value: `${stats.longestStreak}`, label: 'Longest streak' },
+    { icon: 'reader', value: stats.lifetimePages.toLocaleString(), label: 'Pages read', color: t.accent },
+    { icon: 'time', value: `${stats.lifetimeHours}h`, label: 'Time read', color: t.ember },
+    { icon: 'library', value: `${stats.booksFinished}`, label: 'Books finished', color: t.gold },
+    { icon: 'speedometer', value: stats.avgPph != null ? `${stats.avgPph}` : '—', label: 'Avg pages/hr', color: t.level },
+    { icon: 'flame', value: `${stats.currentStreak}`, label: 'Current streak', color: t.ember },
+    { icon: 'trophy', value: `${stats.longestStreak}`, label: 'Longest streak', color: t.gold },
   ];
   const rows: Tile[][] = [];
   for (let i = 0; i < tiles.length; i += 2) rows.push(tiles.slice(i, i + 2));
@@ -158,7 +159,7 @@ export default function Stats() {
                 {rows.map((row, ri) => (
                   <View key={ri} style={styles.statRow}>
                     {row.map((tile) => (
-                      <StatTile key={tile.label} icon={tile.icon} value={tile.value} label={tile.label} />
+                      <StatTile key={tile.label} icon={tile.icon} value={tile.value} label={tile.label} color={tile.color} />
                     ))}
                   </View>
                 ))}
@@ -198,6 +199,7 @@ export default function Stats() {
               label={`${closest.name} · ${closest.progressValue}/${closest.unlockThreshold}`}
               progress={closest.progressValue / closest.unlockThreshold}
               icon={closest.iconName as keyof typeof Ionicons.glyphMap}
+              color={t.gold}
             />
           </Reveal>
         ) : null}
@@ -310,9 +312,7 @@ function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children:
 function EmptyStats({ t, onStart }: { t: ReturnType<typeof useTheme>; onStart: () => void }) {
   return (
     <View style={[styles.emptyCard, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-      <View style={[styles.emptyIcon, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-        <Ionicons name="bar-chart-outline" size={28} color={t.accent} />
-      </View>
+      <Mascot size={108} sparkle />
       <Text style={[styles.emptyTitle, { color: t.text }]}>No reading sessions yet</Text>
       <Text style={[styles.emptyBody, { color: t.textSec }]}>
         Track your first session to unlock pages read, your reading streak, pace, and the heatmap.
@@ -356,7 +356,7 @@ function StatsSkeleton({ topInset }: { topInset: number }) {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 16 },
-  title: { fontFamily: FONTS.displayBold, fontSize: 32, lineHeight: 36 },
+  title: { fontFamily: FONTS.serifBold, fontSize: 38, lineHeight: 40 },
   bento: { gap: 12 },
   statRow: { flexDirection: 'row', gap: 12 },
   sectionCard: { gap: 16 },
@@ -367,31 +367,30 @@ const styles = StyleSheet.create({
   calendarLabel: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginLeft: 4 },
 
   sheetScrim: { flex: 1, backgroundColor: 'rgba(3,4,6,0.62)', justifyContent: 'flex-end' },
-  sheet: { maxHeight: '80%', borderTopWidth: 3, borderLeftWidth: 3, borderRightWidth: 3, borderRadius: 0, paddingTop: 10, paddingHorizontal: 18, paddingBottom: 18, gap: 4 },
-  sheetHandle: { width: 44, height: 5, borderRadius: 0, alignSelf: 'center', marginBottom: 10 },
-  sheetTitle: { fontFamily: FONTS.displayBold, fontSize: 22, letterSpacing: -0.3 },
+  sheet: { maxHeight: '80%', borderTopWidth: 3, borderLeftWidth: 3, borderRightWidth: 3, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingTop: 10, paddingHorizontal: 18, paddingBottom: 18, gap: 4 },
+  sheetHandle: { width: 44, height: 5, borderRadius: 14, alignSelf: 'center', marginBottom: 10 },
+  sheetTitle: { fontFamily: FONTS.serifBold, fontSize: 25, letterSpacing: 0 },
   sheetSub: { fontFamily: FONTS.mono, fontSize: 12, marginBottom: 8 },
   sheetList: { gap: 10, paddingBottom: 8 },
-  dayRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 0, borderWidth: 2 },
-  dayCoverFrame: { borderWidth: 2, borderRadius: 0 },
+  dayRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: 2 },
+  dayCoverFrame: { borderWidth: 2, borderRadius: 14 },
   dayRowInfo: { flex: 1, gap: 3 },
   dayRowTitle: { fontFamily: FONTS.uiBold, fontSize: 15 },
   dayRowStats: { fontFamily: FONTS.mono, fontSize: 12 },
-  sheetCloseBtn: { height: 50, borderRadius: 0, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
+  sheetCloseBtn: { height: 50, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
   sheetCloseText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
   historyRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16,
-    borderRadius: 0, borderWidth: 2,
+    borderRadius: 14, borderWidth: 2,
   },
   historyText: { flex: 1, gap: 2 },
   historyTitle: { fontFamily: FONTS.uiBold, fontSize: 15 },
   historySub: { fontFamily: FONTS.uiMedium, fontSize: 12 },
 
-  emptyCard: { alignItems: 'center', gap: 12, padding: 28, borderRadius: 0, borderWidth: 2 },
-  emptyIcon: { width: 60, height: 60, borderRadius: 0, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontFamily: FONTS.uiBold, fontSize: 18 },
+  emptyCard: { alignItems: 'center', gap: 12, padding: 28, borderRadius: 20, borderWidth: 2 },
+  emptyTitle: { fontFamily: FONTS.serifBold, fontSize: 24, lineHeight: 26 },
   emptyBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   emptyCtaWrap: { marginTop: 4 },
-  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, height: 48, borderRadius: 0, borderWidth: BORDER_WIDTH_THICK },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, height: 48, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
   emptyCtaText: { fontFamily: FONTS.uiBold, fontSize: 15 },
 });
