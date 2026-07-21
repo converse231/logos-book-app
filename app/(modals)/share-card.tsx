@@ -96,11 +96,12 @@ export default function ShareCard() {
   const bookCoverUrl = reshare ? (params.cover || null) : (active?.coverUrl ?? null);
   const bookFormat = (reshare ? params.format : active?.format) as CardStats['format'];
 
-  // Page Trail context — only a live paged session knows where in the book it sat.
-  // (Re-shares don't carry startPage/pageCount, so the trail falls back to Feature.)
-  const trailPageCount = reshare ? null : (active?.pageCount ?? null);
-  const trailStart = reshare || active?.startPage == null ? null : active.startPage;
-  const trailEnd = trailStart != null ? trailStart + pages : null;
+  // Book position — drives the shape of the progress mark on the no-cover cards.
+  // Only a live paged session knows it; re-shares and audiobooks don't carry it,
+  // and the mark then draws a neutral open book.
+  const bookPageCount = reshare ? null : (active?.pageCount ?? null);
+  const bookStartPage = reshare || active?.startPage == null ? null : active.startPage;
+  const bookEndPage = bookStartPage != null ? bookStartPage + pages : null;
 
   const stats: CardStats = {
     headline: String(pages),
@@ -112,9 +113,9 @@ export default function ShareCard() {
     bookTitle,
     bookCoverUrl,
     format: bookFormat,
-    pageCount: trailPageCount,
-    startPage: trailStart,
-    endPage: trailEnd,
+    pageCount: bookPageCount,
+    startPage: bookStartPage,
+    endPage: bookEndPage,
   };
 
   // The style carousel — one page per card style. Swiping the preview left/right
@@ -124,7 +125,6 @@ export default function ShareCard() {
     { key: 'emblem', label: 'Feature · No cover' },
     { key: 'stats', label: 'Stats' },
     { key: 'statsEmblem', label: 'Stats · No cover' },
-    ...(trailPageCount ? [{ key: 'trail' as CardLayout, label: 'Trail' }] : []),
   ];
   const idx = Math.max(0, LAYOUTS.findIndex((l) => l.key === layout));
 
@@ -187,14 +187,14 @@ export default function ShareCard() {
       const uri = await capture();
       await Share.share(
         Platform.OS === 'ios'
-          ? { url: uri, message: `${levelName} on Logos. Track every word you read.` }
-          : { message: `${pages} pages in ${minutes} min · ${levelName} on Logos.\nTrack every word you read.`, url: uri }
+          ? { url: uri, message: `${levelName} on Quire. Track every page you read.` }
+          : { message: `${pages} pages in ${minutes} min · ${levelName} on Quire.\nTrack every page you read.`, url: uri }
       );
     } catch {
       // capture/share failed or user dismissed — fall back to plain text
       try {
         await Share.share({
-          message: `${pages} pages in ${minutes} min · ${levelName} on Logos.\nTrack every word you read.`,
+          message: `${pages} pages in ${minutes} min · ${levelName} on Quire.\nTrack every page you read.`,
         });
       } catch {
         // dismissed — no-op

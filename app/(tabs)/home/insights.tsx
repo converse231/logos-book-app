@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
-// Reading Insights history — reads: reading_insights. Deep link: logos://insights.
+// Reading Insights history — reads: reading_insights. Deep link: quire://insights.
 // F4 implementation.
 export default function Insights() {
   const t = useTheme();

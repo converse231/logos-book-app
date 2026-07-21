@@ -616,7 +616,7 @@ export const MOCK_BADGES: Badge[] = [
   {
     id: 'badge-logos-legend',
     slug: 'logos_legend',
-    name: 'Logos Legend',
+    name: 'Quire Legend',
     description: 'Reach a 365-day reading streak.',
     kind: 'milestone',
     iconName: 'trophy',

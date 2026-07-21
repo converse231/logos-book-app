@@ -18,7 +18,7 @@ const KINDS: { key: FeedbackKind; label: string; icon: keyof typeof Ionicons.gly
 
 const PLACEHOLDER: Record<FeedbackKind, string> = {
   bug: 'What went wrong, and what were you doing when it happened?',
-  idea: 'What would make LOGOS better for you?',
+  idea: 'What would make Quire better for you?',
   feedback: 'Tell us what you think — the good and the rough edges.',
 };
 
@@ -65,7 +65,7 @@ export default function Feedback() {
           </View>
           <Text style={[styles.sentTitle, { color: t.text }]}>Feedback sent</Text>
           <Text style={[styles.sentBody, { color: t.textSec }]}>
-            Thanks for helping shape LOGOS — every note gets read.
+            Thanks for helping shape Quire — every note gets read.
           </Text>
           <PrimaryButton label="Done" onPress={close} />
         </View>

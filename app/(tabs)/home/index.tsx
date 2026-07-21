@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, NO_FONT_PAD, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { HomeData, ReadingSession, Review, StatsData, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -585,13 +585,13 @@ function HomeSkeleton({ topInset }: { topInset: number }) {
         </View>
         <Skeleton width={42} height={42} radius={14} />
       </View>
-      <Skeleton width="100%" height={150} radius={22} />
-      <Skeleton width="100%" height={84} radius={22} />
-      <Skeleton width="100%" height={196} radius={22} />
+      <Skeleton width="100%" height={150} radius={RADIUS.card} />
+      <Skeleton width="100%" height={84} radius={RADIUS.card} />
+      <Skeleton width="100%" height={196} radius={RADIUS.card} />
       <Skeleton width={150} height={24} />
       <View style={styles.skelRow}>
-        <Skeleton width={172} height={150} radius={22} />
-        <Skeleton width={172} height={150} radius={22} />
+        <Skeleton width={172} height={150} radius={RADIUS.card} />
+        <Skeleton width={172} height={150} radius={RADIUS.card} />
       </View>
     </ScrollView>
   );

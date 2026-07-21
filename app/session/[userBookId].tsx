@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,13 +24,14 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
 import { localDateString, useSessionStore, uuidv4 } from '@/stores/sessionStore';
 import { track } from '@/lib/analytics';
 import { startReadingActivity, updateReadingActivity, endReadingActivity } from '@/lib/liveActivity';
 import { sendOrQueue } from '@/lib/sessionQueue';
+import { loadActiveSession, saveActiveSession, clearActiveSession } from '@/lib/activeSession';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { LoadingIndicator } from '@/components/shared/LoadingIndicator';
 import { SessionTimer } from '@/components/session/SessionTimer';
@@ -37,10 +39,15 @@ import { SessionControlBar } from '@/components/session/SessionControlBar';
 import { ReadingCarousel } from '@/components/session/ReadingCarousel';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 
-const STOP_LOCK_SEC = 120; // focus-mode accidental-abort / commitment guard
+const FOCUS_DURATIONS = [10, 15, 25, 45, 60]; // minutes the reader can commit to in focus mode
+const DEFAULT_FOCUS_MIN = 15;
 const CANCEL_WINDOW_SEC = 60; // opening window to drop a mis-started session (never recorded)
 const REVEAL_MS = 4000;
 const TICK_MS = 250;
+// A persisted session older than this is treated as abandoned (e.g. started, then
+// the app was killed and not reopened for half a day) and is discarded on launch
+// rather than resurrected — otherwise it would count all that time as reading.
+const MAX_SESSION_AGE_MS = 12 * 60 * 60 * 1000;
 
 type Phase = 'ready' | 'running';
 
@@ -68,9 +75,11 @@ export default function SessionTracker() {
   const [sessionBook, setSessionBook] = useState<UserBook | null>(null);
 
   const [phase, setPhase] = useState<Phase>('ready');
+  const [restoring, setRestoring] = useState(true); // checking for a killed-session snapshot
   const [focusMode, setFocusMode] = useState(false);
+  const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MIN); // committed focus length
   const [paused, setPaused] = useState(false);
-  const [elapsedWhole, setElapsedWhole] = useState(0); // whole seconds, drives the focus-lock only
+  const [elapsedWhole, setElapsedWhole] = useState(0); // whole seconds, drives the focus-lock + cancel window
   const [showEndEntry, setShowEndEntry] = useState(false);
   const [endPage, setEndPage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -103,6 +112,12 @@ export default function SessionTracker() {
     return Math.max(0, base - startedAtRef.current - pausedAccumRef.current);
   }, []);
 
+  // Focus mode = a committed block: the session can't be paused and Finish stays
+  // locked until the chosen duration elapses. The whole-second counter must run at
+  // least this long (and at least the cancel window) so the lock can release.
+  const focusLockSec = focusMode ? focusMinutes * 60 : 0;
+  const wholeCap = Math.max(CANCEL_WINDOW_SEC, focusLockSec);
+
   // --- drive the clock while running ---
   useEffect(() => {
     if (phase !== 'running') return;
@@ -116,15 +131,86 @@ export default function SessionTracker() {
 
   // --- whole-second counter for the opening window (1s tick, only while it
   //     matters). Drives the cancel affordance (first 60s) and the focus-mode
-  //     finish-lock (first 120s). Ticks only while actively reading (not paused);
-  //     stops once past the longer of the two windows. ---
+  //     finish-lock (the chosen duration). Ticks only while actively reading (not
+  //     paused); stops once past the longer of the two windows. ---
   useEffect(() => {
-    if (phase !== 'running' || elapsedWhole >= STOP_LOCK_SEC) return;
+    if (phase !== 'running' || elapsedWhole >= wholeCap) return;
     const id = setInterval(() => {
       if (!paused) setElapsedWhole((e) => e + 1);
     }, 1000);
     return () => clearInterval(id);
-  }, [phase, elapsedWhole, paused]);
+  }, [phase, elapsedWhole, paused, wholeCap]);
+
+  // --- restore a session that survived a background process-kill ---------------
+  // The running session lives in memory, so if the OS reclaims the app while it's
+  // backgrounded (a camera in the foreground is a common, memory-heavy trigger),
+  // it would be lost on relaunch and the timer would appear to reset. We rehydrate
+  // the last snapshot and recompute elapsed from the wall clock, so no time is lost.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const snap = await loadActiveSession();
+      if (!alive) return;
+      if (snap && Date.now() - snap.startedAtMs < MAX_SESSION_AGE_MS) {
+        startedAtRef.current = snap.startedAtMs;
+        pausedAccumRef.current = snap.pausedAccumMs;
+        pauseStartRef.current = snap.pauseStartMs;
+        const ms = computeElapsedMs();
+        elapsedSec.value = ms / 1000;
+        const snapMinutes = snap.focusMinutes ?? DEFAULT_FOCUS_MIN;
+        // Cap using the SNAPSHOT's own duration — state isn't updated yet in this
+        // closure, so `wholeCap` above would still be the default.
+        const snapCap = Math.max(CANCEL_WINDOW_SEC, snap.focusMode ? snapMinutes * 60 : 0);
+        setElapsedWhole(Math.min(snapCap, Math.max(0, Math.floor(ms / 1000))));
+        setPaused(snap.paused);
+        setFocusMode(snap.focusMode);
+        setFocusMinutes(snapMinutes);
+        setSessionBook(snap.sessionBook);
+        startSession({
+          userBookId: snap.sessionBook.id,
+          bookId: snap.sessionBook.book.id,
+          bookTitle: snap.sessionBook.book.title,
+          coverUrl: snap.sessionBook.book.coverUrl,
+          format: snap.sessionBook.format,
+          startedAtMs: snap.startedAtMs,
+          startPage: snap.sessionBook.currentPage,
+          pageCount: snap.sessionBook.book.pageCount,
+        });
+        startReadingActivity({
+          bookTitle: snap.sessionBook.book.title,
+          coverUrl: snap.sessionBook.book.coverUrl,
+          format: snap.sessionBook.format,
+          startedAtMs: snap.startedAtMs,
+          startPage: snap.sessionBook.currentPage,
+          pageCount: snap.sessionBook.book.pageCount,
+        });
+        setPhase('running');
+      } else if (snap) {
+        clearActiveSession(); // stale / abandoned — don't resurrect it
+      }
+      setRestoring(false);
+    })();
+    return () => {
+      alive = false;
+    };
+    // Run once on mount; all referenced values are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // --- snap the clock the instant we return to the foreground ------------------
+  // The interval self-corrects on its next tick, but recomputing on resume makes
+  // the displayed time right immediately (no stale/frozen frame) and re-syncs the
+  // focus-lock / cancel windows.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && phase === 'running') {
+        const ms = computeElapsedMs();
+        elapsedSec.value = ms / 1000;
+        setElapsedWhole((e) => Math.max(e, Math.min(wholeCap, Math.floor(ms / 1000))));
+      }
+    });
+    return () => sub.remove();
+  }, [phase, computeElapsedMs, elapsedSec, wholeCap]);
 
   // --- load the currently-reading shelf (does NOT start the session) ---
   // Refetches on focus so a book added via the "add to current reads" flow shows
@@ -227,6 +313,17 @@ export default function SessionTracker() {
       pageCount: b.book.pageCount,
     });
     setPhase('running');
+    // Persist so the session survives a background process-kill (see restore effect).
+    saveActiveSession({
+      sessionBook: { ...b, currentPage: start },
+      startedAtMs: startedAtRef.current,
+      pausedAccumMs: 0,
+      pauseStartMs: null,
+      paused: false,
+      focusMode,
+      focusMinutes,
+      savedAt: Date.now(),
+    });
     // Live activity (lock screen / Dynamic Island) — no-op until the dev build.
     startReadingActivity({
       bookTitle: b.book.title,
@@ -240,23 +337,54 @@ export default function SessionTracker() {
   };
 
   const togglePause = () => {
+    if (focusMode) return; // focus mode is a committed block — no pausing
+    let nextPaused: boolean;
     if (paused) {
       if (pauseStartRef.current != null) {
         pausedAccumRef.current += Date.now() - pauseStartRef.current;
         pauseStartRef.current = null;
       }
       setPaused(false);
+      nextPaused = false;
       updateReadingActivity({ paused: false });
     } else {
       pauseStartRef.current = Date.now();
       setPaused(true);
+      nextPaused = true;
       updateReadingActivity({ paused: true });
+    }
+    // Re-persist the updated pause accounting so a kill restores the right elapsed.
+    if (sessionBook) {
+      saveActiveSession({
+        sessionBook,
+        startedAtMs: startedAtRef.current,
+        pausedAccumMs: pausedAccumRef.current,
+        pauseStartMs: pauseStartRef.current,
+        paused: nextPaused,
+        focusMode,
+        focusMinutes,
+        savedAt: Date.now(),
+      });
     }
   };
 
   const beginFinish = () => {
     setEndPage(String(sessionBook?.currentPage ?? ''));
     setShowEndEntry(true);
+  };
+
+  // Focus-mode escape hatch: long-pressing the locked Finish button ends the
+  // commitment early. It FINISHES (records what you've read) rather than
+  // discarding — you did the reading, it counts. Confirmed so it's deliberate.
+  const endFocusEarly = () => {
+    Alert.alert(
+      'End focus early?',
+      `You set a ${focusMinutes}-minute focus block. You can finish now and log everything you've read so far.`,
+      [
+        { text: 'Keep reading', style: 'cancel' },
+        { text: 'Finish now', onPress: beginFinish },
+      ]
+    );
   };
 
   // Drop a just-started session before it's ever recorded. Finish is the only
@@ -274,6 +402,7 @@ export default function SessionTracker() {
           onPress: () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             endReadingActivity(); // dismiss the lock-screen / Dynamic Island activity
+            clearActiveSession(); // no session was recorded — drop the recovery snapshot
             endSession();
             router.back();
           },
@@ -313,6 +442,7 @@ export default function SessionTracker() {
       // Send now; if offline/transient the session is persisted and synced later.
       const result = await sendOrQueue(api, queued);
       endReadingActivity(); // dismiss the lock-screen activity either way
+      clearActiveSession(); // recorded (or queued) — the recovery snapshot is done
 
       if (result) {
         setResult(result);
@@ -343,7 +473,9 @@ export default function SessionTracker() {
 
   const goAddReading = () => router.push('/(modals)/add-book?status=reading' as Href);
 
-  if (!readingBooks) {
+  // Wait until the kill-recovery check is done; a restored running session renders
+  // from `sessionBook` and doesn't need the reading-shelf to have loaded.
+  if (restoring || (!readingBooks && phase !== 'running')) {
     return (
       <View style={[styles.loading, { backgroundColor: t.bg }]}>
         <LoadingIndicator />
@@ -353,6 +485,9 @@ export default function SessionTracker() {
 
   // ── Confirmation screen — pick the book, then start ─────────────────────────
   if (phase === 'ready') {
+    // Unreachable (the loading guard above returns when readingBooks is null and
+    // we're not running) — this just narrows the type for the ready render.
+    if (!readingBooks) return null;
     const isAudio = selectedBook?.format === 'audiobook';
     const Body = reduce ? View : Animated.View;
     return (
@@ -424,30 +559,60 @@ export default function SessionTracker() {
         <View style={[styles.readyFooter, { paddingBottom: insets.bottom + 20 }]}>
           {selectedBook ? (
             <>
-              <Pressable
-                onPress={() => setFocusMode((v) => !v)}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: focusMode }}
-                accessibilityLabel="Focus mode"
-                style={[styles.focusRow, { backgroundColor: t.bgSec, borderColor: focusMode ? t.accent : t.border }]}
-              >
-                <View style={[styles.focusIcon, { backgroundColor: t.accentMuted }]}>
-                  <Ionicons name="lock-closed" size={16} color={t.accent} />
-                </View>
-                <View style={styles.focusTextWrap}>
-                  <Text style={[styles.focusTitle, { color: t.text }]}>Focus mode</Text>
-                  <Text style={[styles.focusSub, { color: t.textSec }]}>
-                    Locks Finish for the first 2 minutes so you don’t bail early.
-                  </Text>
-                </View>
-                <Switch
-                  value={focusMode}
-                  onValueChange={setFocusMode}
-                  trackColor={{ false: t.bgTer, true: t.accent }}
-                  thumbColor={PALETTE.text}
-                  ios_backgroundColor={t.bgTer}
-                />
-              </Pressable>
+              <View style={styles.focusWrap}>
+                <Pressable
+                  onPress={() => setFocusMode((v) => !v)}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: focusMode }}
+                  accessibilityLabel="Focus mode"
+                  style={[styles.focusRow, { backgroundColor: t.bgSec, borderColor: focusMode ? t.accent : t.border }]}
+                >
+                  <View style={[styles.focusIcon, { backgroundColor: t.accentMuted }]}>
+                    <Ionicons name="lock-closed" size={16} color={t.accent} />
+                  </View>
+                  <View style={styles.focusTextWrap}>
+                    <Text style={[styles.focusTitle, { color: t.text }]}>Focus mode</Text>
+                    <Text style={[styles.focusSub, { color: t.textSec }]}>
+                      {focusMode
+                        ? `No pausing — Finish unlocks after ${focusMinutes} min.`
+                        : 'Commit to a set time — no pausing, no bailing early.'}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={focusMode}
+                    onValueChange={setFocusMode}
+                    trackColor={{ false: t.bgTer, true: t.accent }}
+                    thumbColor={PALETTE.text}
+                    ios_backgroundColor={t.bgTer}
+                  />
+                </Pressable>
+
+                {focusMode ? (
+                  <View style={styles.durationRow}>
+                    {FOCUS_DURATIONS.map((min) => {
+                      const active = min === focusMinutes;
+                      return (
+                        <Pressable
+                          key={min}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setFocusMinutes(min);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: active }}
+                          accessibilityLabel={`Focus for ${min} minutes`}
+                          style={[
+                            styles.durationChip,
+                            { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
+                          ]}
+                        >
+                          <Text style={[styles.durationText, { color: active ? t.accent : t.textSec }]}>{min}m</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+              </View>
 
               <ConfirmButton label="Start reading" icon="play" onPress={beginSession} />
               <Text style={[styles.readyHint, { color: t.textTer }]}>The timer starts the moment you tap.</Text>
@@ -506,8 +671,10 @@ export default function SessionTracker() {
     );
   }
   const isAudio = book.format === 'audiobook';
-  const canStop = focusMode ? elapsedWhole >= STOP_LOCK_SEC && !paused : !paused;
-  const stopUnlocksInSec = Math.max(0, STOP_LOCK_SEC - elapsedWhole);
+  // Focus mode: Finish unlocks only after the committed duration (no pausing, so no
+  // pause guard needed). Non-focus: finish anytime unless paused.
+  const canStop = focusMode ? elapsedWhole >= focusLockSec : !paused;
+  const stopUnlocksInSec = focusMode ? Math.max(0, focusLockSec - elapsedWhole) : 0;
   const canCancel = elapsedWhole < CANCEL_WINDOW_SEC;
 
   return (
@@ -555,6 +722,8 @@ export default function SessionTracker() {
           canStop={canStop}
           stopUnlocksInSec={stopUnlocksInSec}
           showCancel={canCancel}
+          showPause={!focusMode}
+          onEndEarly={endFocusEarly}
           onTogglePause={togglePause}
           onStop={beginFinish}
           onCancel={cancelSession}
@@ -649,6 +818,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, borderWidth: BORDER_WIDTH,
   },
   readyFooter: { paddingHorizontal: 24, gap: 14, alignItems: 'center' },
+  focusWrap: { width: '100%', gap: 10 },
   focusRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -662,6 +832,16 @@ const styles = StyleSheet.create({
   focusTextWrap: { flex: 1, gap: 2 },
   focusTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   focusSub: { fontFamily: FONTS.uiRegular, fontSize: 12, lineHeight: 16 },
+  durationRow: { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
+  durationChip: {
+    flex: 1,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: BORDER_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  durationText: { fontFamily: FONTS.uiBold, fontSize: 14, fontVariant: ['tabular-nums'], ...NO_FONT_PAD },
   startBtnWrap: { width: '100%', position: 'relative' },
   startGlow: {
     position: 'absolute',

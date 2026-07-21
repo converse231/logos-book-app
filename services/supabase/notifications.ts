@@ -5,7 +5,7 @@
 // lives on users.expo_push_token and is what send_push targets.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import type { NotificationSettings } from '../types';
 import { supabase } from '@/lib/supabase';
 
@@ -47,7 +47,7 @@ async function requireUid(): Promise<string> {
   return uid;
 }
 
-export const notificationApi: Partial<LogosApi> = {
+export const notificationApi: Partial<QuireApi> = {
   async getNotificationSettings() {
     const uid = await requireUid();
     const { data, error } = await supabase

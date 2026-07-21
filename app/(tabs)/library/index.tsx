@@ -49,7 +49,7 @@ const STATUS_TABS: { key: StatusTab; label: string }[] = [
 // Library shelf (blueprint Section 3). Two-column grid of the user's books with
 // status tabs, a bottom-anchored search in the thumb zone, and a filter/sort
 // sheet. Search filters the shelf locally; the add / scan affordances open the
-// catalog flows. Deep link: logos://library
+// catalog flows. Deep link: quire://library
 export default function Library() {
   const t = useTheme();
   const router = useRouter();
@@ -394,7 +394,7 @@ function SkeletonGrid({ cellWidth, topInset }: { cellWidth: number; topInset: nu
       <View style={styles.skelGrid}>
         {Array.from({ length: 6 }).map((_, i) => (
           <View key={i} style={{ width: cellWidth, gap: 6 }}>
-            <Skeleton width={cellWidth} height={cellWidth / 0.66} radius={8} />
+            <Skeleton width={cellWidth} height={cellWidth / 0.66} radius={14} />
             <Skeleton width={cellWidth * 0.9} height={12} />
             <Skeleton width={cellWidth * 0.6} height={10} />
           </View>

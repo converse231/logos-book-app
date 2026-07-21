@@ -21,7 +21,7 @@ const FRAME = 248;
 
 // ISBN scanner (blueprint Section 3). Live camera via expo-camera; on an EAN-13
 // barcode it hands the code to add-book (?q=<isbn>), where searchBooks resolves
-// it by ISBN. Catalog search is always available as a fallback. Deep link: logos://scan
+// it by ISBN. Catalog search is always available as a fallback. Deep link: quire://scan
 export default function Scanner() {
   const t = useTheme();
   const router = useRouter();

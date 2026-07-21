@@ -1,7 +1,7 @@
-# LOGOS — Master Technical & Product Blueprint
+# Quire — Master Technical & Product Blueprint
 
-> "In the beginning was the Word. Track every one you read."
-> Emotional north star: *Using Logos makes me feel like a serious reader — a literary athlete.*
+> "Before the book, there was the quire. Track every page you read."
+> Emotional north star: *Using Quire makes me feel like a serious reader — a literary athlete.*
 
 **Single source of truth.** Stack: React Native + Expo (managed) · Supabase (Postgres/Auth/Storage/Realtime/Edge Functions/pg_cron) · Zustand + MMKV · Reanimated 3 · Expo Router · PostHog (self-hosted) · Claude API (`claude-sonnet-4-20250514`) · RevenueCat (Phase 4).
 
@@ -431,7 +431,7 @@ begin
       (1,'Page Turner',0),(2,'Margin Scribbler',500),(3,'Chapter Chaser',1500),
       (4,'Shelf Builder',3500),(5,'Spine Cracker',7000),(6,'Night Reader',12000),
       (7,'Bibliophile',20000),(8,'Tome Raider',32000),(9,'Literary Athlete',50000),
-      (10,'Logos Legend',80000)
+      (10,'Quire Legend',80000)
   ) as t(lvl,lname,minxp)
   where v_total >= minxp
   order by minxp desc limit 1;
@@ -528,7 +528,7 @@ create or replace view public.public_profiles as
 
 **Depends on this:** every screen's data layer and all gamification side-effects. The decisive rule below resolves the most common architectural mistake.
 
-**Highest-risk decision:** *Where does session-completion logic live?* A naive build does streak/XP/badge/insight/comeback mutations on the client after `insert session`. That is wrong — it is non-atomic (offline re-sync double-counts), it is cheatable, and `level_name` can drift. **Decision: one transactional edge function `complete_session` owns ALL post-session side effects.** The client only inserts the raw session into the MMKV queue and calls `complete_session` (immediately when online, on sync when offline). This is the single most important architectural rule in Logos.
+**Highest-risk decision:** *Where does session-completion logic live?* A naive build does streak/XP/badge/insight/comeback mutations on the client after `insert session`. That is wrong — it is non-atomic (offline re-sync double-counts), it is cheatable, and `level_name` can drift. **Decision: one transactional edge function `complete_session` owns ALL post-session side effects.** The client only inserts the raw session into the MMKV queue and calls `complete_session` (immediately when online, on sync when offline). This is the single most important architectural rule in Quire.
 
 **Most common mistake:** computing the 30% insight gate or streak increment client-side, producing inconsistent results across the offline path and the online path. Gate everything in the edge function with the session's `client_uuid` as the idempotency key.
 
@@ -667,7 +667,7 @@ app/
 │
 ├── (auth)/                             Stack — unauthenticated
 │   ├── _layout.tsx
-│   ├── sign-in.tsx                     deep: logos://sign-in   reads: —
+│   ├── sign-in.tsx                     deep: quire://sign-in   reads: —
 │   └── sign-up.tsx
 │
 ├── (onboarding)/                       Stack — g= one-question-per-screen, progress dots
@@ -683,40 +683,40 @@ app/
 │   ├── home/
 │   │   ├── index.tsx                   HOME (bento)  reads: streaks, user_books, comeback_challenges, achievements, reading_goals
 │   │   │                               hosts: ComebackChallenge widget, AlmostThereBanner, AtRiskBanner
-│   │   │                               deep: logos://home
-│   │   └── insights.tsx                Reading Insights history  reads: reading_insights  deep: logos://insights
+│   │   │                               deep: quire://home
+│   │   └── insights.tsx                Reading Insights history  reads: reading_insights  deep: quire://insights
 │   ├── library/
-│   │   ├── index.tsx                   LIBRARY (bottom search)  reads: user_books, books   deep: logos://library
+│   │   ├── index.tsx                   LIBRARY (bottom search)  reads: user_books, books   deep: quire://library
 │   │   ├── [userBookId].tsx            Book detail  reads: user_books, books, reviews, reading_sessions
 │   │   └── tbr.tsx                     TBR list (Phase 2)  reads: user_books status='want'
 │   ├── discover/
-│   │   └── index.tsx                   SWIPE discovery (Phase 2)  reads: swipe_history; Google Books  deep: logos://discover
+│   │   └── index.tsx                   SWIPE discovery (Phase 2)  reads: swipe_history; Google Books  deep: quire://discover
 │   ├── stats/
-│   │   └── index.tsx                   STATS bento + heatmap  reads: reading_sessions, xp_log, user_achievements  deep: logos://stats
+│   │   └── index.tsx                   STATS bento + heatmap  reads: reading_sessions, xp_log, user_achievements  deep: quire://stats
 │   └── profile/
 │       ├── index.tsx                   PROFILE  reads: users, user_achievements, reading_goals
 │       └── settings.tsx                Settings  reads/writes: notification_settings, users(theme)
 │
 ├── session/                            ROOT STACK (above tabs) — full screen
 │   ├── [userBookId].tsx                SESSION TRACKER (invisible UI, focus mode)  reads/writes: live_session_state, reading_sessions
-│   │                                   deep: logos://session/[userBookId]  (Live Activity tap target)
+│   │                                   deep: quire://session/[userBookId]  (Live Activity tap target)
 │   └── backdate.tsx                    Backdate session sheet (date/time/page pickers)
 │
 ├── (modals)/                           transparentModal presentations
 │   ├── session-complete.tsx            SESSION-END CELEBRATION (Duolingo moment, Sec 5 timeline)
 │   ├── milestone/[variant].tsx         MilestoneCelebration  variant ∈ normal|bigger|cinematic|legendary
 │   ├── reading-insight.tsx             ReadingInsightCard overlay (slide-up, 200pt, 6s auto-dismiss)
-│   ├── comeback.tsx                    ComebackChallengeScreen full modal  deep: logos://comeback
+│   ├── comeback.tsx                    ComebackChallengeScreen full modal  deep: quire://comeback
 │   ├── share-card.tsx                  Shareable card composer (Transparent/Dark toggle)  reads: reading_sessions, users.level_name
 │   ├── add-book.tsx                    Add-to-shelf sheet (format picker)
-│   ├── scanner.tsx                     ISBN scanner (camera perm at first open)  deep: logos://scan
+│   ├── scanner.tsx                     ISBN scanner (camera perm at first open)  deep: quire://scan
 │   ├── review.tsx                      Write/edit review  writes: reviews
 │   ├── filter-sort.tsx                 Library filter/sort bottom sheet
 │   ├── goal-edit.tsx                   Edit reading goal  writes: reading_goals
-│   └── paywall.tsx                     RevenueCat paywall (Phase 4, after aha)  deep: logos://upgrade
+│   └── paywall.tsx                     RevenueCat paywall (Phase 4, after aha)  deep: quire://upgrade
 │
 ├── ai/
-│   └── index.tsx                       Conversational AI recs (Phase 3, chat bubbles)  reads: ai_rec_cache  deep: logos://ai
+│   └── index.tsx                       Conversational AI recs (Phase 3, chat bubbles)  reads: ai_rec_cache  deep: quire://ai
 │
 └── +not-found.tsx
 ```
@@ -725,7 +725,7 @@ app/
 
 **Backdrop policy (implementation decision, 2026-06-04):** the app does **not** use frosted-glass / `BlurView` backdrops anywhere. Every modal, sheet, and celebration overlay dims the screen behind it with a **darkened translucent rgba scrim** (≈ `rgba(3,4,6,0.62)` dark / `rgba(17,19,24,0.4)` light). Rationale: consistent on iOS + Android, cheaper on Android, and the look the product wants. `expo-blur` is intentionally **not** a dependency. Any `BlurView intensity …` mentions elsewhere in this doc are superseded by this policy.
 
-**Deep link routes (full list → Section 19):** `logos://home · /library · /session/:id · /comeback · /insights · /discover · /stats · /ai · /scan · /upgrade · /book/:id · /share/:cardId`.
+**Deep link routes (full list → Section 19):** `quire://home · /library · /session/:id · /comeback · /insights · /discover · /stats · /ai · /scan · /upgrade · /book/:id · /share/:cardId`.
 
 # SECTION 4 — COMPONENT ARCHITECTURE
 
@@ -908,7 +908,7 @@ interface MilestoneCelebrationProps {
    bigger:    full-screen + auto-generated completion card + prominent share
    cinematic: 5s level-name display (Cormorant Garamond), full-screen Lottie,
               forced share prompt, grants Comeback-Protection badge
-   legendary: auto Year-in-Books card, "Literary Legend" reveal, Logos social post (Phase 3)
+   legendary: auto Year-in-Books card, "Literary Legend" reveal, Quire social post (Phase 3)
    Reanimated: scale/opacity sequence; levelName uses withDelay + withTiming reveal. */
 
 // E. LevelNameBadge — identity pill (cards + notif templating + alerts)
@@ -949,7 +949,7 @@ LEVELS = [
   {lvl:7, name:'Bibliophile',      minXp:20000},
   {lvl:8, name:'Tome Raider',      minXp:32000},
   {lvl:9, name:'Literary Athlete', minXp:50000},
-  {lvl:10,name:'Logos Legend',     minXp:80000},
+  {lvl:10,name:'Quire Legend',     minXp:80000},
 ]
 
 function level_from_xp(total_xp) -> {level, level_name, next_min, prev_min}:
@@ -1239,7 +1239,7 @@ function generate_insight_text(user_id, type, session) -> {text, snapshot}:
 
 # SECTION 7 — COMEBACK CHALLENGE — FULL SPEC
 
-**Depends on:** `comeback_challenges` table + partial unique index (Section 1), `comeback_challenge_trigger` / `_progress` (Section 5), `logos://comeback` deep link (Section 19), ComebackChallenge component (Section 4B).
+**Depends on:** `comeback_challenges` table + partial unique index (Section 1), `comeback_challenge_trigger` / `_progress` (Section 5), `quire://comeback` deep link (Section 19), ComebackChallenge component (Section 4B).
 
 **Highest-risk decision:** streak restoration writes `current_streak = streak_at_break` (NOT 0, NOT 3). The 3 comeback sessions are the *price of re-entry*, not the new streak value. Getting this wrong silently destroys the loss-aversion payoff.
 
@@ -1260,7 +1260,7 @@ function generate_insight_text(user_id, type, session) -> {text, snapshot}:
 - **At most ONE active** comeback per user (DB-enforced).
 - Window is **3 days** from creation.
 - On completion the **full** streak value returns (`streak_at_break`), `last_read_local_date` set to today so the streak continues cleanly.
-- Widget lives on **Home, above the bento grid**; full modal at `logos://comeback`.
+- Widget lives on **Home, above the bento grid**; full modal at `quire://comeback`.
 
 ### 7.3 Copy (with `[LevelName]`)
 
@@ -1466,7 +1466,7 @@ ShareCardCanvas (collapsable={false}, the view-shot ref target)
 ├── <SubStats row>                  // 2–3 secondary stats
 ├── <FormatBadge> (if ebook/audio)
 ├── <LevelNameBadge context="share_card" mode={mode} />   // identity pill
-└── <LogosWordmark>                 // bottom-right (badge goes bottom-left if so)
+└── <QuireWordmark>                 // bottom-right (badge goes bottom-left if so)
 ```
 
 ### 10.2 view-shot config
@@ -1525,14 +1525,14 @@ A segmented control at the top of the composer:
 
 ### 10.6 Level name badge placement
 
-- Pill, bottom-right of card **unless** the Logos wordmark occupies bottom-right — then badge goes **bottom-left**.
+- Pill, bottom-right of card **unless** the Quire wordmark occupies bottom-right — then badge goes **bottom-left**.
 - Transparent: `bg rgba(255,255,255,0.20)`, text `#FFFFFF`. Dark: `bg #F0B429` (gold), text `#FFFFFF`. Font: Label 10pt bold.
 - Always present on all 4 variants × 2 modes (Section 15).
 
 ### 10.7 Share text template
 
 ```
-"[N] pages in [duration] · [LevelName] on Logos 📖🔥
+"[N] pages in [duration] · [LevelName] on Quire 📖🔥
 Track every word you read → [branchShareUrl]"
 ```
 
@@ -1540,7 +1540,7 @@ Track every word you read → [branchShareUrl]"
 
 # SECTION 11 — DYNAMIC ISLAND & ANDROID LIVE NOTIFICATION
 
-**Depends on:** `live_session_state` table (Section 1), session tracker route (Section 3), deep link `logos://session/:id` (Section 19).
+**Depends on:** `live_session_state` table (Section 1), session tracker route (Section 3), deep link `quire://session/:id` (Section 19).
 
 **Highest-risk decision — Architecture (A/B/C):**
 
@@ -1556,7 +1556,7 @@ Track every word you read → [branchShareUrl]"
 
 ```swift
 // Swift Activity attributes + dynamic content state
-struct LogosSessionAttributes: ActivityAttributes {
+struct QuireSessionAttributes: ActivityAttributes {
   public struct ContentState: Codable, Hashable {
     var elapsedSeconds: Int
     var currentPage: Int
@@ -1588,7 +1588,7 @@ interface LiveActivityPayload {
 | **Expanded** (long-press) | cover thumb · book title · elapsed · page progress bar · `pagesRead` · level-name pill · "Tap to open" |
 | **Lock screen / banner** | full-width: cover · title · big elapsed · progress bar · `[LevelName]` · End button |
 
-Tap anywhere → deep link `logos://session/:sessionId` → resumes the full tracker.
+Tap anywhere → deep link `quire://session/:sessionId` → resumes the full tracker.
 
 ### 11.3 Update triggers
 
@@ -1827,7 +1827,7 @@ Share button `disabled={!ready}`.
 
 ```typescript
 const branchLink = await branch.createBranchUniversalObject(`card/${cardId}`, {
-  title: 'My reading on Logos',
+  title: 'My reading on Quire',
   contentImageUrl: uploadedCardUrl,       // uploaded to Supabase Storage (public bucket)
   contentMetadata: { customMetadata: { card_id: cardId, level_name: levelName } },
 }).generateShortUrl({ feature:'share', channel:'card' });
@@ -1861,7 +1861,7 @@ reading_insight:            "[LevelName] — you've unlocked a personal reading 
 long_absence_3d:            "[LevelName] — it's been 3 days. [BookTitle] is waiting on page [N]."
 ```
 
-Each notification carries a `data.deepLink` (e.g. `logos://comeback`, `logos://session/:id`, `logos://insights`).
+Each notification carries a `data.deepLink` (e.g. `quire://comeback`, `quire://session/:id`, `quire://insights`).
 
 ### 16.2 `send_push` edge function
 
@@ -1876,7 +1876,7 @@ function send_push(user_ids[], notif_type, vars):
      if not s.enabled OR not channel_enabled(s, notif_type): continue
      if in_quiet_hours(u, s): defer_to(s.quiet_hours_end); continue
      body = render_template(notif_type, { LevelName:u.level_name, ...vars[u.id] })
-     messages.push({ to:u.expo_push_token, title:'Logos', body,
+     messages.push({ to:u.expo_push_token, title:'Quire', body,
                      data:{ deepLink: deep_link_for(notif_type, vars[u.id]) },
                      sound:'default', priority:'high' })
   # Expo push API: batch ≤100
@@ -1916,7 +1916,7 @@ function send_push(user_ids[], notif_type, vars):
 ### 17.1 Full system prompt (verbatim)
 
 ```
-You are Logos's in-app literary guide. Logos is a reading-tracker app whose users
+You are Quire's in-app literary guide. Quire is a reading-tracker app whose users
 think of themselves as serious, committed readers — "literary athletes." Your job is
 to recommend books that fit the reader's stated mood and history, in a warm,
 literate, concise voice. You are a well-read friend, not a salesperson.
@@ -1974,7 +1974,7 @@ const resp = await fetch('https://api.anthropic.com/v1/messages', {
   body: JSON.stringify({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
-    system: LOGOS_SYSTEM_PROMPT,                 // text above; sent as system param
+    system: QUIRE_SYSTEM_PROMPT,                 // text above; sent as system param
     messages: [{ role:'user', content: JSON.stringify(req) }],
   }),
 });
@@ -2022,7 +2022,7 @@ function parseClaude(text:string): RecResponse {
 ```typescript
 import PostHog from 'posthog-react-native';
 export const posthog = new PostHog(POSTHOG_KEY, {
-  host: 'https://analytics.logos.app',   // self-hosted DigitalOcean
+  host: 'https://analytics.quire.app',   // self-hosted DigitalOcean
   captureAppLifecycleEvents: true,
   flushAt: 20, flushInterval: 30,
 });
@@ -2095,7 +2095,7 @@ export function track<E extends keyof AnalyticsEvents>(e: E, p: AnalyticsEvents[
 
 ```pseudocode
 function posthog_server(event, props, user_id):
-  POST https://analytics.logos.app/capture/
+  POST https://analytics.quire.app/capture/
     { api_key, event, distinct_id:user_id, properties: props ∪ {source:'server'} }
 # used for: comeback_challenge_shown/_completed/_expired, streak_broken (cron), weekly_digest_sent
 ```
@@ -2110,7 +2110,7 @@ User properties kept current: `level_name` updated via `posthog.identify` on eve
 
 **Depends on:** Expo Router + Expo Linking, Branch.io (deferred deep links), notification `data.deepLink`.
 
-**Highest-risk decision:** Branch handles **deferred** deep links (link clicked → install → first open lands on target). Expo Linking handles **direct** `logos://` and universal links for already-installed users. Both resolve to the same Expo Router paths.
+**Highest-risk decision:** Branch handles **deferred** deep links (link clicked → install → first open lands on target). Expo Linking handles **direct** `quire://` and universal links for already-installed users. Both resolve to the same Expo Router paths.
 
 **Most common mistake:** mismatched scheme/path between notification payloads and the router tree → silent no-op. The table below is the contract.
 
@@ -2118,28 +2118,28 @@ User properties kept current: `level_name` updated via `posthog.identify` on eve
 
 | URL | Router path | Notes |
 |---|---|---|
-| `logos://home` | `/(tabs)/home` | default |
-| `logos://library` | `/(tabs)/library` | |
-| `logos://book/:id` | `/(tabs)/library/[userBookId]` | from share/social |
-| `logos://session/:id` | `/session/[userBookId]` | **Live Activity tap target** |
-| `logos://comeback` | `/(modals)/comeback` | comeback push |
-| `logos://insights` | `/(tabs)/home/insights` | insight push |
-| `logos://discover` | `/(tabs)/discover` | |
-| `logos://stats` | `/(tabs)/stats` | |
-| `logos://ai` | `/ai` | Phase 3 |
-| `logos://scan` | `/(modals)/scanner` | |
-| `logos://upgrade` | `/(modals)/paywall` | Phase 4 |
-| `logos://share/:cardId` | `/(modals)/share-card?cardId=` | from Branch |
-| `https://logos.app/book/:id` | universal link → `/library/[id]` | Branch + AASA/assetlinks |
+| `quire://home` | `/(tabs)/home` | default |
+| `quire://library` | `/(tabs)/library` | |
+| `quire://book/:id` | `/(tabs)/library/[userBookId]` | from share/social |
+| `quire://session/:id` | `/session/[userBookId]` | **Live Activity tap target** |
+| `quire://comeback` | `/(modals)/comeback` | comeback push |
+| `quire://insights` | `/(tabs)/home/insights` | insight push |
+| `quire://discover` | `/(tabs)/discover` | |
+| `quire://stats` | `/(tabs)/stats` | |
+| `quire://ai` | `/ai` | Phase 3 |
+| `quire://scan` | `/(modals)/scanner` | |
+| `quire://upgrade` | `/(modals)/paywall` | Phase 4 |
+| `quire://share/:cardId` | `/(modals)/share-card?cardId=` | from Branch |
+| `https://quire.app/book/:id` | universal link → `/library/[id]` | Branch + AASA/assetlinks |
 
 ### 19.2 Expo config
 
 ```json
 // app.json
-{ "expo": { "scheme": "logos",
-  "ios": { "associatedDomains": ["applinks:logos.app", "applinks:logos.app.link"] },
+{ "expo": { "scheme": "quire",
+  "ios": { "associatedDomains": ["applinks:quire.app", "applinks:quire.app.link"] },
   "android": { "intentFilters": [{ "action":"VIEW", "autoVerify":true,
-     "data":[{ "scheme":"https", "host":"logos.app" }],
+     "data":[{ "scheme":"https", "host":"quire.app" }],
      "category":["BROWSABLE","DEFAULT"] }] } } }
 ```
 
@@ -2149,9 +2149,9 @@ User properties kept current: `level_name` updated via `posthog.identify` on eve
 - Share cards generate Branch links with `$deeplink_path` = `share/:cardId` and `$og_image_url` = uploaded card PNG (for rich previews).
 - Deferred: a non-user who taps a friend's streak card → installs → first open routes to that card/book with `+clicked_branch_link`.
 
-### 19.4 `logos://comeback` flow
+### 19.4 `quire://comeback` flow
 
-Push `comeback_challenge_created` → `data.deepLink='logos://comeback'` → tap → `/(modals)/comeback` full modal → "Start Session" → `/session/[lastBook]`.
+Push `comeback_challenge_created` → `data.deepLink='quire://comeback'` → tap → `/(modals)/comeback` full modal → "Start Session" → `/session/[lastBook]`.
 
 ---
 
@@ -2228,8 +2228,8 @@ Push `comeback_challenge_created` → `data.deepLink='logos://comeback'` → tap
 | Account deletion | in-app, reachable in ≤2 taps from Settings | `delete_account` edge fn: `auth.admin.deleteUser` → CASCADE removes all rows; cancel RevenueCat entitlement; PostHog `$delete`; confirm dialog + re-auth |
 | GDPR erasure | complete within 30 days | immediate cascade; backups purged ≤30d `[VERIFY]` Supabase backup retention |
 | Data export | JSON within 24h | `export_data` async job → Storage signed URL (24h expiry) emailed |
-| Privacy Policy | live before beta | `logos.app/privacy` |
-| Terms of Service | live before beta | `logos.app/terms` |
+| Privacy Policy | live before beta | `quire.app/privacy` |
+| Terms of Service | live before beta | `quire.app/terms` |
 | Age gate | birth_year only (COPPA) | under-13 blocked screen; 13–17 `is_minor` → no social, no public reviews (RLS + trigger) |
 | App Store age rating | 12+ | set in App Store Connect |
 | COPPA | no data collection from under-13 | blocked at gate before any account creation |
@@ -2335,7 +2335,7 @@ function delete_account():
 | Streak Freeze tokens | P4 | 1 |
 | ASO optimization | P4 | ongoing |
 
-**ASO plan:** keywords — "reading tracker, book tracker, reading streak, reading timer, books read, reading stats, TBR." Title: "Logos — Reading Tracker & Streaks." Subtitle leads with session timer + streaks (vs Goodreads gap). Screenshots: session timer → streak flame → transparent share card → Dynamic Island → stats bento. App Preview video shows a live session + session-end celebration. Localize top 5 markets. A/B test icon (flame vs open book). Encourage ratings after a milestone celebration (not randomly).
+**ASO plan:** keywords — "reading tracker, book tracker, reading streak, reading timer, books read, reading stats, TBR." Title: "Quire — Reading Tracker & Streaks." Subtitle leads with session timer + streaks (vs Goodreads gap). Screenshots: session timer → streak flame → transparent share card → Dynamic Island → stats bento. App Preview video shows a live session + session-end celebration. Localize top 5 markets. A/B test icon (flame vs open book). Encourage ratings after a milestone celebration (not randomly).
 
 ### 22.5 Technical risk register (22 risks, each with implementable mitigation)
 

@@ -186,7 +186,7 @@ export default function Profile() {
               </Text>
             ) : (
               <Text style={[styles.helper, { color: t.textTer }]}>
-                This is how Logos will greet you.
+                This is how Quire will greet you.
               </Text>
             )}
           </View>

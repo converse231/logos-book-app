@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- The foreground service + permissions are injected into the app's main
+       manifest by plugins/withReadingActivity.js so the foregroundServiceType and
+       special-use declaration live in one place. This module manifest is empty. -->
+</manifest>

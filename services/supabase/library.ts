@@ -5,7 +5,7 @@
 // through the ensure_book edge function (service-role write to public.books).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import type { Book, BookFormat, BookSearchResult, ReadingStatus, Review, UserBook } from '../types';
 import { supabase } from '@/lib/supabase';
 import { recommendedBooks, searchBooks as catalogSearch, enrichFromOpenLibrary, type EnsureBookInput } from '@/lib/bookSearch';
@@ -89,7 +89,7 @@ async function requireUid(): Promise<string> {
   return uid;
 }
 
-export const libraryApi: Partial<LogosApi> = {
+export const libraryApi: Partial<QuireApi> = {
   // ── Search (client-side catalog, no DB) ─────────────────────────────────────
   async searchBooks(query) {
     return catalogSearch(query);

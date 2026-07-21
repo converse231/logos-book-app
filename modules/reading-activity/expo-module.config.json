@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["ReadingActivityModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.readingactivity.ReadingActivityModule"]
+  }
+}

@@ -3,12 +3,14 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
+  Easing,
   FadeIn,
   FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withSpring,
+  withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -189,8 +191,18 @@ export default function SessionComplete() {
   );
 }
 
-// The centrepiece: the cover springs up from nothing, sits on a hard ink shadow,
-// and takes a celebration stamp on its corner (trophy on a personal best).
+const COVER_W = 160;
+const LIFT_OFFSET = 7; // final hard-shadow offset — how far the block lifts
+
+// The centrepiece. A layered, weighted reveal rather than a scale-from-nothing
+// bounce — three beats that overlap:
+//   1. SETTLE — the cover rises with a slight 3D tilt that straightens out, on a
+//      well-damped spring (it lands; it doesn't wobble).
+//   2. LIFT   — its hard ink shadow then slides out from flush, so the block
+//      visibly peels off the page. This is the Paper & Ink signature, shared with
+//      the add-book reveal.
+//   3. STAMP  — the seal presses onto the corner last, with a tight pop.
+// Reduced motion renders the settled end-state with no travel.
 function CoverHero({
   coverUrl,
   title,
@@ -205,24 +217,62 @@ function CoverHero({
   reduce: boolean;
 }) {
   const t = useTheme();
-  const scale = useSharedValue(reduce ? 1 : 0);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const settle = useSharedValue(reduce ? 1 : 0);
+  const lift = useSharedValue(reduce ? 1 : 0);
+  const stamp = useSharedValue(reduce ? 1 : 0);
+
   useEffect(() => {
-    if (!reduce) scale.value = withDelay(80, withSpring(1, ANIMATION.springBouncy));
-  }, [reduce, scale]);
+    if (reduce) return;
+    settle.value = withDelay(60, withSpring(1, ANIMATION.springSmooth));
+    lift.value = withDelay(260, withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) }));
+    stamp.value = withDelay(440, withSpring(1, ANIMATION.springBouncy));
+  }, [reduce, settle, lift, stamp]);
+
+  const coverStyle = useAnimatedStyle(() => ({
+    opacity: settle.value,
+    transform: [
+      { perspective: 900 },
+      { translateY: (1 - settle.value) * 24 },
+      { rotateY: `${(1 - settle.value) * -14}deg` },
+      { scale: 0.9 + settle.value * 0.1 },
+    ],
+  }));
+
+  // The ink block starts flush behind the cover and slides to its offset.
+  const liftStyle = useAnimatedStyle(() => ({
+    opacity: lift.value,
+    transform: [
+      { translateX: lift.value * LIFT_OFFSET },
+      { translateY: lift.value * LIFT_OFFSET },
+    ],
+  }));
+
+  const stampStyle = useAnimatedStyle(() => ({
+    opacity: stamp.value,
+    transform: [{ scale: stamp.value }, { rotate: `${(1 - stamp.value) * -30}deg` }],
+  }));
 
   return (
-    <Animated.View style={[styles.coverWrap, style]}>
+    <View style={styles.coverWrap}>
       <Sparkle size={28} color={PALETTE.gold} delay={0} style={styles.sparkTL} />
       <Sparkle size={20} color={PALETTE.level} delay={320} style={styles.sparkR} />
       <Sparkle size={18} color={PALETTE.ember} delay={640} style={styles.sparkBL} />
-      <View style={styles.coverShadow}>
-        <BookCover url={coverUrl} title={title} format={format} width={160} />
-      </View>
-      <View style={[styles.coverSticker, { backgroundColor: isPB ? t.gold : t.accent, borderColor: t.border }]}>
+
+      <Animated.View style={coverStyle}>
+        <Animated.View style={[styles.liftBlock, liftStyle]} pointerEvents="none" />
+        <BookCover url={coverUrl} title={title} format={format} width={COVER_W} />
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.coverSticker,
+          stampStyle,
+          { backgroundColor: isPB ? t.gold : t.accent, borderColor: t.border },
+        ]}
+      >
         <Ionicons name={isPB ? 'trophy' : 'checkmark'} size={22} color={isPB ? INK : t.onAccent} />
-      </View>
-    </Animated.View>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -269,7 +319,9 @@ const styles = StyleSheet.create({
 
   // Cover hero
   coverWrap: { alignSelf: 'center', position: 'relative', marginBottom: 4 },
-  coverShadow: { ...SHADOW.lg },
+  // Sits flush behind the (opaque) cover and slides out to its offset, so only the
+  // L-shape shows — a hard ink shadow that animates, which a boxShadow can't do.
+  liftBlock: { ...StyleSheet.absoluteFillObject, backgroundColor: INK, borderRadius: 14 },
   coverSticker: {
     position: 'absolute', top: -14, right: -14, width: 42, height: 42, borderRadius: 21,
     borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center',

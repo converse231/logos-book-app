@@ -12,7 +12,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import type { LogosApi } from '@/services/api';
+import type { QuireApi } from '@/services/api';
 
 // Foreground behavior: show the banner + play sound even when the app is open.
 Notifications.setNotificationHandler({
@@ -37,7 +37,7 @@ function getProjectId(): string | undefined {
 /** Ask for permission and register this device's Expo push token with the server.
  *  Idempotent and safe to call repeatedly. Returns the token, or null if it
  *  couldn't register (no permission, Expo Go, simulator, etc.). */
-export async function registerForPushNotifications(api: LogosApi): Promise<string | null> {
+export async function registerForPushNotifications(api: QuireApi): Promise<string | null> {
   try {
     if (isExpoGo || !Device.isDevice) return null; // no push in Expo Go / on simulators
 

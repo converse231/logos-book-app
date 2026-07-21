@@ -57,7 +57,7 @@ export default function AgeGate() {
       step={0}
       totalSteps={5}
       title="When were you born?"
-      subtitle="Logos is for readers 13 and up. We only use this to keep things age-appropriate."
+      subtitle="Quire is for readers 13 and up. We only use this to keep things age-appropriate."
       footer={
         <View style={styles.footer}>
           <PrimaryButton
@@ -108,7 +108,7 @@ function BlockedScreen() {
         Come back when you're a little older
       </Text>
       <Text style={[styles.blockedBody, { color: t.textSec }]}>
-        Logos is built for readers 13 and up. We can't create an account for you just yet — but
+        Quire is built for readers 13 and up. We can't create an account for you just yet — but
         your books will be waiting.
       </Text>
     </View>

@@ -15,6 +15,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Constants from 'expo-constants';
+import ReadingActivity from '@/modules/reading-activity';
 
 export interface LiveActivityStart {
   bookTitle: string;
@@ -32,11 +33,12 @@ export interface LiveActivityUpdate {
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
-// Resolves to the native live-activity module on a dev build, else null.
-// Plug the chosen module in here at B5 (e.g. `return require('expo-live-activity')`).
-function getModule(): any | null {
+// Resolves to the native live-activity module on a dev/standalone build where it's
+// supported, else null. `ReadingActivity.isSupported` is false in Expo Go (the
+// native module isn't present), so every call below stays a safe no-op there.
+function getModule(): typeof ReadingActivity | null {
   if (isExpoGo) return null;
-  return null; // no native module wired yet → safe no-op everywhere
+  return ReadingActivity.isSupported ? ReadingActivity : null;
 }
 
 let active = false;
@@ -46,8 +48,14 @@ export async function startReadingActivity(info: LiveActivityStart): Promise<voi
   const mod = getModule();
   if (!mod) return;
   try {
-    // mod.start({ title: info.bookTitle, cover: info.coverUrl, startedAt: info.startedAtMs,
-    //             startPage: info.startPage, pageCount: info.pageCount, format: info.format });
+    mod.start({
+      title: info.bookTitle,
+      cover: info.coverUrl,
+      format: info.format,
+      startedAtMs: info.startedAtMs,
+      startPage: info.startPage,
+      pageCount: info.pageCount,
+    });
     active = true;
   } catch {
     active = false; // never let a live-activity failure disrupt the session
@@ -60,7 +68,7 @@ export async function updateReadingActivity(patch: LiveActivityUpdate): Promise<
   const mod = getModule();
   if (!mod) return;
   try {
-    // mod.update({ paused: patch.paused, page: patch.currentPage });
+    mod.update({ paused: patch.paused, currentPage: patch.currentPage });
   } catch {
     // ignore — a failed update must never interrupt reading
   }
@@ -73,7 +81,7 @@ export async function endReadingActivity(): Promise<void> {
   active = false;
   if (!mod) return;
   try {
-    // mod.end();
+    mod.end();
   } catch {
     // ignore
   }

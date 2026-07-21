@@ -3,7 +3,7 @@
 // (which holds the Anthropic key + the 7-day cache). No model logic here.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import type { AiRecResult } from '../types';
 import { supabase } from '@/lib/supabase';
 
@@ -20,7 +20,7 @@ async function readEdgeError(err: any): Promise<string> {
   return err?.message ?? 'AI request failed.';
 }
 
-export const aiApi: Partial<LogosApi> = {
+export const aiApi: Partial<QuireApi> = {
   async aiRecommend(mood: string, context?: string): Promise<AiRecResult> {
     const { data, error } = await supabase.functions.invoke('ai_recommend', {
       body: { mood, context: context ?? '' },

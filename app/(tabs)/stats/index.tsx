@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { HomeData, ReadingSession, StatsData, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -339,17 +339,17 @@ function StatsSkeleton({ topInset }: { topInset: number }) {
       scrollEnabled={false}
     >
       <Skeleton width={120} height={30} />
-      <Skeleton width="100%" height={150} radius={22} />
+      <Skeleton width="100%" height={150} radius={RADIUS.card} />
       <View style={styles.statRow}>
-        <Skeleton width="48%" height={92} radius={16} />
-        <Skeleton width="48%" height={92} radius={16} />
+        <Skeleton width="48%" height={92} radius={14} />
+        <Skeleton width="48%" height={92} radius={14} />
       </View>
       <View style={styles.statRow}>
-        <Skeleton width="48%" height={92} radius={16} />
-        <Skeleton width="48%" height={92} radius={16} />
+        <Skeleton width="48%" height={92} radius={14} />
+        <Skeleton width="48%" height={92} radius={14} />
       </View>
-      <Skeleton width="100%" height={170} radius={22} />
-      <Skeleton width="100%" height={190} radius={22} />
+      <Skeleton width="100%" height={170} radius={RADIUS.card} />
+      <Skeleton width="100%" height={190} radius={RADIUS.card} />
     </ScrollView>
   );
 }

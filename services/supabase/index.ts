@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Supabase implementation of LogosApi — assembled method-group by method-group
+// Supabase implementation of QuireApi — assembled method-group by method-group
 // across the B-phases (see CLAUDE.md "Backend integration roadmap").
 //
 // THE SEAM: `liveApi` is the mock with the real Supabase methods layered on top.
@@ -15,10 +15,10 @@
 //     B6 — bestsellerApi: getBestsellers (NYT cache, sync_bestsellers edge fn + cron)
 //     B5 — notificationApi: notification settings + push-token registration
 //   Still on the mock:
-//     (none of the LogosApi surface — B4b adds the MMKV offline queue around completeSession)
+//     (none of the QuireApi surface — B4b adds the MMKV offline queue around completeSession)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import { mockApi } from '../mock';
 import { authApi } from './auth';
 import { libraryApi } from './library';
@@ -30,7 +30,7 @@ import { notificationApi } from './notifications';
 import { feedbackApi } from './feedback';
 
 // Real method groups, in B-phase order. Spread last-wins over the mock.
-export const liveApi: LogosApi = {
+export const liveApi: QuireApi = {
   ...mockApi,
   ...authApi,
   ...libraryApi,

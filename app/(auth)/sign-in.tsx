@@ -124,7 +124,7 @@ export default function SignIn() {
               style={styles.altLink}
             >
               <Text style={[styles.altText, { color: t.textSec }]}>
-                New to Logos? <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>Create an account</Text>
+                New to Quire? <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>Create an account</Text>
               </Text>
             </Pressable>
           </View>

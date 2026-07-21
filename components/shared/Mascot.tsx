@@ -24,7 +24,7 @@ interface MascotProps {
   accessibilityLabel?: string;
 }
 
-// Fable — the LOGOS fox. Aesop's original storyteller, drawn in the Paper & Ink
+// Fable — the Quire fox. Aesop's original storyteller, drawn in the Paper & Ink
 // language: warm ember coat, cream muzzle, thick ink linework. A hand-built SVG
 // (not an emoji) so it stays crisp at any size and owns the brand. Fixed identity
 // colours read cleanly on both the light paper and the warm-dark substrate.
@@ -38,7 +38,7 @@ export function Mascot({
   animated = true,
   sparkle = false,
   style,
-  accessibilityLabel = 'Fable, the LOGOS fox',
+  accessibilityLabel = 'Fable, the Quire fox',
 }: MascotProps) {
   const reduce = useReducedMotion();
   const bob = useSharedValue(0);

@@ -595,26 +595,26 @@ function BookDetailSkeleton({ topInset, coverW }: { topInset: number; coverW: nu
       scrollEnabled={false}
     >
       <View style={styles.topBar}>
-        <Skeleton width={42} height={42} radius={21} />
-        <Skeleton width={42} height={42} radius={21} />
+        <Skeleton width={42} height={42} radius={14} />
+        <Skeleton width={42} height={42} radius={14} />
       </View>
       <View style={styles.skelHero}>
-        <Skeleton width={coverW} height={coverW / 0.66} radius={10} />
+        <Skeleton width={coverW} height={coverW / 0.66} radius={14} />
       </View>
-      <Skeleton width="100%" height={56} radius={16} />
+      <Skeleton width="100%" height={56} radius={14} />
       <View style={styles.skelIdentity}>
         <Skeleton width={120} height={13} />
         <Skeleton width={240} height={28} />
         <Skeleton width={160} height={15} />
       </View>
       <View style={styles.skelChips}>
-        <Skeleton width={90} height={34} radius={999} />
-        <Skeleton width={120} height={34} radius={999} />
-        <Skeleton width={80} height={34} radius={999} />
+        <Skeleton width={90} height={34} radius={14} />
+        <Skeleton width={120} height={34} radius={14} />
+        <Skeleton width={80} height={34} radius={14} />
       </View>
       <View style={styles.statusRow}>
         {[0, 1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} width="18%" height={42} radius={12} />
+          <Skeleton key={i} width="18%" height={42} radius={14} />
         ))}
       </View>
     </ScrollView>

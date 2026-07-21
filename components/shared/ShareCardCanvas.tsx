@@ -1,8 +1,7 @@
 import { forwardRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { BookCover } from './BookCover';
-import { BookEmblem } from './BookEmblem';
-import { PageTrail } from './PageTrail';
+import { BookProgressMark } from './BookProgressMark';
 import { FONTS } from '@/theme/tokens';
 import { BookFormat, CardVariant } from '@/services/types';
 
@@ -13,18 +12,19 @@ export interface CardStats {
   bookTitle?: string;
   bookCoverUrl?: string | null;
   format?: BookFormat;
-  // Page Trail data — where this session sat inside the book. Present for live
-  // paged sessions; absent for audiobooks / re-shares without page context.
+  // Where this session left the reader inside the book — drives the shape of the
+  // progress mark. Present for live paged sessions; absent for audiobooks /
+  // re-shares without page context (the mark then draws a neutral open book).
   pageCount?: number | null;
   startPage?: number | null;
   endPage?: number | null;
 }
 
-// 'emblem'      — the feature composition with the coral open-book mark standing in
-//                 for the cover (for readers who don't want jacket art on a story).
+// 'emblem'      — the feature composition with the coral book mark standing in for
+//                 the cover (for readers who don't want jacket art on a story).
 // 'statsEmblem' — the same swap on the stats composition.
-// 'trail'       — the signature: the book's fore-edge with THIS session's run in coral.
-export type CardLayout = 'feature' | 'stats' | 'emblem' | 'statsEmblem' | 'trail';
+// The mark's shape is the signature: it's drawn from how far into the book you are.
+export type CardLayout = 'feature' | 'stats' | 'emblem' | 'statsEmblem';
 
 interface ShareCardCanvasProps {
   variant: CardVariant;
@@ -45,11 +45,10 @@ export const ShareCardCanvas = forwardRef<View, ShareCardCanvasProps>(
   ({ mode, layout = 'feature', stats, width }, ref) => {
     const height = width * 1.25; // 4:5
     const isDark = mode === 'dark';
-    const innerW = width - width * 0.12; // card width minus horizontal padding
-    // The trail needs page context; audiobooks / re-shares without it fall back
-    // to the cover-led feature card rather than rendering an empty strip.
-    const canTrail =
-      !!stats.pageCount && stats.startPage != null && stats.endPage != null;
+    // How far into the book this session left them — the mark draws itself from
+    // this. null (audiobook / re-share) → a neutral half-open book.
+    const bookProgress =
+      stats.pageCount && stats.endPage != null ? stats.endPage / stats.pageCount : null;
 
     // Hero stat + the sub-stats, as one ordered list for the vertical layout.
     const allStats = [
@@ -101,7 +100,7 @@ export const ShareCardCanvas = forwardRef<View, ShareCardCanvasProps>(
 
             <View style={styles.statsFooter}>
               {layout === 'statsEmblem' ? (
-                <BookEmblem size={width * 0.32} />
+                <BookProgressMark progress={bookProgress} size={width * 0.32} />
               ) : (
                 <View style={styles.coverWrap}>
                   <BookCover
@@ -112,55 +111,6 @@ export const ShareCardCanvas = forwardRef<View, ShareCardCanvasProps>(
                   />
                 </View>
               )}
-            </View>
-          </>
-        ) : layout === 'trail' && canTrail ? (
-          // ── TRAIL (the signature: your route through the book) ───────────────
-          <>
-            {stats.bookTitle ? (
-              <Text style={[styles.bookTitle, textShadow, { fontSize: width * 0.062 }]} numberOfLines={2}>
-                {stats.bookTitle}
-              </Text>
-            ) : (
-              <View />
-            )}
-
-            <View style={styles.trailBlock}>
-              <Text style={[styles.trailKicker, textShadow, { fontSize: width * 0.042 }]}>
-                TONIGHT&apos;S ROUTE
-              </Text>
-              <PageTrail
-                pageCount={stats.pageCount!}
-                startPage={stats.startPage!}
-                endPage={stats.endPage!}
-                width={innerW}
-              />
-              <View style={[styles.trailLabels, { width: innerW }]}>
-                <Text style={[styles.trailLabel, textShadow, { fontSize: width * 0.042 }]}>
-                  p.{stats.startPage}
-                </Text>
-                <Text style={[styles.trailLabel, textShadow, { fontSize: width * 0.042 }]}>
-                  p.{stats.endPage} / {stats.pageCount}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.headlineBlock}>
-              <Text style={[styles.headline, headlineShadow, { fontSize: width * 0.28, lineHeight: width * 0.28 }]}>
-                {stats.headline}
-              </Text>
-              <Text style={[styles.headlineUnit, textShadow, { fontSize: width * 0.072 }]}>
-                {stats.headlineUnit}
-              </Text>
-            </View>
-
-            <View style={styles.subRow}>
-              {stats.sub.map((s, i) => (
-                <View key={i} style={styles.subItem}>
-                  <Text style={[styles.subValue, textShadow, { fontSize: width * 0.095 }]}>{s.value}</Text>
-                  <Text style={[styles.subLabel, textShadow, { fontSize: width * 0.052 }]}>{s.label.toUpperCase()}</Text>
-                </View>
-              ))}
             </View>
           </>
         ) : (
@@ -174,7 +124,7 @@ export const ShareCardCanvas = forwardRef<View, ShareCardCanvasProps>(
                 </Text>
               ) : null}
               {layout === 'emblem' ? (
-                <BookEmblem size={width * 0.34} />
+                <BookProgressMark progress={bookProgress} size={width * 0.34} />
               ) : stats.bookTitle ? (
                 <View style={styles.coverWrap}>
                   <BookCover
@@ -252,12 +202,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  // Trail layout
-  trailBlock: { alignItems: 'flex-start', gap: 8 },
-  trailKicker: { fontFamily: FONTS.mono, color: 'rgba(255,255,255,0.85)', letterSpacing: 1.4 },
-  trailLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  trailLabel: { fontFamily: FONTS.mono, color: 'rgba(255,255,255,0.85)', fontVariant: ['tabular-nums'] },
-
   headlineBlock: { alignItems: 'flex-start' },
   headline: { fontFamily: FONTS.uiBold, color: '#FFFFFF', fontVariant: ['tabular-nums'] },
   headlineUnit: { fontFamily: FONTS.uiMedium, color: '#FFFFFF', marginTop: 2 },

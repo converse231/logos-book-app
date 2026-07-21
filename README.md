@@ -1,4 +1,4 @@
-# LOGOS
+# Quire
 
 > In the beginning was the Word. Track every one you read.
 
@@ -48,7 +48,7 @@ app/                 Expo Router file-based routes
 └── ai/               conversational book recommendations
 
 components/          Shared UI components
-services/            LogosApi interface + mock and Supabase implementations
+services/            QuireApi interface + mock and Supabase implementations
 stores/              Zustand stores (session, library, app state)
 theme/               Design tokens (color, type, spacing, shadow)
 lib/                 Small platform helpers (notifications, live activity, ...)
@@ -59,7 +59,7 @@ supabase/
 
 ## Backend
 
-The app talks to Supabase through a single typed `LogosApi` interface (`services/api.ts`), so the UI never depends on Supabase directly. All post-session gamification math (streaks, XP, badges, comeback challenges) runs server-side in one atomic `complete_session` RPC — never computed on the client.
+The app talks to Supabase through a single typed `QuireApi` interface (`services/api.ts`), so the UI never depends on Supabase directly. All post-session gamification math (streaks, XP, badges, comeback challenges) runs server-side in one atomic `complete_session` RPC — never computed on the client.
 
 To stand up your own backend: create a Supabase project, then run the SQL files in `supabase/migrations/` in filename order, and deploy the functions in `supabase/functions/` with `supabase functions deploy <name>`.
 

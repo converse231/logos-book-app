@@ -95,7 +95,7 @@ export default function SessionHistory() {
       ) : !rows ? (
         <View style={styles.list}>
           {[0, 1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} width="100%" height={72} radius={0} />
+            <Skeleton key={i} width="100%" height={72} radius={14} />
           ))}
         </View>
       ) : rows.length === 0 ? (

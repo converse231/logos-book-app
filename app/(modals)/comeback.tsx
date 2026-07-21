@@ -14,7 +14,7 @@ import { PressBlock } from '@/components/shared/PressBlock';
 
 // Comeback Challenge (blueprint Section 5). A streak broke; finish 3 sessions
 // before it expires to restore it. Loss-aversion framed in gold. Deep link:
-// logos://comeback.
+// quire://comeback.
 export default function Comeback() {
   const t = useTheme();
   const router = useRouter();

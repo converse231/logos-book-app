@@ -336,18 +336,18 @@ function ProfileSkeleton({ topInset }: { topInset: number }) {
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingTop: topInset, paddingBottom: 40 }]} showsVerticalScrollIndicator={false} scrollEnabled={false}>
       <View style={styles.topBar}>
-        <Skeleton width={42} height={42} radius={0} />
-        <Skeleton width={42} height={42} radius={0} />
+        <Skeleton width={42} height={42} radius={14} />
+        <Skeleton width={42} height={42} radius={14} />
       </View>
       <View style={styles.skelIdentity}>
-        <Skeleton width={80} height={80} radius={0} />
+        <Skeleton width={76} height={76} radius={14} />
         <Skeleton width={170} height={28} />
         <Skeleton width={220} height={14} />
       </View>
-      <Skeleton width="100%" height={150} radius={0} />
-      <Skeleton width="100%" height={88} radius={0} />
-      <Skeleton width="100%" height={150} radius={0} />
-      <Skeleton width="100%" height={260} radius={0} />
+      <Skeleton width="100%" height={150} radius={14} />
+      <Skeleton width="100%" height={88} radius={14} />
+      <Skeleton width="100%" height={150} radius={14} />
+      <Skeleton width="100%" height={260} radius={14} />
     </ScrollView>
   );
 }

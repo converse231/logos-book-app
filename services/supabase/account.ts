@@ -7,7 +7,7 @@
 // the auth user requires admin), then signs out locally.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import { supabase } from '@/lib/supabase';
 
 // Owner-scoped tables included in a data export (RLS returns only the caller's rows).
@@ -37,7 +37,7 @@ async function readEdgeError(err: any): Promise<string> {
   return err?.message ?? 'Request failed.';
 }
 
-export const accountApi: Partial<LogosApi> = {
+export const accountApi: Partial<QuireApi> = {
   async exportData(): Promise<string> {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user.id;

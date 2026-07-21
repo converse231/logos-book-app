@@ -15,7 +15,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { decode } from 'base64-arraybuffer';
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import type { LevelName, SubStatus, ThemePref, UserProfile } from '../types';
 import { supabase } from '@/lib/supabase';
 
@@ -71,7 +71,7 @@ async function currentUserEmail(): Promise<string | null> {
 
 // Only the B2 method group. Composed over the mock in services/supabase/index.ts,
 // so every not-yet-implemented method keeps falling through to the mock.
-export const authApi: Partial<LogosApi> = {
+export const authApi: Partial<QuireApi> = {
   // ── Auth ──────────────────────────────────────────────────────────────────
   async signIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({

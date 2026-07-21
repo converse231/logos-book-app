@@ -60,7 +60,7 @@ export default function Browse() {
       ) : !books ? (
         <View style={styles.grid}>
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <View key={i} style={styles.cell}><Skeleton width="100%" height={170} radius={0} /></View>
+            <View key={i} style={styles.cell}><Skeleton width="100%" height={170} radius={14} /></View>
           ))}
         </View>
       ) : books.length === 0 ? (

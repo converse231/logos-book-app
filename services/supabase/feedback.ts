@@ -7,7 +7,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import { supabase } from '@/lib/supabase';
 
 function platformTag(): string {
@@ -17,7 +17,7 @@ function platformTag(): string {
   return `${os} ${ver}${model}`.trim();
 }
 
-export const feedbackApi: Partial<LogosApi> = {
+export const feedbackApi: Partial<QuireApi> = {
   async submitFeedback({ kind, message }): Promise<void> {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user.id;

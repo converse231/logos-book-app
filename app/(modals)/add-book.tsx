@@ -64,7 +64,7 @@ export default function AddBook() {
   const router = useRouter();
   const api = useApi();
   // `status` (from the session picker) adds straight to "currently reading";
-  // `q` (from Logos AI) pre-seeds the search with a recommended title.
+  // `q` (from Quire AI) pre-seeds the search with a recommended title.
   const { status, q } = useLocalSearchParams<{ status?: string; q?: string }>();
 
   const [query, setQuery] = useState(q ?? '');

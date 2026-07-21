@@ -1,19 +1,19 @@
 {
   "expo": {
-    "name": "Logos",
-    "slug": "logos",
+    "name": "Quire",
+    "slug": "quire",
     "version": "0.0.2",
-    "scheme": "logos",
+    "scheme": "quire",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.logos.app"
+      "bundleIdentifier": "com.quire.app"
     },
     "android": {
-      "package": "com.logos.app",
+      "package": "com.quire.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "backgroundColor": "#F4F1E8",
@@ -43,8 +43,8 @@
       [
         "expo-media-library",
         {
-          "savePhotosPermission": "Logos saves your reading share cards to your photo library so you can post them.",
-          "photosPermission": "Logos saves your reading share cards to your photo library so you can post them.",
+          "savePhotosPermission": "Quire saves your reading share cards to your photo library so you can post them.",
+          "photosPermission": "Quire saves your reading share cards to your photo library so you can post them.",
           "isAccessMediaLocationEnabled": false
         }
       ],
@@ -53,16 +53,17 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Logos uses the camera to scan a book's barcode so you can add it to your shelf instantly."
+          "cameraPermission": "Quire uses the camera to scan a book's barcode so you can add it to your shelf instantly."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Logos uses your photos so you can set a profile picture."
+          "photosPermission": "Quire uses your photos so you can set a profile picture."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "./plugins/withReadingActivity"
     ],
     "experiments": {},
     "extra": {

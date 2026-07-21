@@ -47,13 +47,13 @@ export default function TBR() {
       ) : books === null ? (
         <View style={[styles.content, { paddingTop: insets.top + 6 }]}>
           <View style={styles.header}>
-            <Skeleton width={42} height={42} radius={21} />
+            <Skeleton width={42} height={42} radius={14} />
             <Skeleton width={150} height={28} />
           </View>
           <View style={styles.skelGrid}>
             {Array.from({ length: 4 }).map((_, i) => (
               <View key={i} style={{ width: cellWidth, gap: 6 }}>
-                <Skeleton width={cellWidth} height={cellWidth / 0.66} radius={8} />
+                <Skeleton width={cellWidth} height={cellWidth / 0.66} radius={14} />
                 <Skeleton width={cellWidth * 0.9} height={12} />
                 <Skeleton width={cellWidth * 0.6} height={10} />
               </View>

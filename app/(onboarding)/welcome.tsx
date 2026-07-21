@@ -16,8 +16,8 @@ export default function Welcome() {
     <OnboardingScaffold
       step={1}
       totalSteps={5}
-      title="In the beginning was the Word."
-      subtitle="Track every one you read. Here's where a single year of reading with Logos can take you."
+      title="Before the book, there was the quire."
+      subtitle="Track every page you read. Here's where a single year with Quire can take you."
       titleFont="display"
       onBack={() => router.back()}
       footer={

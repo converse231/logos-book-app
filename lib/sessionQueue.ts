@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { LogosApi } from '@/services/api';
+import type { QuireApi } from '@/services/api';
 import type { CompleteSessionResult, QueuedSession } from '@/services/types';
 
 const KEY = 'logos.sessionQueue.v1';
@@ -50,7 +50,7 @@ export async function enqueueSession(session: QueuedSession): Promise<void> {
 /** Online finish path: try to send; on failure, queue it. Returns the server
  *  result when it went through immediately, or null when it was queued. */
 export async function sendOrQueue(
-  api: LogosApi,
+  api: QuireApi,
   session: QueuedSession
 ): Promise<CompleteSessionResult | null> {
   try {
@@ -66,7 +66,7 @@ let draining = false;
 /** Try to flush every queued session. Safe to call often (re-entrancy guarded).
  *  Successful + permanently-failed (max attempts) items are removed; transient
  *  failures stay with an incremented attempt count. Returns how many synced. */
-export async function drainQueue(api: LogosApi): Promise<number> {
+export async function drainQueue(api: QuireApi): Promise<number> {
   if (draining) return 0;
   draining = true;
   try {

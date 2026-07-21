@@ -90,7 +90,7 @@ export default function ShareReview() {
 
   const onShare = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const msg = `${'★'.repeat(Math.round(review.rating))} ${review.bookTitle} — my review on Logos.`;
+    const msg = `${'★'.repeat(Math.round(review.rating))} ${review.bookTitle} — my review on Quire.`;
     try {
       const uri = await capture();
       await Share.share(Platform.OS === 'ios' ? { url: uri, message: msg } : { message: msg, url: uri });

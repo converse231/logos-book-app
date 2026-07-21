@@ -5,7 +5,7 @@
 // BookSearchResult shape the Discover carousels already render.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import type { BookSearchResult } from '../types';
 import { supabase } from '@/lib/supabase';
 
@@ -25,7 +25,7 @@ function mapBestseller(r: any): BookSearchResult {
   };
 }
 
-export const bestsellerApi: Partial<LogosApi> = {
+export const bestsellerApi: Partial<QuireApi> = {
   async getBestsellers(list = 'hardcover-fiction') {
     const { data, error } = await supabase
       .from('bestseller_lists')

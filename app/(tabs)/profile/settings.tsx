@@ -451,7 +451,7 @@ export default function Settings() {
         </Reveal>
 
         <Reveal i={5} reduce={reduce}>
-          <Text style={[styles.version, { color: t.textTer }]}>LOGOS · Frontend build</Text>
+          <Text style={[styles.version, { color: t.textTer }]}>Quire · Frontend build</Text>
         </Reveal>
       </ScrollView>
     </ScreenBackground>

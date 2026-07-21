@@ -55,9 +55,11 @@ export const PALETTE = {
   accentGradStart: '#F0764F',
   accentGradEnd:   '#F0764F',
 
-  // Skeleton shimmer (warm light substrate)
-  skeletonBase:    '#EDE4D2',
-  skeletonShimmer: '#E1D7C3',
+  // Skeleton shimmer (warm light substrate). Deliberately a few steps deeper than
+  // bgTer — the oat paper bg is so close in tone that an inset-cream block would
+  // barely read as a placeholder.
+  skeletonBase:    '#E7DAC1',
+  skeletonShimmer: '#DBCBAC',
 
   // Share card
   cardTransparentBadgeBg: 'rgba(255,255,255,0.22)',

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// LogosApi — the stable interface that the UI binds to.
+// QuireApi — the stable interface that the UI binds to.
 // Mock implementation lives in services/mock/.
 // Supabase implementation will replace the mock with no UI changes.
 // React provider + useApi hook live in services/ApiContext.tsx.
@@ -24,7 +24,7 @@ import {
   UserProfile,
 } from './types';
 
-export interface LogosApi {
+export interface QuireApi {
   // ── Auth ──────────────────────────────────────────────────────────────────
   signIn(email: string, password: string): Promise<{ userId: string }>;
   signUp(email: string, password: string, birthYear: number): Promise<{ userId: string }>;

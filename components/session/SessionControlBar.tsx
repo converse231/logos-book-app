@@ -11,9 +11,22 @@ interface SessionControlBarProps {
   /** Show the "cancel session" affordance (only in the opening window — a mistaken
    *  start can be dropped without ever recording a session). */
   showCancel?: boolean;
+  /** Pause is hidden in focus mode (a committed, un-pausable session). */
+  showPause?: boolean;
+  /** Long-press escape while a focus block is still locked — ends early and
+   *  finishes (records) the session. Only wired during the focus countdown. */
+  onEndEarly?: () => void;
   onTogglePause: () => void;
   onStop: () => void;
   onCancel?: () => void;
+}
+
+// Locked-finish countdown: seconds for a short wait, m:ss once it's a minute+.
+function formatLock(sec: number): string {
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
 // Glass control bar pinned in the bottom thumb zone (blueprint #5). Stop is
@@ -27,11 +40,18 @@ export function SessionControlBar({
   canStop,
   stopUnlocksInSec = 0,
   showCancel = false,
+  showPause = true,
+  onEndEarly,
   onTogglePause,
   onStop,
   onCancel,
 }: SessionControlBarProps) {
   const t = useTheme();
+  // Locked because a focus commitment is still counting down, vs. because the
+  // session is paused — the two need different messaging.
+  const lockedLabel = stopUnlocksInSec > 0 ? `FINISH IN ${formatLock(stopUnlocksInSec)}` : 'RESUME TO FINISH';
+  // Focus block still running: not tappable to finish, but long-pressable to bail.
+  const focusLocked = !canStop && stopUnlocksInSec > 0;
 
   return (
     <View style={[styles.bar, { backgroundColor: t.glass, borderColor: t.border }]}>
@@ -49,20 +69,22 @@ export function SessionControlBar({
         </Pressable>
       ) : null}
 
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onTogglePause();
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={isPaused ? 'Resume session' : 'Pause session'}
-        style={[styles.secondary, { borderColor: t.border }]}
-      >
-        <Ionicons name={isPaused ? 'play' : 'pause'} size={22} color={t.text} />
-        <Text style={[styles.secondaryText, { color: t.text }]}>
-          {isPaused ? 'RESUME' : 'PAUSE'}
-        </Text>
-      </Pressable>
+      {showPause ? (
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onTogglePause();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={isPaused ? 'Resume session' : 'Pause session'}
+          style={[styles.secondary, { borderColor: t.border }]}
+        >
+          <Ionicons name={isPaused ? 'play' : 'pause'} size={22} color={t.text} />
+          <Text style={[styles.secondaryText, { color: t.text }]}>
+            {isPaused ? 'RESUME' : 'PAUSE'}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <Pressable
         onPress={() => {
@@ -70,10 +92,20 @@ export function SessionControlBar({
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           onStop();
         }}
-        disabled={!canStop}
+        onLongPress={
+          focusLocked && onEndEarly
+            ? () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onEndEarly();
+              }
+            : undefined
+        }
+        delayLongPress={600}
+        disabled={!canStop && !focusLocked}
         accessibilityRole="button"
-        accessibilityLabel={canStop ? 'Stop and finish session' : `Stop available in ${stopUnlocksInSec} seconds`}
-        accessibilityState={{ disabled: !canStop }}
+        accessibilityLabel={canStop ? 'Stop and finish session' : lockedLabel}
+        accessibilityHint={focusLocked ? 'Press and hold to end your focus session early and finish' : undefined}
+        accessibilityState={{ disabled: !canStop && !focusLocked }}
         style={[styles.stop, { backgroundColor: canStop ? t.accent : t.bgTer, borderColor: t.border }, !canStop && styles.stopLocked]}
       >
         {canStop ? (
@@ -82,9 +114,12 @@ export function SessionControlBar({
             <Text style={[styles.stopText, { color: t.onAccent }]}>FINISH</Text>
           </>
         ) : (
-          <Text style={[styles.lockedText, { color: t.textSec }]}>
-            FINISH IN {stopUnlocksInSec}s
-          </Text>
+          <View style={styles.lockedCol}>
+            <Text style={[styles.lockedText, { color: t.textSec }]}>{lockedLabel}</Text>
+            {focusLocked ? (
+              <Text style={[styles.holdHint, { color: t.textTer }]}>HOLD TO END EARLY</Text>
+            ) : null}
+          </View>
         )}
       </Pressable>
     </View>
@@ -132,5 +167,7 @@ const styles = StyleSheet.create({
   },
   stopLocked: { opacity: 0.7 },
   stopText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.8 },
+  lockedCol: { alignItems: 'center', justifyContent: 'center', gap: 2 },
   lockedText: { fontFamily: FONTS.monoMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
+  holdHint: { fontFamily: FONTS.mono, fontSize: 9, letterSpacing: 0.8 },
 });

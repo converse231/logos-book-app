@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
   // Build the prompt and call Claude with structured output.
   const system =
-    'You are a thoughtful book recommender for the LOGOS reading app. Recommend exactly 10 ' +
+    'You are a thoughtful book recommender for the Quire reading app. Recommend exactly 10 ' +
     'real, published books that match the reader\'s mood and taste. Use correct titles and ' +
     'authors — never invent books. Vary authors and sub-genres so the set feels diverse. ' +
     'The reader already owns the books in the "already on my shelves" list — NEVER recommend any of those. ' +

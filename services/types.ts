@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// LOGOS shared types — mirrors the blueprint schema and edge-function contracts.
+// Quire shared types — mirrors the blueprint schema and edge-function contracts.
 // Keep in sync with LOGOS_BLUEPRINT.md (Sections 1, 2, 4, 5, 6, 7, 9).
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -42,7 +42,7 @@ export type LevelName =
   | 'Bibliophile'
   | 'Tome Raider'
   | 'Literary Athlete'
-  | 'Logos Legend';
+  | 'Quire Legend';
 
 // ── Domain models ─────────────────────────────────────────────────────────────
 

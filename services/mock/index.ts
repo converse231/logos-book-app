@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Mock LogosApi implementation.
+// Mock QuireApi implementation.
 // Returns realistic fixture data; gamification side-effects are simulated to
 // match the complete_session contract (blueprint Section 2).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { LogosApi } from '../api';
+import { QuireApi } from '../api';
 import {
   Book,
   BookFormat,
@@ -54,7 +54,7 @@ let _notifSettings: NotificationSettings = {
   quietHoursEnd: 8,
 };
 
-export const mockApi: LogosApi = {
+export const mockApi: QuireApi = {
   // ── Auth ────────────────────────────────────────────────────────────────
   async signIn(_email, _password) {
     await delay();

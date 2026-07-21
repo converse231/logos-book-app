@@ -236,7 +236,7 @@ export async function recommendedBooks(): Promise<BookSearchResult[]> {
 }
 
 /** Full metadata for a single Google volume — built into the ensure_book payload
- *  by addBook (the LogosApi only hands us the id). Handles the `ol:` prefix that
+ *  by addBook (the QuireApi only hands us the id). Handles the `ol:` prefix that
  *  toSearchResult assigns to Open-Library-only results. */
 export async function fetchBookForId(id: string): Promise<EnsureBookInput | null> {
   if (id.startsWith('ol:')) {

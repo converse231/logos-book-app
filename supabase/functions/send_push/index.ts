@@ -43,18 +43,18 @@ const TEMPLATES: Record<string, (lvl: string, v: Vars) => string> = {
 
 // Per-type deep link (§16) + the notification_settings column that gates it.
 const DEEP_LINK: Record<string, string> = {
-  at_risk: 'logos://home',
-  streak_broken: 'logos://comeback',
-  comeback_challenge_created: 'logos://comeback',
-  comeback_challenge_progress: 'logos://comeback',
-  comeback_challenge_expired: 'logos://home',
-  comeback_restored: 'logos://home',
-  daily_reminder: 'logos://home',
-  weekly_digest: 'logos://stats',
-  goal_milestone: 'logos://home',
-  almost_there: 'logos://home',
-  reading_insight: 'logos://insights',
-  long_absence_3d: 'logos://home',
+  at_risk: 'quire://home',
+  streak_broken: 'quire://comeback',
+  comeback_challenge_created: 'quire://comeback',
+  comeback_challenge_progress: 'quire://comeback',
+  comeback_challenge_expired: 'quire://home',
+  comeback_restored: 'quire://home',
+  daily_reminder: 'quire://home',
+  weekly_digest: 'quire://stats',
+  goal_milestone: 'quire://home',
+  almost_there: 'quire://home',
+  reading_insight: 'quire://insights',
+  long_absence_3d: 'quire://home',
 };
 
 // Which notification_settings boolean must be true for each type (besides `enabled`).
@@ -131,10 +131,10 @@ Deno.serve(async (req) => {
     const body = template(u.level_name ?? 'Reader', vars);
     messages.push({
       to: u.expo_push_token,
-      title: 'Logos',
+      title: 'Quire',
       body,
       sound: 'default',
-      data: { deepLink: DEEP_LINK[type] ?? 'logos://home', type },
+      data: { deepLink: DEEP_LINK[type] ?? 'quire://home', type },
     });
   }
 

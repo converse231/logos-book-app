@@ -7,7 +7,7 @@
 // the MMKV offline queue (B4b) wraps this later for the dev build.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { LogosApi } from '../api';
+import type { QuireApi } from '../api';
 import type {
   ComebackChallenge, CompleteSessionResult, HomeData, ReadingGoal, ReadingInsight,
   ReadingSession, StatsData, Badge, StreakState,
@@ -100,7 +100,7 @@ async function requireUid(): Promise<string> {
   return uid;
 }
 
-export const sessionApi: Partial<LogosApi> = {
+export const sessionApi: Partial<QuireApi> = {
   // ── The gamification core (atomic RPC) ──────────────────────────────────────
   async completeSession(session): Promise<CompleteSessionResult> {
     const { data, error } = await supabase.rpc('complete_session', {

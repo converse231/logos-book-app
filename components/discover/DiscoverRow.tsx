@@ -48,7 +48,7 @@ export function DiscoverRow({
       {loading ? (
         <View style={styles.skelRow}>
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} width={COVER_W} height={COVER_W * 1.5} radius={0} />
+            <Skeleton key={i} width={COVER_W} height={COVER_W * 1.5} radius={14} />
           ))}
         </View>
       ) : (
