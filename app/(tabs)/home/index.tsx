@@ -19,6 +19,7 @@ import { Card } from '@/components/shared/Card';
 import { BookCover } from '@/components/shared/BookCover';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { LevelNameBadge } from '@/components/shared/LevelNameBadge';
+import { Q } from '@/components/shared/Q';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { RefreshingOverlay, HIDDEN_SPINNER } from '@/components/shared/RefreshingOverlay';
@@ -105,6 +106,9 @@ export default function Home() {
   const booksFinished = stats.booksFinished;
   const goalPct = data.goal ? Math.min(1, booksFinished / data.goal.goalBooks) : 0;
   const initials = (data.user.displayName ?? 'R').trim().charAt(0).toUpperCase();
+  // Late-night reading gets a sleepy Q + a knowing greeting.
+  const nightHour = new Date().getHours();
+  const isNight = nightHour >= 22 || nightHour < 5;
   // Daily check-in: every local-date with a session (heatmapDays covers all read
   // days; recentSessions is only the last 7 sessions, so multi-session days there
   // drop earlier read days off the week strip).
@@ -216,6 +220,7 @@ export default function Home() {
                 {data.user.displayName ?? 'Reader'}
               </Text>
             </View>
+            {isNight ? <Q expression="sleepy" size={42} decorative style={styles.headerQ} /> : null}
             <Pressable
               onPress={() => router.push('/(tabs)/profile/settings' as Href)}
               hitSlop={10}
@@ -232,7 +237,7 @@ export default function Home() {
         {data.streak.isAtRisk ? (
           <Reveal index={1} reduce={reduce}>
             <Card padded style={styles.atRisk}>
-              <Ionicons name="alert-circle" size={22} color={t.gold} />
+              <Q expression="concerned" size={46} decorative />
               <Text style={[styles.atRiskText, { color: t.gold }]}>
                 Your {data.streak.currentStreak}-day streak ends tonight. Read to keep it alive.
               </Text>
@@ -362,6 +367,7 @@ export default function Home() {
             </Card>
           ) : (
             <Card padded style={styles.emptyActive}>
+              <Q expression="shrug" size={88} />
               <Text style={[styles.emptyText, { color: t.textSec }]}>
                 No active book. Add one from your library to start a session.
               </Text>
@@ -563,6 +569,7 @@ function StartButton({ onPress }: { onPress: () => void }) {
 
 function timeGreeting(): string {
   const h = new Date().getHours();
+  if (h >= 22 || h < 5) return 'Reading late?';
   if (h < 12) return 'Good morning';
   if (h < 18) return 'Good afternoon';
   return 'Good evening';
@@ -609,6 +616,7 @@ const styles = StyleSheet.create({
   greeting: { fontFamily: FONTS.uiSemiBold, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase' },
   name: { fontFamily: FONTS.serif, fontSize: 33, lineHeight: 37 },
   iconBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  headerQ: { marginHorizontal: -2 },
   atRisk: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   atRiskText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14, lineHeight: 19 },
 

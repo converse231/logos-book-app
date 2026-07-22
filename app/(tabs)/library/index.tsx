@@ -26,7 +26,7 @@ import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PressBlock } from '@/components/shared/PressBlock';
-import { Mascot } from '@/components/shared/Mascot';
+import { Q } from '@/components/shared/Q';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { BookGridCard } from '@/components/library/BookGridCard';
@@ -369,7 +369,7 @@ function EmptyState({
   const copy = EMPTY_COPY[shelfEmpty ? 'all' : statusTab];
   return (
     <View style={styles.empty}>
-      <Mascot size={116} sparkle />
+      <Q expression="reading" size={140} sparkle />
       <Text style={[styles.emptyTitle, { color: t.text }]}>{copy.title}</Text>
       <Text style={[styles.emptyBody, { color: t.textSec }]}>{copy.body}</Text>
       <PressBlock

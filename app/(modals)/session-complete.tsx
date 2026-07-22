@@ -25,6 +25,7 @@ import { PressBlock } from '@/components/shared/PressBlock';
 import { ReadingInsightCard } from '@/components/session/ReadingInsightCard';
 import { BookCover } from '@/components/shared/BookCover';
 import { Sparkle } from '@/components/shared/Sparkle';
+import { Q } from '@/components/shared/Q';
 
 // The Duolingo moment (blueprint Section 5 timeline). The book cover is the hero —
 // it springs in, big, under a hard ink shadow with a celebration stamp — then the
@@ -53,18 +54,29 @@ export default function SessionComplete() {
       return;
     }
     const c = setTimeout(() => setFireConfetti(true), 150);
-    // A streak milestone escalates into its own celebration on top of this one.
-    const m = result.milestoneVariant
-      ? setTimeout(
-          () => router.push(`/(modals)/milestone/${result.milestoneVariant}?count=${result.streak.current}` as Href),
-          650
-        )
-      : null;
-    // The insight only slides up on a non-milestone session (mock already gates this).
-    const i = result.insight && !result.milestoneVariant ? setTimeout(() => setShowInsight(true), 2000) : null;
+    // Escalation composited on top of this celebration: a streak milestone wins;
+    // otherwise a level-up. Mutually exclusive so we never stack two full-screen
+    // takeovers on one session.
+    let escalate: ReturnType<typeof setTimeout> | null = null;
+    if (result.milestoneVariant) {
+      escalate = setTimeout(
+        () => router.push(`/(modals)/milestone/${result.milestoneVariant}?count=${result.streak.current}` as Href),
+        650
+      );
+    } else if (result.leveledUp) {
+      escalate = setTimeout(
+        () => router.push(`/(modals)/level-up?level=${result.level}&name=${encodeURIComponent(result.levelName)}` as Href),
+        650
+      );
+    }
+    // The insight only slides up when nothing bigger took over.
+    const i =
+      result.insight && !result.milestoneVariant && !result.leveledUp
+        ? setTimeout(() => setShowInsight(true), 2000)
+        : null;
     return () => {
       clearTimeout(c);
-      if (m) clearTimeout(m);
+      if (escalate) clearTimeout(escalate);
       if (i) clearTimeout(i);
     };
   }, [result, router]);
@@ -117,6 +129,7 @@ export default function SessionComplete() {
 
         <Reveal d={d(120)} reduce={reduce}>
           <View style={styles.titleBlock}>
+            <Q expression={isPB ? 'surprised' : 'happy'} size={74} />
             <Text style={[styles.title, { color: isPB ? t.gold : t.text }]}>
               {isPB ? 'Personal best' : 'Session complete'}
             </Text>

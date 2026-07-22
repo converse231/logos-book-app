@@ -10,7 +10,7 @@ import { useApi } from '@/services/ApiContext';
 import { HomeData, ReadingSession, StatsData, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PressBlock } from '@/components/shared/PressBlock';
-import { Mascot } from '@/components/shared/Mascot';
+import { Q } from '@/components/shared/Q';
 import { Card } from '@/components/shared/Card';
 import { BookCover } from '@/components/shared/BookCover';
 import { StatTile } from '@/components/shared/StatTile';
@@ -312,7 +312,7 @@ function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children:
 function EmptyStats({ t, onStart }: { t: ReturnType<typeof useTheme>; onStart: () => void }) {
   return (
     <View style={[styles.emptyCard, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-      <Mascot size={108} sparkle />
+      <Q expression="looking-up" size={132} sparkle />
       <Text style={[styles.emptyTitle, { color: t.text }]}>No reading sessions yet</Text>
       <Text style={[styles.emptyBody, { color: t.textSec }]}>
         Track your first session to unlock pages read, your reading streak, pace, and the heatmap.

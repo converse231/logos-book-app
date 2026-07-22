@@ -5,7 +5,7 @@
     "version": "0.0.2",
     "scheme": "quire",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -16,10 +16,8 @@
       "package": "com.quire.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "backgroundColor": "#F4F1E8",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#F6EEDF",
+        "foregroundImage": "./assets/android-icon.png"
       },
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -62,6 +60,15 @@
           "photosPermission": "Quire uses your photos so you can set a profile picture."
         }
       ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-screen.png",
+          "imageWidth": 300,
+          "resizeMode": "contain",
+          "backgroundColor": "#F7EBD3"
+        }
+      ],
       "expo-notifications",
       "./plugins/withReadingActivity"
     ],
@@ -69,8 +76,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "9497cadc-7318-4b40-a37a-1eedf34b94ab"
+        "projectId": "61f01791-f40e-4f23-970f-d2498815fd15"
       }
-    }
+    },
+    "owner": "enyeng23"
   }
 }

@@ -11,6 +11,7 @@ import { useApi } from '@/services/ApiContext';
 import { ComebackChallenge, UserBook } from '@/services/types';
 import { LoadingIndicator } from '@/components/shared/LoadingIndicator';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { Q } from '@/components/shared/Q';
 
 // Comeback Challenge (blueprint Section 5). A streak broke; finish 3 sessions
 // before it expires to restore it. Loss-aversion framed in gold. Deep link:
@@ -86,9 +87,7 @@ export default function Comeback() {
                 <Ionicons name="close" size={20} color={t.text} />
               </Pressable>
 
-              <View style={[styles.glyph, { backgroundColor: 'rgba(255,197,61,0.16)' }]}>
-                <Ionicons name="flame" size={40} color={t.gold} />
-              </View>
+              <Q expression="confident" size={108} style={styles.glyphQ} />
 
               <Text style={[styles.kicker, { color: t.gold }]}>COMEBACK CHALLENGE</Text>
               <Text style={[styles.title, { color: t.text }]}>Restore your {comeback.streakAtBreak}-day streak</Text>
@@ -156,7 +155,7 @@ const styles = StyleSheet.create({
     ...({ boxShadow: '4px 4px 0px #241E19' } as const),
   },
   closeBtn: { position: 'absolute', top: 14, right: 14, width: 34, height: 34, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  glyph: { width: 80, height: 80, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 4 },
+  glyphQ: { marginTop: 4, marginBottom: 2 },
   kicker: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 1.4 },
   title: { fontFamily: FONTS.displayBold, fontSize: 26, lineHeight: 30, textAlign: 'center' },
   body: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', paddingHorizontal: 4 },

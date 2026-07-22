@@ -5,7 +5,7 @@ import { FONTS } from '@/theme/tokens';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { WelcomeStatCard } from '@/components/onboarding/WelcomeStatCard';
-import { Mascot } from '@/components/shared/Mascot';
+import { Q } from '@/components/shared/Q';
 
 // RULE 1: lead with an animated mock stat card so the value is felt before any
 // data exists. Framing copy makes clear the card is the user's own potential.
@@ -27,7 +27,7 @@ export default function Welcome() {
       <View style={styles.cardArea}>
         <WelcomeStatCard />
         <View style={styles.captionRow}>
-          <Mascot size={54} />
+          <Q expression="waving" size={62} />
           <Text style={[styles.caption, { color: t.textSec }]}>
             A preview, not real numbers — yet. Every page you log makes it yours.
           </Text>

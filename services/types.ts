@@ -237,6 +237,12 @@ export interface CompleteSessionResult {
     restoredViaGrace: boolean;
   };
   xpGained: number;
+  // Post-XP level standing (server-authoritative; derived client-side on live
+  // without a schema change). `leveledUp` is true when this session pushed the
+  // reader across a level boundary — the trigger for the level-up celebration.
+  level: number;
+  levelName: LevelName;
+  leveledUp: boolean;
   newBadges: Badge[];
   comeback: {
     status: 'progress' | 'completed' | 'expired' | null;

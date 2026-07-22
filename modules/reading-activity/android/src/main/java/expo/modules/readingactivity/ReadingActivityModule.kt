@@ -40,9 +40,14 @@ class ReadingActivityModule : Module() {
       ContextCompat.startForegroundService(ctx, intent)
     }
 
+    // No early `return@Function`: this zero-arg overload resolves to `() -> Any?`,
+    // where a bare return (which yields Unit) is a type mismatch. A plain if keeps
+    // the body's result type Unit without an early exit.
     Function("end") {
-      val ctx = appContext.reactContext ?: return@Function
-      ctx.stopService(Intent(ctx, ReadingTimerService::class.java))
+      val ctx = appContext.reactContext
+      if (ctx != null) {
+        ctx.stopService(Intent(ctx, ReadingTimerService::class.java))
+      }
     }
   }
 }

@@ -11,6 +11,7 @@ import {
   BookSearchResult,
   CompleteSessionResult,
   HomeData,
+  LevelName,
   NotificationSettings,
   QueuedSession,
   ReadingGoal,
@@ -38,6 +39,14 @@ import {
 } from './fixtures';
 
 const delay = (ms = 300) => new Promise<void>(r => setTimeout(r, ms));
+
+// Ordered level ladder (blueprint §5) — for the mock's demo level-up.
+const LEVEL_LADDER: LevelName[] = [
+  'Page Turner', 'Margin Scribbler', 'Chapter Chaser', 'Shelf Builder', 'Spine Cracker',
+  'Night Reader', 'Bibliophile', 'Tome Raider', 'Literary Athlete', 'Quire Legend',
+];
+const nextLevelName = (cur: LevelName): LevelName =>
+  LEVEL_LADDER[Math.min(LEVEL_LADDER.indexOf(cur) + 1, LEVEL_LADDER.length - 1)];
 
 let _user: UserProfile = { ...MOCK_USER };
 
@@ -260,8 +269,11 @@ export const mockApi: QuireApi = {
       { count: 100, variant: 'cinematic' as const },
       { count: 365, variant: 'legendary' as const },
     ];
-    const hit = Math.random() < 0.35 ? milestones[Math.floor(Math.random() * milestones.length)] : null;
+    const hit = Math.random() < 0.3 ? milestones[Math.floor(Math.random() * milestones.length)] : null;
     const streakCurrent = hit ? hit.count : 13;
+    // Demo: occasionally cross a level boundary so the level-up celebration is
+    // reachable in the frontend phase (mutually exclusive with a milestone).
+    const leveledUp = !hit && _user.level < LEVEL_LADDER.length && Math.random() < 0.25;
 
     return {
       ok: true,
@@ -272,11 +284,14 @@ export const mockApi: QuireApi = {
       durationSeconds,
       isPersonalBest: false,
       streak: { current: streakCurrent, incremented: true, restoredViaGrace: false },
-      xpGained: 72,
+      xpGained: leveledUp ? 340 : 72,
+      level: leveledUp ? _user.level + 1 : _user.level,
+      levelName: leveledUp ? nextLevelName(_user.levelName) : _user.levelName,
+      leveledUp,
       newBadges: [],
       comeback: null,
-      // The milestone is the bigger reward — don't stack an insight on top of it.
-      insight: !hit && Math.random() < 0.3 ? { ...MOCK_INSIGHT, id: 'insight-' + Date.now() } : null,
+      // The milestone / level-up is the bigger reward — don't stack an insight on it.
+      insight: !hit && !leveledUp && Math.random() < 0.3 ? { ...MOCK_INSIGHT, id: 'insight-' + Date.now() } : null,
       milestoneVariant: hit ? hit.variant : null,
     };
   },

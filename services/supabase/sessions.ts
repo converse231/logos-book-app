@@ -32,6 +32,13 @@ function levelBounds(totalXp: number): { prev: number; next: number } {
   return { prev, next };
 }
 
+// 1-indexed level number for a given lifetime XP (mirrors fn_apply_xp's ladder).
+function levelNumber(totalXp: number): number {
+  let lvl = 1;
+  for (let i = 0; i < LEVELS.length; i++) if (totalXp >= LEVELS[i]) lvl = i + 1;
+  return lvl;
+}
+
 function mapSession(r: any): ReadingSession {
   return {
     id: r.id,
@@ -118,7 +125,25 @@ export const sessionApi: Partial<QuireApi> = {
       p_source: session.source,
     });
     if (error) throw error;
-    return data as CompleteSessionResult;
+    const result = data as CompleteSessionResult;
+    // Level-up detection without a schema change: the RPC doesn't return level
+    // fields, so read the fresh (trigger-maintained) level and derive the prior
+    // level from xpGained. Best-effort — a failed follow-up read must never fail
+    // the (already-committed) session; it just skips the level-up celebration.
+    result.leveledUp = false;
+    try {
+      const uid = await requireUid();
+      const { data: u } = await supabase.from('users').select('level, level_name, total_xp').eq('id', uid).single();
+      if (u) {
+        const newXp = Number(u.total_xp ?? 0);
+        result.level = u.level;
+        result.levelName = u.level_name;
+        result.leveledUp = u.level > levelNumber(newXp - result.xpGained);
+      }
+    } catch {
+      /* keep leveledUp=false */
+    }
+    return result;
   },
 
   // ── Delete a session + reverse its XP (streak/badges preserved) ─────────────
