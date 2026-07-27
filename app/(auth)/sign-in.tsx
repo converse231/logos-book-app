@@ -105,6 +105,15 @@ export default function SignIn() {
                 returnKeyType="go"
                 onSubmitEditing={handleSignIn}
               />
+              <Pressable
+                onPress={() => router.push('/(auth)/forgot-password' as Href)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Forgot your password?"
+                style={styles.forgot}
+              >
+                <Text style={[styles.forgotText, { color: t.accent }]}>Forgot password?</Text>
+              </Pressable>
             </View>
 
             {error ? (
@@ -149,6 +158,8 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiMedium, fontSize: 17,
   },
   error: { fontFamily: FONTS.uiMedium, fontSize: 13 },
+  forgot: { alignSelf: 'flex-end', paddingVertical: 2 },
+  forgotText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   footer: { marginTop: 'auto', gap: 16 },
   altLink: { alignItems: 'center', paddingVertical: 4 },
   altText: { fontFamily: FONTS.uiRegular, fontSize: 14 },

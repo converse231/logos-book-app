@@ -139,6 +139,26 @@ export const authApi: Partial<QuireApi> = {
     if (error) throw error;
   },
 
+  // OTP-code reset (not a link) so it works in Expo Go before deep links land (B5).
+  // Requires the "Reset Password" email template to include {{ .Token }} — see the
+  // dashboard step in CLAUDE.md's operational checklist.
+  async requestPasswordReset(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+    if (error) throw error;
+  },
+
+  async resetPassword(email, code, newPassword) {
+    // Recovery OTP → a live session; updateUser then sets the new password on it.
+    const { error: vErr } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code.trim(),
+      type: 'recovery',
+    });
+    if (vErr) throw vErr;
+    const { error: uErr } = await supabase.auth.updateUser({ password: newPassword });
+    if (uErr) throw uErr;
+  },
+
   // ── Onboarding ──────────────────────────────────────────────────────────────
   async updateBirthYear(birthYear) {
     // Age-gate runs before any account exists — the COPPA decision is pure age

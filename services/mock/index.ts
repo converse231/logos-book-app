@@ -81,6 +81,14 @@ export const mockApi: QuireApi = {
     await delay(100);
   },
 
+  async requestPasswordReset(_email) {
+    await delay();
+  },
+
+  async resetPassword(_email, _code, _newPassword) {
+    await delay();
+  },
+
   // ── Onboarding ──────────────────────────────────────────────────────────
   async updateBirthYear(birthYear) {
     await delay();

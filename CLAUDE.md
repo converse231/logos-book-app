@@ -158,7 +158,7 @@ Ordering reflects the confirmed "onboarding first" decision. (Product Phase 1–
 **Edge functions** (`supabase functions deploy <name>`):
 - `ensure_book` · `ai_recommend` (secret `ANTHROPIC_API_KEY`) · `delete_account` · `sync_bestsellers --no-verify-jwt` (secrets `NYT_API_KEY` + `BESTSELLERS_SYNC_SECRET`; ✅ deployed + first-filled 2026-06-16) · `send_push --no-verify-jwt` (secret `PUSH_SEND_SECRET`; needs the dev build for tokens to exist)
 
-**Settings / secrets:** Auth → turn OFF "Confirm email" (so email signup returns a session in Expo Go); PostHog `EXPO_PUBLIC_POSTHOG_KEY` in `.env` (optional, silent no-op if unset). Project ref: `gkigoeaycabiviuqfojd`.
+**Settings / secrets:** Auth → turn OFF "Confirm email" (so email signup returns a session in Expo Go); Auth → Email Templates → **Reset Password**: include `{{ .Token }}` in the body (the forgot-password flow uses the OTP code (6–10 digits per your OTP-length setting), not the link — so it works in Expo Go before deep links land at B5); PostHog `EXPO_PUBLIC_POSTHOG_KEY` in `.env` (optional, silent no-op if unset). Project ref: `gkigoeaycabiviuqfojd`.
 
 **Maps to blueprint §22:** B1–B5 ≈ Phase 1 (beta) core; B6 ≈ Phase 3/4. The §22 build order (schema → `complete_session` → streaks → comeback ‖ reward ‖ celebration → cards/notifications) is preserved by B1 → B4 → B5.
 

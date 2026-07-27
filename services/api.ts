@@ -29,6 +29,10 @@ export interface QuireApi {
   signIn(email: string, password: string): Promise<{ userId: string }>;
   signUp(email: string, password: string, birthYear: number): Promise<{ userId: string }>;
   signOut(): Promise<void>;
+  /** Email a recovery code (works without deep links, unlike a reset link). */
+  requestPasswordReset(email: string): Promise<void>;
+  /** Verify the recovery code and set a new password (leaves the user signed in). */
+  resetPassword(email: string, code: string, newPassword: string): Promise<void>;
 
   // ── Onboarding ────────────────────────────────────────────────────────────
   updateBirthYear(birthYear: number): Promise<{ isMinor: boolean; isUnder13: boolean }>;
