@@ -29,12 +29,18 @@ function formatLock(sec: number): string {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
-// Glass control bar pinned in the bottom thumb zone (blueprint #5). Stop is
-// locked for the first 2 minutes to prevent accidental aborts; while locked it
-// shows a countdown and stays a real (disabled) target — never hidden, so it
-// remains reachable to screen readers. Translucent fill instead of BlurView
-// (cheap on Android; blueprint allows rgba). A short-lived Cancel (danger) sits
-// on the left during the opening seconds so a mis-started session leaves no trace.
+// Glass control bar pinned in the bottom thumb zone (blueprint #5). Translucent
+// fill instead of BlurView (cheap on Android; blueprint allows rgba). A short-lived
+// Cancel (danger) sits on the left during the opening seconds so a mis-started
+// session leaves no trace.
+//
+// Two flows share the bar:
+//   • Normal (Strava-style): while reading, a single full-width PAUSE. Pausing
+//     reveals RESUME + FINISH — finishing lives in the paused state, so the two
+//     never crowd the running screen.
+//   • Focus mode (showPause=false): a committed block — one Finish that stays
+//     locked with a countdown until the chosen duration elapses, long-pressable
+//     to end early. Never hidden, so it stays reachable to screen readers.
 export function SessionControlBar({
   isPaused,
   canStop,
@@ -47,81 +53,112 @@ export function SessionControlBar({
   onCancel,
 }: SessionControlBarProps) {
   const t = useTheme();
-  // Locked because a focus commitment is still counting down, vs. because the
-  // session is paused — the two need different messaging.
-  const lockedLabel = stopUnlocksInSec > 0 ? `FINISH IN ${formatLock(stopUnlocksInSec)}` : 'RESUME TO FINISH';
-  // Focus block still running: not tappable to finish, but long-pressable to bail.
-  const focusLocked = !canStop && stopUnlocksInSec > 0;
 
-  return (
-    <View style={[styles.bar, { backgroundColor: t.glass, borderColor: t.border }]}>
-      {showCancel && onCancel ? (
+  const cancelBtn =
+    showCancel && onCancel ? (
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onCancel();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Cancel session without saving"
+        style={[styles.cancel, { borderColor: t.danger }]}
+      >
+        <Ionicons name="close" size={24} color={t.danger} />
+      </Pressable>
+    ) : null;
+
+  // ── Focus mode: a single locked Finish (countdown + hold-to-end-early) ────────
+  if (!showPause) {
+    const focusLocked = !canStop && stopUnlocksInSec > 0;
+    const lockedLabel = stopUnlocksInSec > 0 ? `FINISH IN ${formatLock(stopUnlocksInSec)}` : 'RESUME TO FINISH';
+    return (
+      <View style={[styles.bar, { backgroundColor: t.glass, borderColor: t.border }]}>
+        {cancelBtn}
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onCancel();
+            if (!canStop) return;
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            onStop();
           }}
+          onLongPress={
+            focusLocked && onEndEarly
+              ? () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  onEndEarly();
+                }
+              : undefined
+          }
+          delayLongPress={600}
+          disabled={!canStop && !focusLocked}
           accessibilityRole="button"
-          accessibilityLabel="Cancel session without saving"
-          style={[styles.cancel, { borderColor: t.danger }]}
+          accessibilityLabel={canStop ? 'Stop and finish session' : lockedLabel}
+          accessibilityHint={focusLocked ? 'Press and hold to end your focus session early and finish' : undefined}
+          accessibilityState={{ disabled: !canStop && !focusLocked }}
+          style={[styles.btn, { backgroundColor: canStop ? t.accent : t.bgTer, borderColor: t.border }, !canStop && styles.locked]}
         >
-          <Ionicons name="close" size={24} color={t.danger} />
+          {canStop ? (
+            <>
+              <Ionicons name="stop" size={20} color={t.onAccent} />
+              <Text style={[styles.btnText, { color: t.onAccent }]}>FINISH</Text>
+            </>
+          ) : (
+            <View style={styles.lockedCol}>
+              <Text style={[styles.lockedText, { color: t.textSec }]}>{lockedLabel}</Text>
+              {focusLocked ? <Text style={[styles.holdHint, { color: t.textTer }]}>HOLD TO END EARLY</Text> : null}
+            </View>
+          )}
         </Pressable>
-      ) : null}
+      </View>
+    );
+  }
 
-      {showPause ? (
+  // ── Normal mode: PAUSE while running → RESUME + FINISH while paused ────────────
+  return (
+    <View style={[styles.bar, { backgroundColor: t.glass, borderColor: t.border }]}>
+      {cancelBtn}
+      {!isPaused ? (
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onTogglePause();
           }}
           accessibilityRole="button"
-          accessibilityLabel={isPaused ? 'Resume session' : 'Pause session'}
-          style={[styles.secondary, { borderColor: t.border }]}
+          accessibilityLabel="Pause session"
+          style={[styles.btn, { borderColor: t.border }]}
         >
-          <Ionicons name={isPaused ? 'play' : 'pause'} size={22} color={t.text} />
-          <Text style={[styles.secondaryText, { color: t.text }]}>
-            {isPaused ? 'RESUME' : 'PAUSE'}
-          </Text>
+          <Ionicons name="pause" size={22} color={t.text} />
+          <Text style={[styles.btnText, { color: t.text }]}>PAUSE</Text>
         </Pressable>
-      ) : null}
-
-      <Pressable
-        onPress={() => {
-          if (!canStop) return;
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          onStop();
-        }}
-        onLongPress={
-          focusLocked && onEndEarly
-            ? () => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                onEndEarly();
-              }
-            : undefined
-        }
-        delayLongPress={600}
-        disabled={!canStop && !focusLocked}
-        accessibilityRole="button"
-        accessibilityLabel={canStop ? 'Stop and finish session' : lockedLabel}
-        accessibilityHint={focusLocked ? 'Press and hold to end your focus session early and finish' : undefined}
-        accessibilityState={{ disabled: !canStop && !focusLocked }}
-        style={[styles.stop, { backgroundColor: canStop ? t.accent : t.bgTer, borderColor: t.border }, !canStop && styles.stopLocked]}
-      >
-        {canStop ? (
-          <>
-            <Ionicons name="stop" size={20} color={t.onAccent} />
-            <Text style={[styles.stopText, { color: t.onAccent }]}>FINISH</Text>
-          </>
-        ) : (
-          <View style={styles.lockedCol}>
-            <Text style={[styles.lockedText, { color: t.textSec }]}>{lockedLabel}</Text>
-            {focusLocked ? (
-              <Text style={[styles.holdHint, { color: t.textTer }]}>HOLD TO END EARLY</Text>
-            ) : null}
-          </View>
-        )}
-      </Pressable>
+      ) : (
+        <>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onTogglePause();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Resume session"
+            style={[styles.btn, { backgroundColor: t.accent, borderColor: t.border }]}
+          >
+            <Ionicons name="play" size={22} color={t.onAccent} />
+            <Text style={[styles.btnText, { color: t.onAccent }]}>RESUME</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              onStop();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Stop and finish session"
+            style={[styles.btn, { backgroundColor: t.bgSec, borderColor: t.border }]}
+          >
+            <Ionicons name="stop" size={20} color={t.text} />
+            <Text style={[styles.btnText, { color: t.text }]}>FINISH</Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }
@@ -144,18 +181,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: BORDER_WIDTH,
   },
-  secondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 52,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    borderWidth: BORDER_WIDTH,
-  },
-  secondaryText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
-  stop: {
+  // Shared button face: fills the bar (flex), fill/border set inline per action.
+  btn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -165,8 +192,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: BORDER_WIDTH,
   },
-  stopLocked: { opacity: 0.7 },
-  stopText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.8 },
+  btnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.8 },
+  locked: { opacity: 0.7 },
   lockedCol: { alignItems: 'center', justifyContent: 'center', gap: 2 },
   lockedText: { fontFamily: FONTS.monoMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
   holdHint: { fontFamily: FONTS.mono, fontSize: 9, letterSpacing: 0.8 },

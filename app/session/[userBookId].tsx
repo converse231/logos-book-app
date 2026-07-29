@@ -672,8 +672,9 @@ export default function SessionTracker() {
   }
   const isAudio = book.format === 'audiobook';
   // Focus mode: Finish unlocks only after the committed duration (no pausing, so no
-  // pause guard needed). Non-focus: finish anytime unless paused.
-  const canStop = focusMode ? elapsedWhole >= focusLockSec : !paused;
+  // pause guard needed). Non-focus: the control bar surfaces Finish only in the
+  // paused state (Strava-style), so it's always finishable — canStop is focus-only.
+  const canStop = focusMode ? elapsedWhole >= focusLockSec : true;
   const stopUnlocksInSec = focusMode ? Math.max(0, focusLockSec - elapsedWhole) : 0;
   const canCancel = elapsedWhole < CANCEL_WINDOW_SEC;
 

@@ -461,5 +461,5 @@ const styles = StyleSheet.create({
   emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 48, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
   emptyCtaText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
-  skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
 });

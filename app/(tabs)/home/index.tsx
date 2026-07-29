@@ -20,6 +20,7 @@ import { BookCover } from '@/components/shared/BookCover';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { LevelNameBadge } from '@/components/shared/LevelNameBadge';
 import { Q } from '@/components/shared/Q';
+import { StreakHero } from '@/components/home/StreakHero';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { RefreshingOverlay, HIDDEN_SPINNER } from '@/components/shared/RefreshingOverlay';
@@ -233,73 +234,33 @@ export default function Home() {
           </View>
         </Reveal>
 
-        {/* At-risk (urgent) */}
-        {data.streak.isAtRisk ? (
-          <Reveal index={1} reduce={reduce}>
-            <Card padded style={styles.atRisk}>
-              <Q expression="concerned" size={46} decorative />
-              <Text style={[styles.atRiskText, { color: t.gold }]}>
-                Your {data.streak.currentStreak}-day streak ends tonight. Read to keep it alive.
-              </Text>
-            </Card>
-          </Reveal>
-        ) : null}
+        {/* 1 — Illustrated streak hero (Duolingo-style, keyed to live streak state) */}
+        <Reveal index={1} reduce={reduce}>
+          <StreakHero
+            currentStreak={data.streak.currentStreak}
+            isAtRisk={data.streak.isAtRisk}
+            hasComeback={!!data.comeback}
+            hasEverRead={!!data.streak.lastReadLocalDate}
+            almostThere={!!data.almostThere}
+            readToday={readToday}
+            onPress={() => router.push('/(tabs)/stats' as Href)}
+          />
+        </Reveal>
 
-        {/* 1 — Streak + stats bento */}
+        {/* 2 — Reading stats (tinted blocks; almost-there lives in the hero + challenges) */}
         <Reveal index={2} reduce={reduce}>
-          <Card padded>
-            <View style={styles.firstRow}>
-              <View style={[styles.streakCell, { borderColor: t.border, backgroundColor: t.bgTer }]}>
-                <Text style={[styles.cellLabel, { color: t.textSec }]}>STREAK</Text>
-                {reduce ? (
-                  <Ionicons name="flame" size={26} color={data.streak.isAtRisk ? t.gold : t.ember} />
-                ) : (
-                  <Image
-                    source={require('@/assets/fire.webp')}
-                    style={styles.streakFlame}
-                    autoplay
-                    contentFit="contain"
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants"
-                  />
-                )}
-                <Text style={[styles.streakCount, { color: t.text }]}>{data.streak.currentStreak}</Text>
-                <Text style={[styles.streakUnit, { color: t.textSec }]}>
-                  {data.streak.currentStreak === 1 ? 'day' : 'days'}
-                </Text>
-              </View>
-              <View style={styles.statsCell}>
-                <View style={styles.statsHead}>
-                  <Text style={[styles.statsTitle, { color: t.text }]}>Your reading</Text>
-                  <Pressable
-                    onPress={() => router.push('/(tabs)/stats' as Href)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="All stats"
-                    style={styles.statsLink}
-                  >
-                    <Text style={[styles.statsLinkText, { color: t.accent }]}>All stats</Text>
-                    <Ionicons name="chevron-forward" size={13} color={t.accent} />
-                  </Pressable>
-                </View>
-                <View style={styles.statsRow}>
-                  <HomeStat value={stats.lifetimePages.toLocaleString()} label="pages" t={t} />
-                  <HomeStat value={`${stats.lifetimeHours}h`} label="read" t={t} />
-                  <HomeStat value={`${stats.booksFinished}`} label="books" t={t} />
-                </View>
-              </View>
+          <View style={styles.section}>
+            <SectionHeader
+              title="Your reading"
+              actionLabel="All stats"
+              onAction={() => router.push('/(tabs)/stats' as Href)}
+            />
+            <View style={styles.statBlocks}>
+              <StatBlock icon="reader-outline" tint={t.accentMuted} color={t.accent} value={stats.lifetimePages.toLocaleString()} label="PAGES" t={t} />
+              <StatBlock icon="time-outline" tint="rgba(242,145,63,0.16)" color={t.ember} value={`${stats.lifetimeHours}h`} label="READ" t={t} />
+              <StatBlock icon="checkmark-done-outline" tint="rgba(243,194,76,0.18)" color={t.gold} value={`${stats.booksFinished}`} label="BOOKS" t={t} />
             </View>
-
-            {data.almostThere ? (
-              <View style={[styles.milestone, { borderTopColor: t.border }]}>
-                <View style={styles.milestoneHead}>
-                  <Ionicons name="ribbon" size={16} color={t.accent} />
-                  <Text style={[styles.milestoneText, { color: t.text }]}>{data.almostThere.label}</Text>
-                </View>
-                <ProgressBar value={data.almostThere.progress} max={1} height={8} />
-              </View>
-            ) : null}
-          </Card>
+          </View>
         </Reveal>
 
         {/* Daily check-in — "I read today" streak saver */}
@@ -335,7 +296,12 @@ export default function Home() {
           {data.activeBook ? (
             <Card padded>
               <Text style={[styles.kicker, { color: t.textSec }]}>CONTINUE READING</Text>
-              <View style={styles.bookRow}>
+              <Pressable
+                onPress={() => router.push(`/(tabs)/library/${data.activeBook!.id}` as Href)}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${data.activeBook.book.title}`}
+                style={({ pressed }) => [styles.bookRow, pressed && styles.pressed]}
+              >
                 <BookCover
                   url={data.activeBook.book.coverUrl}
                   title={data.activeBook.book.title}
@@ -362,7 +328,7 @@ export default function Home() {
                     </Text>
                   </View>
                 </View>
-              </View>
+              </Pressable>
               <StartButton onPress={() => router.push(`/session/${data.activeBook!.id}` as Href)} />
             </Card>
           ) : (
@@ -493,15 +459,30 @@ function Reveal({ index, reduce, children }: { index: number; reduce: boolean; c
   return <Animated.View entering={FadeInUp.delay(index * 70).duration(440)}>{children}</Animated.View>;
 }
 
-function HomeStat({ value, label, t }: { value: string; label: string; t: ReturnType<typeof useTheme> }) {
+// A tinted, ink-bordered stat block on a hard shadow — one reward colour each, the
+// same neubrutalist language as the session-complete cards.
+function StatBlock({
+  icon,
+  tint,
+  color,
+  value,
+  label,
+  t,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  tint: string;
+  color: string;
+  value: string;
+  label: string;
+  t: ReturnType<typeof useTheme>;
+}) {
   return (
-    <View style={styles.homeStatCol}>
-      <Text style={[styles.homeStatValue, { color: t.text }]} numberOfLines={1}>
+    <View style={[styles.statBlock, { backgroundColor: tint, borderColor: t.border }]}>
+      <Ionicons name={icon} size={20} color={color} />
+      <Text style={[styles.statBlockValue, { color: t.text }]} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
-      <Text style={[styles.homeStatLabel, { color: t.textSec }]} numberOfLines={1}>
-        {label}
-      </Text>
+      <Text style={[styles.statBlockLabel, { color: t.textSec }]}>{label}</Text>
     </View>
   );
 }
@@ -637,18 +618,22 @@ const styles = StyleSheet.create({
   streakCount: { fontFamily: FONTS.uiBold, fontSize: 30, lineHeight: 34, fontVariant: ['tabular-nums'], marginTop: 2 },
   streakUnit: { fontFamily: FONTS.uiMedium, fontSize: 12 },
   statsCell: { flex: 1, justifyContent: 'center', gap: 14 },
-  statsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statsTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
-  statsLink: { flexDirection: 'row', alignItems: 'center', gap: 1 },
-  statsLinkText: { fontFamily: FONTS.uiSemiBold, fontSize: 12 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  homeStatCol: { flex: 1, gap: 2 },
-  homeStatValue: { fontFamily: FONTS.uiBold, fontSize: 20, fontVariant: ['tabular-nums'] },
-  homeStatLabel: { fontFamily: FONTS.uiMedium, fontSize: 12 },
+  statBlocks: { flexDirection: 'row', gap: 10 },
+  statBlock: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: BORDER_WIDTH,
+    ...SHADOW.sm,
+    paddingVertical: 16,
+    paddingHorizontal: 6,
+    minHeight: 96,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  statBlockValue: { fontFamily: FONTS.monoBold, fontSize: 22, lineHeight: 24, fontVariant: ['tabular-nums'], includeFontPadding: false },
+  statBlockLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.8 },
 
-  milestone: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 16, paddingTop: 14, gap: 10 },
-  milestoneHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  milestoneText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14 },
 
   levelCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   xpWrap: { flex: 1, gap: 5 },
