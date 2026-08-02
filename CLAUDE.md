@@ -162,6 +162,26 @@ Ordering reflects the confirmed "onboarding first" decision. (Product Phase 1–
 
 **Maps to blueprint §22:** B1–B5 ≈ Phase 1 (beta) core; B6 ≈ Phase 3/4. The §22 build order (schema → `complete_session` → streaks → comeback ‖ reward ‖ celebration → cards/notifications) is preserved by B1 → B4 → B5.
 
+## Presentations (`presentations/`)
+
+Decks live outside the app but reuse its brand. Rules load from `presentations/CLAUDE.md`;
+the `make-deck` skill (`.claude/skills/make-deck/`) runs the full build.
+
+- **One self-contained `.html` file per deck.** No PowerPoint, no slide framework (reveal.js,
+  Slidev, Marp — none), no npm, no build step, no dependencies. CSS + JS inline. It opens by
+  double-clicking. Only external request is the Google Fonts `<link>`, and it degrades fine.
+- `presentations/brand.md` is the visual contract (Paper & Ink, mirrored from `theme/tokens.ts`);
+  `presentations/context.md` is the **only** source of facts. **Never invent a number, date,
+  link, or quote for a slide** — Quire is pre-launch and has no metrics to quote. Missing fact →
+  a visible `[Add link]` marker plus a `[NEEDS FACT]` line in the deck's `outline.md`.
+- `presentations/template.html` is the shared engine (nav / overview / speaker notes / copy
+  buttons / slide types). A deck copies it and edits **only** the markup inside
+  `<main class="deck">`. Never fork its CSS or JS per-deck — new visuals get added to the
+  template so every deck inherits them.
+- `outline.md` before any slide HTML. One folder per deck, assets copied in (never hotlinked).
+- **Never generate images for a deck** — real screenshots and real favicons only; if art is
+  missing, write a prompt into `outline.md` for the user to generate.
+
 ## app.json
 
 - ✅ Name `Quire`, slug `quire`, scheme `quire://`, bundle id / package `com.quire.app` (renamed from Logos 2026-07-21). `userInterfaceStyle` is `automatic`.

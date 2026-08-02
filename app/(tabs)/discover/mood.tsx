@@ -357,7 +357,9 @@ const styles = StyleSheet.create({
 
   // Preview sheet
   sheetScrim: { flex: 1, backgroundColor: 'rgba(3,4,6,0.62)', justifyContent: 'flex-end' },
-  sheet: { maxHeight: '86%', borderTopWidth: BORDER_WIDTH_THICK, borderLeftWidth: BORDER_WIDTH_THICK, borderRightWidth: BORDER_WIDTH_THICK, borderRadius: 14, paddingTop: 10 },
+  // Uniform width — a per-side border plus a radius makes RN paint the corner
+  // arcs into the top edge (a thick black cap above the sheet).
+  sheet: { maxHeight: '86%', borderWidth: BORDER_WIDTH_THICK, borderRadius: 14, paddingTop: 10 },
   sheetHandle: { width: 44, height: 5, borderRadius: 14, alignSelf: 'center', marginBottom: 14 },
   sheetBody: { paddingHorizontal: 20, paddingBottom: 16, gap: 16 },
   sheetHead: { flexDirection: 'row', gap: 14 },

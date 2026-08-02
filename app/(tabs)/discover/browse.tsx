@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
+import { coverGrid } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { BookSearchResult } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -15,13 +16,15 @@ import { ErrorState } from '@/components/shared/ErrorState';
 
 // Category / author results (reached from the Discover hub). `q` is the Google
 // Books query (e.g. "subject:Mystery" or "inauthor:Brandon Sanderson"); `title`
-// is the heading. Tapping a book hands off to add-book pre-searched.
+// is the heading. Tapping a book opens its book page.
 export default function Browse() {
   const t = useTheme();
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
   const { title, q } = useLocalSearchParams<{ title?: string; q?: string }>();
+  const { width } = useWindowDimensions();
+  const { columns, cellWidth } = coverGrid(width, 3, 12);
 
   const [books, setBooks] = useState<BookSearchResult[] | null>(null);
   const [error, setError] = useState(false);
@@ -42,7 +45,10 @@ export default function Browse() {
 
   const openBook = (b: BookSearchResult) => {
     Haptics.selectionAsync();
-    router.push(`/(modals)/add-book?q=${encodeURIComponent(`${b.title} ${b.authors[0] ?? ''}`.trim())}` as Href);
+    // The reader already picked this book — show them the book, not a search
+    // for it. Passed whole rather than by id: the search result is already
+    // complete, so refetching would only add a spinner.
+    router.push({ pathname: '/book', params: { data: JSON.stringify(b), from: 'browse' } } as unknown as Href);
   };
 
   return (
@@ -52,15 +58,20 @@ export default function Browse() {
           <Ionicons name="chevron-back" size={22} color={t.text} />
         </Pressable>
         <Text style={[styles.title, { color: t.text }]} numberOfLines={1}>{title ?? 'Browse'}</Text>
-        <View style={styles.roundBtn} />
+        {/* Layout spacer only — must NOT reuse roundBtn, whose border painted a
+            phantom empty button here. */}
+        <View style={styles.headerSpacer} />
       </View>
 
       {error ? (
         <ErrorState onRetry={() => setNonce((n) => n + 1)} />
       ) : !books ? (
         <View style={styles.grid}>
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <View key={i} style={styles.cell}><Skeleton width="100%" height={170} radius={14} /></View>
+          {Array.from({ length: columns * 2 }).map((_, i) => (
+            <View key={i} style={{ width: cellWidth, gap: 5 }}>
+              <Skeleton width={cellWidth} height={cellWidth / 0.66} radius={RADIUS.md} />
+              <Skeleton width={cellWidth * 0.9} height={11} />
+            </View>
           ))}
         </View>
       ) : books.length === 0 ? (
@@ -71,16 +82,19 @@ export default function Browse() {
       ) : (
         <FlatList
           data={books}
-          numColumns={3}
+          key={String(columns)}
+          numColumns={columns}
           keyExtractor={(item, i) => `${item.googleBooksId}-${i}`}
           contentContainerStyle={[styles.gridContent, { paddingBottom: insets.bottom + 24 }]}
           columnWrapperStyle={styles.gridRow}
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={7}
           renderItem={({ item }) => (
-            <Pressable onPress={() => openBook(item)} accessibilityRole="button" accessibilityLabel={`${item.title} by ${item.authors.join(', ')}`} style={({ pressed }) => [styles.cell, pressed && { opacity: 0.75 }]}>
-              <View style={[styles.coverFrame, { borderColor: t.border }]}>
-                <BookCover url={item.coverUrl} title={item.title} width={104} />
-              </View>
+            <Pressable onPress={() => openBook(item)} accessibilityRole="button" accessibilityLabel={`${item.title} by ${item.authors.join(', ')}`} style={({ pressed }) => [styles.cell, { width: cellWidth }, pressed && { opacity: 0.75 }]}>
+              <BookCover url={item.coverUrl} title={item.title} width={cellWidth} />
               <Text style={[styles.bookTitle, { color: t.text }]} numberOfLines={2}>{item.title}</Text>
             </Pressable>
           )}
@@ -94,11 +108,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 18, paddingBottom: 10 },
   roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontFamily: FONTS.displayBold, fontSize: 22, letterSpacing: -0.4, textAlign: 'center', textTransform: 'uppercase' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14, gap: 10 },
-  gridContent: { paddingHorizontal: 14, gap: 16 },
-  gridRow: { gap: 10 },
-  cell: { flex: 1 / 3, gap: 5, maxWidth: '33%' },
-  coverFrame: { borderWidth: 2, borderRadius: 14, alignSelf: 'flex-start' },
+  headerSpacer: { width: 42 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 18, gap: 12 },
+  gridContent: { paddingHorizontal: 18, gap: 16 },
+  gridRow: { gap: 12 },
+  cell: { gap: 5 },
   bookTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 12, lineHeight: 15 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   emptyText: { fontFamily: FONTS.uiRegular, fontSize: 15 },

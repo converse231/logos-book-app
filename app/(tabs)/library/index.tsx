@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
+import { coverGrid } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -56,7 +57,11 @@ export default function Library() {
   const api = useApi();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
+  // The shelf lives inside the centred reading column on tablets, so cells are
+  // measured against the COLUMN, not the device — otherwise 3 columns on an iPad
+  // gives 320dp covers. The extra column keeps cells at their designed size.
   const { width } = useWindowDimensions();
+  const { columns, cellWidth } = coverGrid(width, 3, 12); // 18px gutters, 12px column gaps
 
   // Lift the bottom-anchored search dock above the keyboard. Driven by Reanimated's
   // useAnimatedKeyboard on BOTH platforms — it takes control of the Android keyboard
@@ -98,8 +103,6 @@ export default function Library() {
     setRefreshing(true);
     setNonce((n) => n + 1);
   }, []);
-
-  const cellWidth = (width - 36 - 24) / 3; // 18px gutters, 2×12px column gaps
 
   const visible = useMemo(() => {
     if (!books) return [];
@@ -191,10 +194,10 @@ export default function Library() {
       ) : (
         <Animated.View style={styles.flex} entering={reduce ? undefined : FadeIn.duration(300)}>
           <FlatList
-            key={view}
+            key={`${view}-${columns}`}
             data={visible}
             keyExtractor={(item) => item.id}
-            numColumns={view === 'grid' ? 3 : 1}
+            numColumns={view === 'grid' ? columns : 1}
             ListHeaderComponent={Header}
             columnWrapperStyle={view === 'grid' ? styles.column : undefined}
             contentContainerStyle={[
@@ -203,6 +206,10 @@ export default function Library() {
             ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            removeClippedSubviews
+            initialNumToRender={12}
+            maxToRenderPerBatch={12}
+            windowSize={7}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} {...HIDDEN_SPINNER} />
             }

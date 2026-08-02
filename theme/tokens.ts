@@ -84,6 +84,19 @@ export const BG_GRADIENT_LIGHT = {
   locations: [0, 0.5, 1] as const,
 } as const;
 
+// Rotating tint/ink pairs for subject + genre chips. Borderless pale fills — the
+// one place the system drops its ink border, so a row of taxonomy labels reads as
+// quiet metadata instead of six competing buttons. Index by position so a book's
+// genres (and an author's recurring themes) get a stable, varied sequence.
+export const GENRE_PALETTE = [
+  { bg: 'rgba(99,179,237,0.18)',  fg: '#63B3ED' },  // sky blue   — Fiction / Sci-Fi
+  { bg: 'rgba(154,117,244,0.18)', fg: '#9A75F4' },  // violet     — Fantasy / Mystery
+  { bg: 'rgba(224,114,158,0.18)', fg: '#E0729E' },  // rose       — Self-Help / Business
+  { bg: 'rgba(255,197,61,0.18)', fg: '#D4960A' },   // amber      — History / Biography
+  { bg: 'rgba(252,129,100,0.18)', fg: '#E06B4A' },  // coral      — Literary / Cultural
+  { bg: 'rgba(99,223,180,0.18)', fg: '#22A37A' },   // teal       — Science / Nature
+] as const;
+
 // ─── Typography ─────────────────────────────────────────────────────────────
 
 // Font families — must match the keys loaded via useFonts in app/_layout.tsx.

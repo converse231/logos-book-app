@@ -302,6 +302,31 @@ export interface BookSearchResult {
   isbn13?: string | null;
 }
 
+// ── Author profile (Open Library) ────────────────────────────────────────────
+// Public catalog data for the author page. Google Books has no author entity at
+// all, so this comes entirely from Open Library — and OL coverage is VERY uneven:
+// a well-known novelist has a bio, photo, links and ratings, while a mid-list
+// author may have nothing but a name and a work count. EVERY field except `name`
+// is therefore optional by design, and the author screen must read as deliberate
+// when most of them are null.
+export interface AuthorProfile {
+  name: string;                  // canonical OL spelling (may differ in case from the query)
+  openLibraryId: string | null;
+  photoUrl: string | null;
+  bio: string | null;            // markdown stripped, reference-link junk removed
+  /** Attribution pulled out of the bio's trailing "Source: …" line (CC BY-SA). */
+  bioSource: { title: string; url: string } | null;
+  birthDate: string | null;      // free-form, e.g. "20 February 1991"
+  deathDate: string | null;
+  workCount: number | null;
+  topWork: string | null;        // OL's most-held work — "best known for"
+  subjects: string[];            // top_subjects, cleaned + de-duplicated
+  ratingAverage: number | null;  // 0–5, null when nobody has rated them
+  ratingCount: number;
+  readerCount: number;           // readinglog_count — people tracking them on OL
+  links: { title: string; url: string }[];
+}
+
 // ── AI recommendations (B6 / blueprint §17) ──────────────────────────────────
 export interface AiBookRec {
   title: string;

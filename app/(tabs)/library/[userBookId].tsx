@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD, GENRE_PALETTE } from '@/theme/tokens';
+import { useContentWidth } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, Review, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -16,20 +17,12 @@ import { ProgressBar } from '@/components/shared/ProgressBar';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StarRating } from '@/components/library/StarRating';
+import { plainText } from '@/lib/bookSearch';
 import { getBookProgress } from '@/components/library/bookProgress';
 import { FinishedDatePicker } from '@/components/library/FinishedDatePicker';
 
 // A curated set of tinted genre pill colours (bg + fg). Rotates by index so
 // consecutive genres always get different hues without needing a genre→colour map.
-const GENRE_PALETTE = [
-  { bg: 'rgba(99,179,237,0.18)',  fg: '#63B3ED' },  // sky blue   — Fiction / Sci-Fi
-  { bg: 'rgba(154,117,244,0.18)', fg: '#9A75F4' },  // violet     — Fantasy / Mystery
-  { bg: 'rgba(224,114,158,0.18)', fg: '#E0729E' },  // rose       — Self-Help / Business
-  { bg: 'rgba(255,197,61,0.18)', fg: '#D4960A' },  // amber      — History / Biography
-  { bg: 'rgba(252,129,100,0.18)', fg: '#E06B4A' },  // coral      — Literary / Cultural
-  { bg: 'rgba(99,223,180,0.18)', fg: '#22A37A' },  // teal       — Science / Nature
-] as const;
-
 const STATUSES: { key: ReadingStatus; label: string }[] = [
   { key: 'want', label: 'Want' },
   { key: 'tbr', label: 'TBR' },
@@ -60,7 +53,9 @@ export default function BookDetail() {
   const api = useApi();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
-  const { width } = useWindowDimensions();
+  // Hero cover is sized off the centred reading column, so a tablet gets the
+  // designed 210dp cover rather than a 460dp one.
+  const width = useContentWidth();
 
   const [ub, setUb] = useState<UserBook | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -194,6 +189,7 @@ export default function BookDetail() {
   const ratingCount = reviews.length;
   const ratingAvg = ratingCount > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / ratingCount : 0;
   const meta = [length, book.genres[0]].filter(Boolean) as string[];
+  const blurb = plainText(book.description);
 
   const startSession = () => router.push(`/session/${ub.id}` as Href);
   const writeReview = () =>
@@ -229,6 +225,9 @@ export default function BookDetail() {
     try {
       const updated = await api.writeReview(book.id, next, myReview?.body ?? undefined, myReview?.containsSpoilers ?? false);
       setReviews((prev) => [updated, ...prev.filter((r) => r.userId !== updated.userId)]);
+      // Goodreads-style: rating a book marks it finished (writeReview already did
+      // this server-side) — reflect it locally so the shelf/status update instantly.
+      setUb((prev) => (prev && prev.status !== 'finished' ? { ...prev, status: 'finished', finishedAt: new Date().toISOString() } : prev));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       Alert.alert('Could not save rating', 'Please try again.');
@@ -325,7 +324,23 @@ export default function BookDetail() {
                 {book.subtitle}
               </Text>
             ) : null}
-            <Text style={[styles.author, { color: t.textSec }]}>{book.authors.join(', ')}</Text>
+            {book.authors[0] ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push(`/author?name=${encodeURIComponent(book.authors[0])}` as Href);
+                }}
+                hitSlop={8}
+                accessibilityRole="link"
+                accessibilityLabel={`About ${book.authors[0]} and their other books`}
+                style={({ pressed }) => [styles.authorLink, pressed && { opacity: 0.6 }]}
+              >
+                <Text style={[styles.author, { color: t.accent }]} numberOfLines={2}>
+                  {book.authors.join(', ')}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={t.accent} />
+              </Pressable>
+            ) : null}
             {ub.seriesName ? (
               <Text style={[styles.series, { color: t.textTer }]}>
                 {ub.seriesName}
@@ -395,6 +410,24 @@ export default function BookDetail() {
             </Pressable>
           </View>
         </Reveal>
+
+        {/* Loved it — surface more by the same author on a high rating. */}
+        {myRating >= 4.5 && book.authors[0] ? (
+          <Reveal i={3} reduce={reduce}>
+            <Pressable
+              onPress={() => router.push(`/author?name=${encodeURIComponent(book.authors[0])}` as Href)}
+              accessibilityRole="button"
+              accessibilityLabel={`See more books by ${book.authors[0]}`}
+              style={[styles.authorBanner, { backgroundColor: t.accentMuted }]}
+            >
+              <Ionicons name="sparkles" size={18} color={t.accent} />
+              <Text style={[styles.authorBannerText, { color: t.accent }]} numberOfLines={1}>
+                Loved it? More by {book.authors[0]}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={t.accent} />
+            </Pressable>
+          </Reveal>
+        ) : null}
 
         {/* Shelf status */}
         <Reveal i={4} reduce={reduce}>
@@ -478,12 +511,12 @@ export default function BookDetail() {
         {/* Tab content */}
         {tab === 'about' ? (
           <View style={styles.tabBody}>
-            {book.description ? (
+            {blurb ? (
               <>
                 <Text style={[styles.body, { color: t.text }]} numberOfLines={descExpanded ? undefined : 5}>
-                  {book.description}
+                  {blurb}
                 </Text>
-                {book.description.length > 220 ? (
+                {blurb.length > 220 ? (
                   <Pressable onPress={() => setDescExpanded((v) => !v)} hitSlop={6} accessibilityRole="button">
                     <Text style={[styles.moreLink, { color: t.accent }]}>{descExpanded ? 'Show less' : 'Show more'}</Text>
                   </Pressable>
@@ -796,7 +829,8 @@ const styles = StyleSheet.create({
   metaText: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   title: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 32, textAlign: 'center', marginTop: 4 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 14, textAlign: 'center', lineHeight: 19 },
-  author: { fontFamily: FONTS.uiSemiBold, fontSize: 15, textAlign: 'center', marginTop: 2 },
+  authorLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, marginTop: 4, alignSelf: 'center' },
+  author: { fontFamily: FONTS.uiSemiBold, fontSize: 15, textAlign: 'center', textDecorationLine: 'underline' },
   series: { fontFamily: FONTS.uiMedium, fontSize: 12 },
 
   chipScroll: { marginHorizontal: -18 },
@@ -810,6 +844,9 @@ const styles = StyleSheet.create({
   rateHint: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   reviewLink: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 38, borderRadius: 14, borderWidth: BORDER_WIDTH },
   reviewLinkText: { fontFamily: FONTS.uiBold, fontSize: 13 },
+
+  authorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 14, borderRadius: 14 },
+  authorBannerText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 13.5 },
 
   statusRow: { flexDirection: 'row', gap: 8 },
   statusPill: { flex: 1, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

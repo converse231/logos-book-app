@@ -19,6 +19,14 @@ interface PrimaryButtonProps {
 
 const OFFSET = 4; // hard-shadow depth (px) the button presses into
 
+// The hard shadow sits OUTSIDE the face (down-right by `offset`), so the block's
+// visual extent is bigger than the face. If that extra lives outside the
+// component's layout box it gets sliced off by any clipping ancestor — a vertical
+// ScrollView clips horizontal overflow, which is why the review sheet's POST
+// REVIEW button had a flat right edge. Reserving the overhang as padding on an
+// outer wrapper keeps the whole block inside its own box, so no scroller can cut
+// it, here or anywhere else it's used.
+//
 // Neubrutalist CTA. Flat accent fill, thick ink border, SHARP corners, and a
 // hard offset shadow rendered as a solid ink block behind it. On press the
 // button translates into its shadow (the shadow fades) for a tactile "stamp"
@@ -59,7 +67,10 @@ export function PrimaryButton({
   };
 
   return (
+    // Outer box reserves the shadow's overhang so no scroller can clip it; the
+    // inner stack is what the absolutely-placed shadow positions against.
     <View style={styles.outer}>
+      <View style={styles.stack}>
       {showShadow ? (
         <Animated.View
           pointerEvents="none"
@@ -103,12 +114,14 @@ export function PrimaryButton({
           </View>
         </Pressable>
       </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outer: { position: 'relative' },
+  outer: { paddingRight: OFFSET, paddingBottom: OFFSET },
+  stack: { position: 'relative' },
   shadowBlock: { position: 'absolute', top: OFFSET, left: OFFSET, right: -OFFSET, bottom: -OFFSET, borderRadius: RADIUS.lg },
   button: {
     minHeight: 52,

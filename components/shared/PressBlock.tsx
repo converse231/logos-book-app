@@ -30,6 +30,14 @@ interface PressBlockProps {
   hitSlop?: number;
 }
 
+// The hard shadow sits OUTSIDE the face (down-right by `offset`), so the block's
+// visual extent is bigger than the face. If that extra lives outside the
+// component's layout box it gets sliced off by any clipping ancestor — a vertical
+// ScrollView clips horizontal overflow, which is why the review sheet's POST
+// REVIEW button had a flat right edge. Reserving the overhang as padding on an
+// outer wrapper keeps the whole block inside its own box, so no scroller can cut
+// it, here or anywhere else it's used.
+//
 // The canonical neubrutalist button interaction (same mechanic as PrimaryButton):
 // a solid ink shadow block sits behind the content; on press the content
 // translates INTO the shadow (which fades) for a tactile "stamp". Reduced-motion
@@ -74,7 +82,10 @@ export function PressBlock({
   };
 
   return (
-    <View style={[styles.outer, containerStyle]}>
+    // `pad` reserves the shadow's overhang; `stack` is the positioning context the
+    // absolutely-placed shadow measures against (see the note above).
+    <View style={[{ paddingRight: offset, paddingBottom: offset }, containerStyle]}>
+      <View style={styles.stack}>
       {!disabled ? (
         <Animated.View
           pointerEvents="none"
@@ -100,11 +111,12 @@ export function PressBlock({
           {children}
         </Pressable>
       </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outer: { position: 'relative' },
+  stack: { position: 'relative' },
   shadow: { position: 'absolute' },
 });

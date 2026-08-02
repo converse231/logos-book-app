@@ -44,3 +44,11 @@ yarn-error.*
 
 # local DB SQL runner (uses DATABASE_URL from .env; not committed)
 dbrun.mjs
+
+# Pre-optimisation source art. Kept on disk so the WebP conversion is reversible,
+# but never committed — it is ~95MB, and the previously-tracked originals are still
+# recoverable from git history at their old paths.
+/assets/_originals
+
+# Supabase CLI scratch state (project ref, pooler URL, tool versions)
+/supabase/.temp

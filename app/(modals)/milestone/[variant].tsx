@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { CENTER_COLUMN } from '@/theme/layout';
 import { Confetti } from '@/components/shared/Confetti';
 import { CountUp } from '@/components/onboarding/CountUp';
 import { PressBlock } from '@/components/shared/PressBlock';
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
 
   label: { fontFamily: FONTS.monoMedium, fontSize: 14, letterSpacing: 2, marginTop: 12 },
   blurb: { fontFamily: FONTS.serifMedium, fontSize: 20, lineHeight: 26, textAlign: 'center', marginTop: 26, maxWidth: 320 },
-  footer: { paddingHorizontal: 24 },
+  footer: { ...CENTER_COLUMN, paddingHorizontal: 24 },
   cta: { minHeight: 54, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: '#241E19' },
 });

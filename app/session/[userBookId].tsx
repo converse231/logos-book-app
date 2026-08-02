@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
+import { CENTER_COLUMN } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
 import { localDateString, useSessionStore, uuidv4 } from '@/stores/sessionStore';
@@ -799,7 +800,7 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   // Ready screen
-  readyTopBar: { paddingHorizontal: 20 },
+  readyTopBar: { ...CENTER_COLUMN, paddingHorizontal: 20 },
   closeBtn: {
     width: 42,
     height: 42,
@@ -810,7 +811,7 @@ const styles = StyleSheet.create({
   },
   readyBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 22 },
   pickLabel: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 1.6 },
-  readyText: { alignItems: 'center', gap: 6, paddingHorizontal: 32, minHeight: 92 },
+  readyText: { ...CENTER_COLUMN, alignItems: 'center', gap: 6, paddingHorizontal: 32, minHeight: 92 },
   readyTitle: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 34, textAlign: 'center' },
   readyAuthor: { fontFamily: FONTS.uiRegular, fontSize: 15, textAlign: 'center' },
   readyStartPage: { fontFamily: FONTS.uiMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
@@ -818,7 +819,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, borderWidth: BORDER_WIDTH,
   },
-  readyFooter: { paddingHorizontal: 24, gap: 14, alignItems: 'center' },
+  readyFooter: { ...CENTER_COLUMN, paddingHorizontal: 24, gap: 14, alignItems: 'center' },
   focusWrap: { width: '100%', gap: 10 },
   focusRow: {
     flexDirection: 'row',
@@ -876,12 +877,12 @@ const styles = StyleSheet.create({
   readingLabel: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
   progressWrap: { width: 220, gap: 8, alignItems: 'center' },
   startedOn: { fontFamily: FONTS.uiMedium, fontSize: 12 },
-  controls: { paddingHorizontal: 20 },
+  controls: { ...CENTER_COLUMN, paddingHorizontal: 20 },
 
   // End-page entry
   entryOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
   entryBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: PALETTE.overlay },
-  entrySheet: { borderTopLeftRadius: 0, borderTopRightRadius: 0, padding: 24, gap: 12 },
+  entrySheet: { ...CENTER_COLUMN, borderTopLeftRadius: 0, borderTopRightRadius: 0, padding: 24, gap: 12 },
   entryTitle: { fontFamily: FONTS.uiBold, fontSize: 20 },
   entryHint: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },
   entryInput: {

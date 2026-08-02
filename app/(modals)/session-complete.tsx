@@ -16,6 +16,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, ANIMATION, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, type ThemeTokens } from '@/theme/tokens';
+import { CENTER_COLUMN_FILL } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import type { BookFormat } from '@/services/types';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -58,12 +59,11 @@ export default function SessionComplete() {
     // otherwise a level-up. Mutually exclusive so we never stack two full-screen
     // takeovers on one session.
     let escalate: ReturnType<typeof setTimeout> | null = null;
-    if (result.milestoneVariant) {
-      escalate = setTimeout(
-        () => router.push(`/(modals)/milestone/${result.milestoneVariant}?count=${result.streak.current}` as Href),
-        650
-      );
-    } else if (result.leveledUp) {
+    // Streak milestones no longer escalate from here — they're celebrated on Home
+    // (see lib/streakCelebration), which covers every way a day can be logged and
+    // keeps this flow from firing two streak animations back to back. Level-ups
+    // still take over, since nothing downstream celebrates those.
+    if (result.leveledUp) {
       escalate = setTimeout(
         () => router.push(`/(modals)/level-up?level=${result.level}&name=${encodeURIComponent(result.levelName)}` as Href),
         650
@@ -71,7 +71,7 @@ export default function SessionComplete() {
     }
     // The insight only slides up when nothing bigger took over.
     const i =
-      result.insight && !result.milestoneVariant && !result.leveledUp
+      result.insight && !result.leveledUp
         ? setTimeout(() => setShowInsight(true), 2000)
         : null;
     return () => {
@@ -117,6 +117,9 @@ export default function SessionComplete() {
     <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top }]}>
       <Confetti fire={fireConfetti} particleCount={isPB ? 120 : 80} />
 
+      {/* Confetti stays full-bleed; the celebration itself is clamped to the
+          centred reading column so a tablet gets the designed layout. */}
+      <View style={styles.column}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero — the book, big, springing in under a hard shadow with a stamp */}
         <CoverHero
@@ -187,6 +190,7 @@ export default function SessionComplete() {
           <Text style={[styles.doneText, { color: t.text }]}>DONE</Text>
         </PressBlock>
       </Animated.View>
+      </View>
 
       {/* Variable-reward insight */}
       {showInsight && result.insight ? (
@@ -328,6 +332,7 @@ function StatCard({ spec, t }: { spec: StatSpec; t: ThemeTokens }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  column: CENTER_COLUMN_FILL,
   content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 28, gap: 16 },
 
   // Cover hero

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
+import { coverGrid } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -19,7 +20,9 @@ export default function TBR() {
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
+  // Measured against the centred reading column (tablets), never the device.
   const { width } = useWindowDimensions();
+  const { columns, cellWidth } = coverGrid(width, 2, 16);
 
   const [books, setBooks] = useState<UserBook[] | null>(null);
   const [error, setError] = useState(false);
@@ -37,8 +40,6 @@ export default function TBR() {
       };
     }, [api, nonce])
   );
-
-  const cellWidth = (width - 36 - 16) / 2;
 
   return (
     <ScreenBackground>
@@ -64,10 +65,15 @@ export default function TBR() {
         <FlatList
           data={books}
           keyExtractor={(item) => item.id}
-          numColumns={2}
+          key={String(columns)}
+          numColumns={columns}
           columnWrapperStyle={styles.column}
           contentContainerStyle={[styles.content, { paddingTop: insets.top + 6, paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={9}
+          maxToRenderPerBatch={9}
+          windowSize={7}
           ListHeaderComponent={
             <View style={styles.header}>
               <Pressable

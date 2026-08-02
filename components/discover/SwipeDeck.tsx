@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { CONTENT_MAX_WIDTH } from '@/theme/layout';
 import { BookCover } from '@/components/shared/BookCover';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { AiBookRec, BookSearchResult } from '@/services/types';
@@ -23,9 +24,18 @@ export interface DeckCard {
   book: BookSearchResult | null; // resolved cover/catalog match (null = unresolved)
 }
 
-const { width: SCREEN_W } = Dimensions.get('window');
+// The deck sits inside the centred reading column, so both the card size and the
+// gesture distances are measured against the COLUMN, not the device: on an iPad the
+// raw window width gave a 770dp-wide card in a 440dp-tall slot and a swipe you had
+// to drag 210dp to register.
+const SCREEN_W = Math.min(Dimensions.get('window').width, CONTENT_MAX_WIDTH);
 const SWIPE_THRESHOLD = SCREEN_W * 0.26;
 const FLING = SCREEN_W * 1.4;
+// Card is capped and height-derived so it keeps its portrait proportion instead of
+// going landscape on a wide column (a 390dp phone lands on 342×438 — the size the
+// deck was designed at).
+const DECK_W = Math.min(SCREEN_W - 48, 380);
+const DECK_H = Math.round(DECK_W / 0.78);
 
 // Tinder-style book deck. Swipe/▶ right = add to Want shelf, left = pass; tap (or
 // the ⓘ button) opens the preview. Gesture-driven, with equivalent buttons so the
@@ -208,7 +218,7 @@ function ActionBtn({
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18 },
-  stack: { width: SCREEN_W - 48, height: 440, alignItems: 'center', justifyContent: 'center' },
+  stack: { width: DECK_W, height: DECK_H, alignItems: 'center', justifyContent: 'center' },
   cardAbs: { position: 'absolute', width: '100%', height: '100%' },
   card: {
     flex: 1, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, padding: 18,

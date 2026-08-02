@@ -367,7 +367,9 @@ const styles = StyleSheet.create({
   calendarLabel: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginLeft: 4 },
 
   sheetScrim: { flex: 1, backgroundColor: 'rgba(3,4,6,0.62)', justifyContent: 'flex-end' },
-  sheet: { maxHeight: '80%', borderTopWidth: 3, borderLeftWidth: 3, borderRightWidth: 3, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingTop: 10, paddingHorizontal: 18, paddingBottom: 18, gap: 4 },
+  // Uniform width — a per-side border plus a radius makes RN paint the corner
+  // arcs into the top edge (a thick black cap above the sheet).
+  sheet: { maxHeight: '80%', borderWidth: 3, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingTop: 10, paddingHorizontal: 18, paddingBottom: 18, gap: 4 },
   sheetHandle: { width: 44, height: 5, borderRadius: 14, alignSelf: 'center', marginBottom: 10 },
   sheetTitle: { fontFamily: FONTS.serifBold, fontSize: 25, letterSpacing: 0 },
   sheetSub: { fontFamily: FONTS.mono, fontSize: 12, marginBottom: 8 },

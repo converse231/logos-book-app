@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
@@ -11,6 +11,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { ANIMATION, FONTS } from '@/theme/tokens';
+import { CONTENT_MAX_WIDTH } from '@/theme/layout';
 import { SessionFab } from '@/components/navigation/SessionFab';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -61,6 +62,14 @@ function TabIcon({
 export default function TabsLayout() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+
+  // Tablet: the bar keeps its full-bleed paper + top rule (it's chrome, it should
+  // meet the edges), but the tab items are gathered into the same reading column
+  // as the content above them — otherwise five items spread across 1024dp leave
+  // the icons stranded miles from the centre FAB. Symmetric padding, so the
+  // centre spacer (and therefore the FAB) stays exactly centred.
+  const barGutter = Math.max(0, (width - CONTENT_MAX_WIDTH) / 2);
 
   return (
     <View style={styles.root}>
@@ -74,6 +83,7 @@ export default function TabsLayout() {
             height: 60 + insets.bottom,
             paddingBottom: insets.bottom + 6,
             paddingTop: 8,
+            paddingHorizontal: barGutter,
           },
           tabBarActiveTintColor: t.accent,
           tabBarInactiveTintColor: t.textSec,

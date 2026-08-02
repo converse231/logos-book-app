@@ -5,7 +5,7 @@
 // addBook re-fetches the full Google volume to build the ensure_book payload.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { BookSearchResult } from '@/services/types';
+import type { AuthorProfile, BookSearchResult } from '@/services/types';
 
 // Payload shape ensure_book expects (superset of BookSearchResult).
 export interface EnsureBookInput {
@@ -63,6 +63,32 @@ function httpsCover(url?: string | null): string | null {
   return url.replace(/^http:/, 'https:');
 }
 
+const ENTITIES: Record<string, string> = {
+  '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'",
+  '&apos;': "'", '&nbsp;': ' ', '&mdash;': '—', '&ndash;': '–', '&hellip;': '…',
+};
+
+/**
+ * Publisher blurbs are HTML often enough to matter: a minority of Google volumes
+ * carry `<br>`, `<p>`, `<b>` or entity escapes in `description`, and <Text> renders
+ * those literally — a stray "<br>" in the middle of a sentence. Applied where
+ * descriptions ENTER the app so every consumer (book page, search rows, and the
+ * ensure_book upsert that fills the library detail) gets readable prose. Idempotent,
+ * so it's safe to run again at render time on rows stored before this existed.
+ */
+export function plainText(html?: string | null): string | null {
+  if (!html) return null;
+  const out = html
+    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+    .replace(/<\s*\/\s*(p|div|li|h[1-6])\s*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&[a-zA-Z#0-9]+;/g, (m) => ENTITIES[m.toLowerCase()] ?? m)
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return out.length > 0 ? out : null;
+}
+
 function mapGoogleVolume(v: any): EnsureBookInput {
   const info = v.volumeInfo ?? {};
   const ids: any[] = info.industryIdentifiers ?? [];
@@ -78,7 +104,7 @@ function mapGoogleVolume(v: any): EnsureBookInput {
     durationMinutes: null, // Google Books has no audiobook duration
     publishedYear: yearFrom(info.publishedDate),
     publisher: info.publisher ?? null,
-    description: info.description ?? null,
+    description: plainText(info.description),
     genres: info.categories ?? [],
     language: info.language ?? 'en',
   };
@@ -100,7 +126,7 @@ function toSearchResult(b: EnsureBookInput): BookSearchResult {
 }
 
 const olDesc = (v: any): string | null =>
-  typeof v === 'string' ? v : typeof v?.value === 'string' ? v.value : null;
+  plainText(typeof v === 'string' ? v : typeof v?.value === 'string' ? v.value : null);
 
 /** Open Library's edition/work records often carry a page count, description, or
  *  subjects that Google omits. When a book about to be added is missing any of
@@ -224,6 +250,213 @@ export async function fetchAuthorPhoto(name: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+// ─── Author profile + bibliography (the author page) ─────────────────────────
+
+// Open Library bios are user-edited markdown, usually pasted from Wikipedia, and
+// arrive with real junk in them: CRLFs, `*emphasis*`, inline `[text](url)` links,
+// reference-style `[text][2]` usages, and a block of bare `[2]: https://…`
+// definitions dumped at the end. Rendering that raw looks broken, so strip it to
+// clean prose. The trailing "Source: …" line is EXTRACTED rather than deleted —
+// Wikipedia text is CC BY-SA, so the attribution has to survive somewhere.
+function cleanBio(raw: unknown): { bio: string | null; source: { title: string; url: string } | null } {
+  const text = typeof raw === 'string' ? raw : typeof (raw as any)?.value === 'string' ? (raw as any).value : null;
+  if (!text) return { bio: null, source: null };
+
+  let s = text.replace(/\r\n?/g, '\n');
+  // Reference-link definitions on their own lines: `[2]: https://…`
+  s = s.replace(/^\[[^\]]+\]:\s*\S+[ \t]*$/gm, '');
+  // Pull out the trailing attribution before link syntax is flattened.
+  let source: { title: string; url: string } | null = null;
+  s = s.replace(/\n*Sources?:\s*\[([^\]]+)\]\((https?:\/\/[^)]+)\)[.\s]*$/i, (_m: string, title: string, url: string) => {
+    source = { title: title.trim(), url: url.trim() };
+    return '';
+  });
+  s = s.replace(/\[([^\]]+)\]\[[^\]]*\]/g, '$1');      // [text][2]  → text
+  s = s.replace(/\[([^\]]+)\]\((?:[^)]*)\)/g, '$1');   // [text](url) → text
+  s = s.replace(/\*\*([^*]+)\*\*/g, '$1');             // **bold**   → bold
+  s = s.replace(/\*([^*\n]+)\*/g, '$1');               // *italic*   → italic
+  s = s.replace(/^#{1,6}\s*/gm, '');                   // headings
+  s = s.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  return { bio: s.length > 0 ? s : null, source };
+}
+
+// top_subjects arrive as comma-packed index facets — "Man-woman relationships,
+// fiction", "Fiction, fantasy, epic", "Dublin (Ireland)". Keep only the leading
+// facet, drop the parenthetical qualifier, and de-duplicate case-insensitively so
+// "Dublin (Ireland)" and "Dublin" collapse. Existing capitalisation is PRESERVED
+// (OL already gets "New York Times bestseller" right — sentence-casing wrecks it);
+// only an all-lowercase leading character is lifted.
+function cleanSubjects(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const s of raw) {
+    if (typeof s !== 'string') continue;
+    const head = s.split(',')[0].replace(/\s*\([^)]*\)\s*$/, '').trim();
+    if (head.length < 3 || head.length > 26) continue;
+    const label = head.charAt(0).toUpperCase() + head.slice(1);
+    const key = label.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(label);
+    if (out.length === 6) break;
+  }
+  return out;
+}
+
+// OL link titles are free text and run long ("The Coppermind Wiki - 17th Shard,
+// the Official Brandon Sanderson Fansite" is one real value). Chips need a short,
+// scannable label, so name the well-known destinations and fall back to the bare
+// hostname rather than truncating someone's prose mid-word.
+const LINK_LABELS: [RegExp, string][] = [
+  [/wikipedia\.org/, 'Wikipedia'],
+  [/goodreads\.com/, 'Goodreads'],
+  [/amazon\./, 'Amazon'],
+  [/(twitter|x)\.com/, 'X'],
+  [/instagram\.com/, 'Instagram'],
+  [/facebook\.com/, 'Facebook'],
+  [/(youtube\.com|youtu\.be)/, 'YouTube'],
+  [/substack\.com/, 'Substack'],
+];
+
+function linkLabel(title: string, url: string): string {
+  for (const [re, label] of LINK_LABELS) if (re.test(url)) return label;
+  // Anchored: a fansite titled "…the Official Brandon Sanderson Fansite" is not
+  // the official site, and a loose /official/ test labelled both of them the same.
+  if (/^official/i.test(title.trim()) || /author'?s website/i.test(title)) return 'Official site';
+  const host = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+  return host.length > 0 && host.length <= 24 ? host : title.slice(0, 22);
+}
+
+/**
+ * Everything the public catalog knows about an author, from Open Library (Google
+ * Books has no author records at all). Two calls: the author search index — which
+ * carries the counts, ratings, top work and subjects — then the author record for
+ * the bio, photo and external links. The second call is skipped for authors OL has
+ * only indexed thinly. Returns null only when the author can't be resolved at all.
+ */
+export async function fetchAuthorProfile(name: string): Promise<AuthorProfile | null> {
+  const q = name.trim();
+  if (!q) return null;
+  try {
+    const res = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(q)}&limit=1`);
+    if (!res.ok) return null;
+    const doc = (await res.json())?.docs?.[0];
+    if (!doc?.key) return null;
+
+    const olid: string = doc.key;
+    const ratingCount = typeof doc.ratings_count === 'number' ? doc.ratings_count : 0;
+    const profile: AuthorProfile = {
+      name: typeof doc.name === 'string' && doc.name.trim() ? doc.name.trim() : q,
+      openLibraryId: olid,
+      // `?default=false` 404s instead of serving a placeholder, so <Image onError>
+      // can fall back to the monogram.
+      photoUrl: `https://covers.openlibrary.org/a/olid/${olid}-M.jpg?default=false`,
+      bio: null,
+      bioSource: null,
+      birthDate: typeof doc.birth_date === 'string' ? doc.birth_date : null,
+      deathDate: typeof doc.death_date === 'string' ? doc.death_date : null,
+      workCount: typeof doc.work_count === 'number' ? doc.work_count : null,
+      topWork: typeof doc.top_work === 'string' ? doc.top_work : null,
+      subjects: cleanSubjects(doc.top_subjects),
+      // OL reports an average even when nobody has rated — treat 0 ratings as unrated.
+      ratingAverage: ratingCount > 0 && typeof doc.ratings_average === 'number' ? doc.ratings_average : null,
+      ratingCount,
+      readerCount: typeof doc.readinglog_count === 'number' ? doc.readinglog_count : 0,
+      links: [],
+    };
+
+    // Second call: bio + links. Best-effort — a thin author still gets a page.
+    try {
+      const ar = await fetch(`https://openlibrary.org/authors/${olid}.json`);
+      if (ar.ok) {
+        const a = await ar.json();
+        const { bio, source } = cleanBio(a.bio);
+        profile.bio = bio;
+        profile.bioSource = source;
+        if (!profile.birthDate && typeof a.birth_date === 'string') profile.birthDate = a.birth_date;
+        if (!profile.deathDate && typeof a.death_date === 'string') profile.deathDate = a.death_date;
+        if (Array.isArray(a.links)) {
+          profile.links = a.links
+            .filter((l: any) => typeof l?.url === 'string' && /^https?:\/\//.test(l.url))
+            .slice(0, 4)
+            .map((l: any) => ({ title: linkLabel(typeof l.title === 'string' ? l.title : '', l.url), url: l.url as string }));
+        }
+        if (typeof a.wikipedia === 'string' && /^https?:\/\//.test(a.wikipedia)) {
+          profile.links.unshift({ title: 'Wikipedia', url: a.wikipedia });
+        }
+        // The bio's own attribution is a Wikipedia link too — offer it as a chip
+        // when OL didn't record one, so "read more about them" always has a home.
+        if (profile.bioSource && !profile.links.some((l) => l.url === profile.bioSource!.url)) {
+          profile.links.push({ title: linkLabel(profile.bioSource.title, profile.bioSource.url), url: profile.bioSource.url });
+        }
+        // Two links can still reduce to the same label (two Wikipedia locales, a
+        // site plus its /about page). One chip each.
+        const byLabel = new Map(profile.links.map((l) => [l.title, l]));
+        profile.links = [...byLabel.values()];
+      }
+    } catch {
+      // keep the index-only profile
+    }
+    return profile;
+  } catch {
+    return null;
+  }
+}
+
+// Dedupe key: the work, not the edition. `inauthor:` returns every reissue and
+// territory edition, so a Google page for one novelist can be the same four titles
+// over and over (the old author screen showed "Normal People" four times). Collapse
+// on the title up to any subtitle/parenthetical, punctuation and case stripped.
+function workKey(title: string): string {
+  return title
+    .split(/[:(–—]/)[0]
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '') // "Café" and "Cafe" must collapse to one key
+    .replace(/^(the|a|an)\s+/, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+/** How complete a record is — used to pick the best edition of a duplicated work. */
+const richness = (b: BookSearchResult): number =>
+  (b.coverUrl ? 4 : 0) + (b.pageCount ? 2 : 0) + (b.description ? 1 : 0);
+
+/**
+ * An author's bibliography: one entry per WORK, best edition of each, in Google's
+ * relevance order (so the books they're known for lead). Also drops the study
+ * guides and "critical companions" that `inauthor:` drags in, by requiring the
+ * author's surname to actually appear in the volume's author list.
+ */
+export async function fetchAuthorBooks(name: string): Promise<BookSearchResult[]> {
+  const q = name.trim();
+  if (!q) return [];
+  let raw: EnsureBookInput[];
+  try {
+    raw = await googleSearch(`inauthor:"${q}"`, 40);
+  } catch {
+    try {
+      raw = await openLibrarySearch(`author:"${q}"`, 40);
+    } catch {
+      return [];
+    }
+  }
+
+  const surname = q.split(/\s+/).pop()!.toLowerCase();
+  const best = new Map<string, BookSearchResult>();
+  for (const b of raw.map(toSearchResult)) {
+    if (!b.title) continue;
+    // Books ABOUT the author (study guides, companions) list a different author.
+    if (b.authors.length > 0 && !b.authors.some((a) => a.toLowerCase().includes(surname))) continue;
+    const key = workKey(b.title);
+    if (!key) continue;
+    const prev = best.get(key);
+    // First-seen wins ties, so Google's relevance order is preserved.
+    if (!prev || richness(b) > richness(prev)) best.set(key, b);
+  }
+  return [...best.values()];
 }
 
 /** A "popular right now" set for the add-book empty state (before any query). */

@@ -1,0 +1,1025 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quire — Join the beta</title>
+
+<!-- ═══ FONTS (brand.md §2) ══════════════════════════════════════════════════ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════════
+   QUIRE DECK ENGINE
+   Everything below the :root block is the engine. DO NOT EDIT IT PER-DECK —
+   improvements are supposed to carry over to every deck. Per-deck changes go in
+   the markup only. Restyling = replace the :root block (see brand.md §8).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root{
+  /* ── colors ─────────────────────────────────────────────── brand.md §1 ── */
+  --bg:#F6EEDF; --bg-card:#FCF8ED; --bg-inset:#F0E6D3;
+  --text:#241E19; --muted:#6E6250; --faint:#9A8E79;
+  --accent:#F0764F; --ember:#D9730F; --gold:#C8892C; --gold-fill:#F3C24C;
+  --lilac:#8257C7; --danger:#B4271B; --on-accent:#241E19;
+
+  /* ── background depth ───────────────────────────────────── brand.md §4 ── */
+  --wash-a:rgba(240,118,79,0.08); --wash-b:rgba(243,194,60,0.07);
+  --grid-dot:rgba(36,30,25,0.06); --grid-size:46px; --vignette:rgba(36,30,25,0.05);
+
+  /* ── type ───────────────────────────────────────────────── brand.md §2 ── */
+  --font-display:'Fraunces',Georgia,'Times New Roman',serif;
+  --font-ui:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Consolas,monospace;
+
+  /* ── sizes: clamp(phone floor, viewport, projector ceiling) — brand.md §3 ─ */
+  --fs-hero:clamp(46px,7.4vw,136px);
+  --fs-h1:clamp(34px,5.0vw,88px);
+  --fs-h2:clamp(26px,3.4vw,56px);
+  --fs-lead:clamp(20px,2.3vw,38px);
+  --fs-body:clamp(18px,1.75vw,30px);
+  --fs-label:clamp(12px,0.95vw,18px);
+  --fs-mono:clamp(15px,1.35vw,24px);
+  --fs-num:clamp(40px,5.2vw,92px);
+  --measure-hero:18ch; --measure-head:26ch; --measure-body:38ch;
+
+  /* ── structure ──────────────────────────────────────────── brand.md §5 ── */
+  --bw:2px; --bw-thick:3px;
+  --r-sm:10px; --r-md:14px; --r-lg:18px; --r-card:20px; --r-xl:26px;
+  --shadow-sm:2px 3px 0 var(--text);
+  --shadow-card:4px 4px 0 var(--text);
+  --shadow-lg:6px 6px 0 var(--text);
+  --shadow-hero:6px 6px 0 var(--text),0 18px 28px -14px rgba(36,30,25,.30);
+
+  --pad:clamp(26px,4.6vw,104px);
+  --gap:clamp(14px,1.7vw,32px);
+}
+
+/* ── reset ─────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--font-ui); font-size:var(--fs-body); line-height:1.45;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+img{max-width:100%;display:block}
+button{font:inherit;color:inherit}
+
+/* ── background depth: wash + dot grid + vignette ──────────────────────────── */
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg::before{ /* wash */
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(80% 70% at 8% 4%, var(--wash-a), transparent 62%),
+    radial-gradient(75% 70% at 96% 100%, var(--wash-b), transparent 60%);
+}
+.bg::after{ /* dot journal grid + vignette */
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(circle, var(--grid-dot) 1.2px, transparent 1.3px),
+    radial-gradient(120% 110% at 50% 45%, transparent 52%, var(--vignette) 100%);
+  background-size:var(--grid-size) var(--grid-size), 100% 100%;
+}
+
+/* ══ SLIDE MECHANICS ═══════════════════════════════════════════════════════ */
+.deck{position:relative;z-index:1;height:100%;overflow:hidden}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:var(--pad) var(--pad) calc(var(--pad) + clamp(46px,4.6vw,74px));
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;visibility:hidden;transform:translateX(2.2%) scale(.994);
+  transition:opacity .42s ease,transform .42s ease,visibility 0s linear .42s;
+}
+.slide.is-active{
+  opacity:1;visibility:visible;transform:none;
+  transition:opacity .42s ease,transform .42s ease,visibility 0s;
+}
+.slide.is-prev{transform:translateX(-2.2%) scale(.994)}
+/* margin:auto centers safely AND never clips when content overflows on a phone */
+.wrap{margin-block:auto;width:100%;max-width:1600px;margin-inline:auto;min-width:0}
+
+/* Overflow guard. A grid/flex child's default min size is min-content, so one long
+   word or a wide image pushes the track past the slide. Every layout child gets 0. */
+.cols>*,.split>*,.grid>*,.phones>*,.logo-row>*,.flow>*,.actions>*,.wrap>*{min-width:0}
+.wrap :where(p,li,h1,h2,h3,blockquote,.lead,.statement,.hero,.big,.title){
+  overflow-wrap:break-word;
+}
+
+/* element fade-in stagger */
+.stagger>*{opacity:0}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.is-active .stagger>*{animation:rise .55s cubic-bezier(.2,.7,.3,1) both}
+.is-active .stagger>*:nth-child(1){animation-delay:.08s}
+.is-active .stagger>*:nth-child(2){animation-delay:.15s}
+.is-active .stagger>*:nth-child(3){animation-delay:.22s}
+.is-active .stagger>*:nth-child(4){animation-delay:.29s}
+.is-active .stagger>*:nth-child(5){animation-delay:.36s}
+.is-active .stagger>*:nth-child(6){animation-delay:.43s}
+.is-active .stagger>*:nth-child(7){animation-delay:.50s}
+.is-active .stagger>*:nth-child(8){animation-delay:.57s}
+.is-active .stagger>*:nth-child(9){animation-delay:.64s}
+.is-active .stagger>*:nth-child(10){animation-delay:.71s}
+.is-active .stagger>*:nth-child(11){animation-delay:.78s}
+.is-active .stagger>*:nth-child(12){animation-delay:.85s}
+.is-active .q-peek{animation:rise .55s .3s both}
+
+/* ══ TYPE PRIMITIVES ═══════════════════════════════════════════════════════ */
+h1,h2,h3,p,ul,ol,blockquote,figure{margin:0}
+.kicker{
+  font-family:var(--font-mono);font-size:var(--fs-label);font-weight:500;
+  text-transform:uppercase;letter-spacing:.16em;color:var(--muted);
+}
+.kicker.accent{color:var(--accent)}
+h1,.h1{font-family:var(--font-display);font-size:var(--fs-h1);font-weight:700;
+  line-height:1.02;letter-spacing:-.02em;max-width:var(--measure-head)}
+h2,.h2{font-family:var(--font-display);font-size:var(--fs-h2);font-weight:600;
+  line-height:1.08;letter-spacing:-.015em;max-width:var(--measure-head)}
+h3,.h3{font-family:var(--font-ui);font-size:var(--fs-lead);font-weight:700;line-height:1.15}
+.lead{font-size:var(--fs-lead);line-height:1.35;max-width:var(--measure-body);color:var(--muted)}
+p{max-width:var(--measure-body)}
+/* THE one emphasis rule — brand.md §6. <em> in a headline = the single accent word. */
+h1 em,h2 em,.h1 em,.h2 em,.hero em,.statement em{color:var(--accent);font-style:normal}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:700}
+.rule{height:var(--bw);background:var(--text);opacity:.16;border:0;width:100%}
+
+/* ══ COMPONENTS ════════════════════════════════════════════════════════════ */
+/* rounded logo/app-icon tile — brand.md §7 / asset rule 3. Never a bare image. */
+.logo-tile{
+  display:grid;place-items:center;background:var(--bg-card);
+  border:var(--bw) solid var(--text);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-card);padding:clamp(9px,.9vw,16px);
+  width:clamp(64px,7vw,124px);aspect-ratio:1;flex:none;overflow:hidden;
+}
+.logo-tile img{width:100%;height:100%;object-fit:contain;border-radius:calc(var(--r-lg) - 8px)}
+.logo-tile.lg{width:clamp(96px,10.5vw,184px);border-width:var(--bw-thick);box-shadow:var(--shadow-hero)}
+.logo-row{display:flex;flex-wrap:wrap;gap:var(--gap);align-items:center}
+
+.card{
+  background:var(--bg-card);border:var(--bw) solid var(--text);
+  border-radius:var(--r-card);box-shadow:var(--shadow-card);
+  padding:clamp(16px,1.8vw,34px);
+}
+.card.inset{background:var(--bg-inset)}
+.card.fill-accent{background:var(--accent);color:var(--on-accent)}
+.card.fill-gold{background:var(--gold-fill);color:var(--text)}
+
+.pill{
+  display:inline-flex;align-items:center;gap:.5em;
+  font-family:var(--font-mono);font-size:var(--fs-label);font-weight:500;
+  text-transform:uppercase;letter-spacing:.12em;
+  border:var(--bw) solid var(--text);border-radius:999px;
+  padding:.5em 1em;background:var(--bg-card);box-shadow:var(--shadow-sm);
+}
+.pill.accent{background:var(--accent);color:var(--on-accent)}
+.pill.gold{background:var(--gold-fill)}
+.pill.ember{background:var(--ember);color:#FCF8ED}
+.pill.lilac{background:var(--lilac);color:#FCF8ED}
+
+.btn{
+  display:inline-flex;align-items:center;gap:.6em;
+  font-weight:700;font-size:var(--fs-lead);
+  background:var(--accent);color:var(--on-accent);
+  border:var(--bw-thick) solid var(--text);border-radius:var(--r-md);
+  padding:.62em 1.2em;box-shadow:var(--shadow-lg);text-decoration:none;
+}
+.btn.ghost{background:var(--bg-card);color:var(--text)}
+
+/* Q inline (rare — prefer .q-peek) */
+.q{width:clamp(90px,11vw,210px);height:auto;flex:none}
+.q.lg{width:clamp(130px,19vw,330px)}
+
+/* Q LEANING INTO FRAME from the slide edge — the mascot treatment (brand.md §7).
+   Half-body: the art is cropped from the top so Q reads as leaning in, never as a
+   full character floating in empty space. Add `has-peek` to the slide element.
+
+   --peek-ar sets the crop. Visible fraction of the art = (art aspect) / --peek-ar.
+   The 1/1 default suits the 2:3 full-body Q PNGs: 0.667/1 = the top ~67%, which cuts
+   at the lower torso. Tighter head-and-shoulders: 3/2. Already-half-body art: 2/3.
+   --peek-bleed pulls Q past the slide edge so she's cropped by the frame rather than
+   floating inside the PNG's own transparent margin. */
+.q-peek{
+  position:absolute;z-index:2;pointer-events:none;
+  right:0;bottom:clamp(56px,9vh,124px);
+  margin-right:calc(-1 * var(--peek-bleed,clamp(8px,1.6vw,30px)));
+  width:clamp(120px,16vw,320px);
+  aspect-ratio:var(--peek-ar,1/1);
+  object-fit:cover;object-position:center top;
+}
+.q-peek.left{right:auto;left:0;margin-right:0;
+  margin-left:calc(-1 * var(--peek-bleed,clamp(8px,1.6vw,30px)))}
+.slide.has-peek .wrap{padding-right:clamp(126px,17vw,340px)}
+.slide.has-peek.peek-left .wrap{padding-right:0;padding-left:clamp(126px,17vw,340px)}
+
+/* stats */
+.stat{display:flex;flex-direction:column;gap:.1em}
+.stat .figure{font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+  font-weight:700;font-size:var(--fs-num);line-height:1;letter-spacing:-.03em}
+.stat .figure.accent{color:var(--accent)}
+.stat .figure.ember{color:var(--ember)}
+.stat .figure.gold{color:var(--gold)}
+.stat .figure.lilac{color:var(--lilac)}
+.stat .label{font-family:var(--font-mono);font-size:var(--fs-label);
+  text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+
+/* device + browser frames — asset rule 1: show the real thing.
+   Frames hug their image and the image is capped by VIEWPORT HEIGHT — a portrait
+   screenshot stretched to a wide grid column is what blows a slide out sideways. */
+.frame-phone{
+  background:var(--bg-card);border:var(--bw-thick) solid var(--text);
+  border-radius:clamp(20px,2.6vw,42px);box-shadow:var(--shadow-hero);
+  padding:clamp(5px,.55vw,10px);
+  width:fit-content;max-width:100%;margin-inline:auto;
+}
+.frame-phone img{
+  width:auto;max-width:100%;
+  max-height:var(--shot-h,58vh);max-height:var(--shot-h,58svh);
+  border-radius:clamp(14px,2vw,32px);
+}
+.frame-browser{
+  background:var(--bg-card);border:var(--bw-thick) solid var(--text);
+  border-radius:var(--r-xl);box-shadow:var(--shadow-hero);overflow:hidden;
+  width:fit-content;max-width:100%;margin-inline:auto;
+}
+.frame-browser .chrome{
+  display:flex;align-items:center;gap:.7em;
+  padding:clamp(8px,.85vw,15px) clamp(11px,1.1vw,20px);
+  border-bottom:var(--bw) solid var(--text);background:var(--bg-inset);
+}
+.frame-browser .dot{width:clamp(9px,.85vw,15px);aspect-ratio:1;border-radius:999px;
+  border:1.5px solid var(--text);background:var(--bg-card)}
+.frame-browser .dot:nth-child(1){background:var(--accent)}
+.frame-browser .dot:nth-child(2){background:var(--gold-fill)}
+.frame-browser .url{
+  flex:1;font-family:var(--font-mono);font-size:var(--fs-label);color:var(--muted);
+  background:var(--bg-card);border:1.5px solid var(--text);border-radius:999px;
+  padding:.35em .9em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.frame-browser img{width:100%;max-height:var(--shot-h,58vh);
+  max-height:var(--shot-h,58svh);object-fit:contain}
+.shot-caption{font-family:var(--font-mono);font-size:var(--fs-label);
+  text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-top:.9em}
+
+/* diagram — asset rule 4: diagrams beat paragraphs */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:var(--gap)}
+.flow .node{
+  flex:1 1 210px;min-width:0;
+  background:var(--bg-card);border:var(--bw) solid var(--text);
+  border-radius:var(--r-card);box-shadow:var(--shadow-card);
+  padding:clamp(14px,1.5vw,28px);display:flex;flex-direction:column;gap:.4em;
+}
+.flow .node .n{font-family:var(--font-mono);font-size:var(--fs-label);font-weight:700;
+  letter-spacing:.14em;color:var(--accent)}
+.flow .node .t{font-weight:700;font-size:var(--fs-lead);line-height:1.15}
+.flow .node .d{font-size:var(--fs-body);color:var(--muted)}
+.flow .arrow{display:grid;place-items:center;font-family:var(--font-mono);
+  font-size:var(--fs-h2);color:var(--faint);flex:none;line-height:1}
+.flow.loop .node:last-child{background:var(--accent);color:var(--on-accent)}
+.flow.loop .node:last-child .n,.flow.loop .node:last-child .d{color:var(--text)}
+
+/* code / prompt block with copy button */
+.code{
+  background:var(--bg-card);border:var(--bw) solid var(--text);
+  border-radius:var(--r-card);box-shadow:var(--shadow-card);overflow:hidden;
+  max-width:100%;
+}
+.code-head{
+  display:flex;align-items:center;justify-content:space-between;gap:1em;
+  padding:.55em clamp(12px,1.1vw,20px);border-bottom:var(--bw) solid var(--text);
+  background:var(--bg-inset);
+}
+.code-lang{font-family:var(--font-mono);font-size:var(--fs-label);font-weight:700;
+  text-transform:uppercase;letter-spacing:.16em;color:var(--muted)}
+.copy{
+  font-family:var(--font-mono);font-size:var(--fs-label);font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;cursor:pointer;
+  background:var(--bg-card);border:var(--bw) solid var(--text);
+  border-radius:var(--r-sm);padding:.42em .85em;box-shadow:var(--shadow-sm);
+  transition:transform .09s ease,box-shadow .09s ease,background .12s ease;
+}
+.copy:hover{transform:translate(1px,1.5px);box-shadow:1px 1.5px 0 var(--text)}
+.copy.done{background:var(--accent);color:var(--on-accent)}
+.code pre{
+  margin:0;padding:clamp(14px,1.4vw,26px);overflow-x:auto;
+  font-family:var(--font-mono);font-size:var(--fs-mono);line-height:1.6;
+  white-space:pre-wrap;word-break:break-word;
+}
+
+/* ══ SLIDE TYPES ═══════════════════════════════════════════════════════════ */
+/* title */
+.s-title .hero{
+  font-family:var(--font-display);font-size:var(--fs-hero);font-weight:700;
+  line-height:.98;letter-spacing:-.03em;max-width:var(--measure-hero);
+}
+.s-title .head{display:flex;align-items:center;gap:var(--gap);flex-wrap:wrap}
+.s-title .foot{display:flex;align-items:flex-end;justify-content:space-between;
+  gap:var(--gap);flex-wrap:wrap}
+.s-title .wrap{display:grid;gap:clamp(16px,2.2vw,44px)}
+
+/* section divider */
+.s-section{align-items:flex-start}
+.s-section .wrap{display:grid;gap:clamp(12px,1.4vw,26px)}
+.s-section .idx{font-family:var(--font-mono);font-size:var(--fs-num);font-weight:700;
+  color:var(--accent);line-height:1;letter-spacing:-.02em}
+.s-section .title{font-family:var(--font-display);font-size:var(--fs-hero);font-weight:700;
+  line-height:1;letter-spacing:-.03em;max-width:var(--measure-hero)}
+
+/* agenda */
+.s-agenda .wrap{display:grid;gap:clamp(14px,1.6vw,30px)}
+.agenda{display:grid;gap:clamp(8px,.9vw,16px);list-style:none;padding:0;
+  counter-reset:ag;max-width:1200px}
+.agenda li{
+  display:flex;align-items:baseline;gap:clamp(12px,1.3vw,26px);
+  font-size:var(--fs-lead);font-weight:600;line-height:1.2;
+  padding-bottom:clamp(8px,.9vw,16px);border-bottom:var(--bw) solid rgba(36,30,25,.14);
+}
+.agenda li::before{
+  counter-increment:ag;content:counter(ag,decimal-leading-zero);
+  font-family:var(--font-mono);font-size:var(--fs-label);font-weight:700;
+  letter-spacing:.1em;color:var(--accent);flex:none;
+}
+.agenda li.on{color:var(--text)}
+.agenda li.off{color:var(--faint)}
+
+/* one big statement */
+.s-statement{text-align:left}
+.s-statement .statement{
+  font-family:var(--font-display);font-size:var(--fs-hero);font-weight:700;
+  line-height:1;letter-spacing:-.03em;max-width:var(--measure-hero);
+}
+.s-statement .wrap{display:grid;gap:clamp(14px,1.8vw,36px);justify-items:start}
+
+/* bullets */
+.s-bullets .wrap{display:grid;gap:clamp(16px,2vw,40px)}
+.bullets{display:grid;gap:clamp(10px,1.15vw,22px);list-style:none;padding:0;max-width:1250px}
+.bullets li{display:flex;align-items:baseline;gap:clamp(11px,1.1vw,22px);
+  font-size:var(--fs-lead);line-height:1.3}
+.bullets li::before{
+  content:'';width:clamp(10px,.95vw,17px);aspect-ratio:1;flex:none;
+  background:var(--accent);border:var(--bw) solid var(--text);border-radius:4px;
+  transform:translateY(-.12em);
+}
+.bullets.ember li::before{background:var(--ember)}
+.bullets.gold li::before{background:var(--gold-fill)}
+.bullets strong{font-weight:700}
+
+/* two column */
+.s-two-col .cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:clamp(18px,2.6vw,56px);align-items:start}
+.s-two-col .wrap{display:grid;gap:clamp(16px,2vw,40px)}
+.col-head{font-family:var(--font-mono);font-size:var(--fs-label);font-weight:700;
+  text-transform:uppercase;letter-spacing:.16em;color:var(--muted);
+  padding-bottom:.7em;margin-bottom:.9em;border-bottom:var(--bw) solid var(--text)}
+.col-head.accent{color:var(--accent);border-color:var(--accent)}
+
+/* cards / stats grid */
+.s-cards .wrap{display:grid;gap:clamp(16px,2vw,40px)}
+.grid{display:grid;gap:var(--gap);grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+.grid .card{display:flex;flex-direction:column;gap:.45em}
+.grid .card .ct{font-weight:700;font-size:var(--fs-lead);line-height:1.15}
+.grid .card .cd{font-size:var(--fs-body);color:var(--muted)}
+.grid .card.fill-accent .cd,.grid .card.fill-gold .cd{color:var(--text);opacity:.82}
+.card-ico{font-size:var(--fs-h2);line-height:1;margin-bottom:.1em}
+
+/* quote */
+.s-quote .wrap{display:grid;gap:clamp(14px,1.8vw,34px);justify-items:start}
+.s-quote blockquote{
+  font-family:var(--font-display);font-size:var(--fs-h1);font-weight:600;
+  line-height:1.1;letter-spacing:-.02em;max-width:24ch;position:relative;
+}
+.s-quote blockquote::before{content:'\201C';color:var(--accent);
+  font-family:var(--font-display);font-size:1.1em;line-height:0;
+  position:absolute;left:-.55em;top:.42em}
+.s-quote .cite{display:flex;align-items:center;gap:.9em;font-family:var(--font-mono);
+  font-size:var(--fs-label);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+
+/* code slide */
+.s-code .wrap{display:grid;gap:clamp(14px,1.8vw,34px)}
+
+/* screenshot slide */
+.s-shot .wrap{display:grid;gap:clamp(16px,2.2vw,44px)}
+.s-shot .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+  gap:clamp(20px,3vw,64px);align-items:center}
+.s-shot .split.reverse{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+/* two phones share the height budget, so each gets a shorter cap */
+.s-shot .phones{display:flex;gap:clamp(14px,2vw,40px);align-items:flex-start;
+  justify-content:center;flex-wrap:wrap;--shot-h:52svh}
+.s-shot .phones>figure{flex:0 1 auto;min-width:0;margin:0;max-width:min(340px,46%)}
+.phone-cap{margin-top:.75em;font-family:var(--font-mono);font-size:var(--fs-label);
+  text-transform:uppercase;letter-spacing:.13em;color:var(--muted);text-align:center}
+.callouts{display:grid;gap:clamp(10px,1.1vw,20px);list-style:none;padding:0;margin:0}
+.callouts li{display:flex;gap:clamp(11px,1.1vw,20px);align-items:baseline;
+  font-size:var(--fs-body);line-height:1.35}
+.callouts li b{font-weight:700}
+.callouts .tag{
+  font-family:var(--font-mono);font-size:var(--fs-label);font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;flex:none;
+  border:var(--bw) solid var(--text);border-radius:var(--r-sm);
+  padding:.25em .6em;background:var(--bg-card);box-shadow:var(--shadow-sm);
+}
+.callouts li:nth-child(1) .tag{background:var(--accent);color:var(--on-accent)}
+.callouts li:nth-child(2) .tag{background:var(--gold-fill)}
+.callouts li:nth-child(3) .tag{background:var(--bg-inset)}
+
+/* full-bleed art slide */
+.s-art{padding:0;justify-content:flex-end}
+.s-art .art{position:absolute;inset:0;z-index:-1}
+.s-art .art img{width:100%;height:100%;object-fit:cover}
+.s-art .art::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(20,14,28,.86) 0%,rgba(20,14,28,.45) 46%,rgba(20,14,28,.12) 100%)}
+.s-art .wrap{margin:0;padding:var(--pad) var(--pad) calc(var(--pad) + clamp(46px,4.6vw,74px));
+  color:#FCF8ED;display:grid;gap:clamp(12px,1.4vw,26px)}
+.s-art .kicker{color:#F3C24C}
+.s-art .statement{font-family:var(--font-display);font-size:var(--fs-h1);font-weight:700;
+  line-height:1.02;letter-spacing:-.025em;max-width:var(--measure-hero)}
+.s-art .statement em{color:#F6875D}
+.s-art .lead{color:rgba(252,248,237,.86)}
+
+/* call to action */
+.s-cta .wrap{display:grid;gap:clamp(16px,2.2vw,44px);justify-items:start}
+.s-cta .big{font-family:var(--font-display);font-size:var(--fs-hero);font-weight:700;
+  line-height:1;letter-spacing:-.03em;max-width:var(--measure-hero)}
+.s-cta .actions{display:flex;gap:var(--gap);flex-wrap:wrap;align-items:center}
+.todo{ /* visible unfilled-fact marker — context.md says never fake a link */
+  font-family:var(--font-mono);font-size:var(--fs-label);font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--danger);
+  border:var(--bw) dashed var(--danger);border-radius:var(--r-sm);padding:.4em .8em;
+}
+
+/* closing */
+.s-closing{text-align:center;align-items:center}
+.s-closing .wrap{display:grid;gap:clamp(14px,1.8vw,36px);justify-items:center}
+.s-closing .big{font-family:var(--font-display);font-size:var(--fs-hero);font-weight:700;
+  line-height:1;letter-spacing:-.03em;max-width:20ch}
+.s-closing p,.s-closing .lead{margin-inline:auto;text-align:center}
+
+/* ══ HUD: progress, counter, arrows, key hints ══════════════════════════════ */
+.progress{position:fixed;top:0;left:0;right:0;height:6px;z-index:40;
+  background:rgba(36,30,25,.10)}
+.progress i{display:block;height:100%;width:0;background:var(--accent);
+  border-right:var(--bw) solid var(--text);transition:width .38s ease}
+/* above the notes panel (z 45) so the arrows stay clickable with notes open */
+.hud{position:fixed;z-index:50;bottom:clamp(12px,1.5vw,26px);right:clamp(12px,1.5vw,26px);
+  display:flex;align-items:center;gap:clamp(8px,.9vw,14px)}
+.hud .keys{font-family:var(--font-mono);font-size:var(--fs-label);color:var(--muted);
+  letter-spacing:.08em;margin-right:.3em}
+.counter{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:700;
+  font-size:var(--fs-label);letter-spacing:.1em;
+  background:var(--bg-card);border:var(--bw) solid var(--text);border-radius:999px;
+  padding:.5em .95em;box-shadow:var(--shadow-sm)}
+.nav{
+  width:clamp(40px,3.6vw,58px);aspect-ratio:1;display:grid;place-items:center;cursor:pointer;
+  background:var(--bg-card);border:var(--bw) solid var(--text);border-radius:var(--r-md);
+  box-shadow:var(--shadow-sm);transition:transform .09s ease,box-shadow .09s ease;
+}
+.nav svg{width:46%;height:46%;stroke:currentColor;stroke-width:2.6;fill:none;
+  stroke-linecap:round;stroke-linejoin:round}
+.nav:hover{transform:translate(1px,1.5px);box-shadow:1px 1.5px 0 var(--text)}
+.nav[disabled]{opacity:.34;cursor:default;transform:none;box-shadow:var(--shadow-sm)}
+.nav.next{background:var(--accent);color:var(--on-accent)}
+@media(max-width:700px){.hud .keys{display:none}}
+
+/* ══ SPEAKER NOTES (S) ═════════════════════════════════════════════════════ */
+.notes{display:none}
+.notes-panel{
+  position:fixed;z-index:45;left:0;right:0;bottom:0;
+  max-height:42vh;overflow-y:auto;
+  padding:clamp(14px,1.5vw,26px) clamp(16px,1.8vw,32px) clamp(58px,5vw,80px);
+  background:var(--bg-card);border-top:var(--bw-thick) solid var(--text);
+  transform:translateY(101%);transition:transform .3s ease;
+  font-size:clamp(15px,1.25vw,21px);line-height:1.5;
+}
+body.notes-on .notes-panel{transform:none}
+.notes-panel h4{margin:0 0 .5em;font-family:var(--font-mono);font-size:var(--fs-label);
+  font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:var(--accent)}
+.notes-panel p{max-width:100ch;margin:0 0 .5em}
+.notes-panel ul{margin:.2em 0;padding-left:1.3em;max-width:100ch}
+
+/* ══ OVERVIEW (O) ══════════════════════════════════════════════════════════ */
+.overview{
+  position:fixed;inset:0;z-index:60;display:none;overflow-y:auto;
+  background:var(--bg);padding:clamp(16px,2vw,40px);
+}
+body.ov-on .overview{display:block}
+.ov-head{display:flex;align-items:baseline;justify-content:space-between;gap:1em;
+  margin-bottom:clamp(14px,1.6vw,28px);flex-wrap:wrap}
+.ov-head .t{font-family:var(--font-display);font-size:var(--fs-h2);font-weight:700}
+.ov-grid{display:grid;gap:clamp(12px,1.4vw,26px);
+  grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))}
+.ov-cell{
+  position:relative;padding:0;cursor:pointer;aspect-ratio:16/9;overflow:hidden;
+  background:var(--bg-card);border:var(--bw) solid var(--text);
+  border-radius:var(--r-card);box-shadow:var(--shadow-card);
+  transition:transform .1s ease,box-shadow .1s ease;
+}
+.ov-cell:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--text)}
+.ov-cell.here{border-color:var(--accent);border-width:var(--bw-thick);
+  box-shadow:4px 4px 0 var(--accent)}
+.ov-stage{
+  position:absolute;top:0;left:0;width:1440px;height:810px;
+  transform:scale(var(--tz,.2));transform-origin:0 0;pointer-events:none;
+  /* viewport-relative clamps can't work inside a scaled thumbnail — pin them */
+  --fs-hero:112px;--fs-h1:76px;--fs-h2:50px;--fs-lead:33px;--fs-body:26px;
+  --fs-label:15px;--fs-mono:21px;--fs-num:80px;--pad:74px;--gap:24px;
+}
+.ov-stage .slide{transition:none;animation:none}
+.ov-stage .stagger>*{opacity:1;animation:none}
+.ov-num{
+  position:absolute;bottom:8px;right:8px;font-family:var(--font-mono);font-weight:700;
+  font-size:14px;background:var(--bg-card);border:var(--bw) solid var(--text);
+  border-radius:var(--r-sm);padding:.15em .5em;
+}
+.ov-cell.here .ov-num{background:var(--accent);color:var(--on-accent)}
+
+/* ══ RESPONSIVE: phone → projector ═════════════════════════════════════════ */
+/* stack early — two columns on a narrow laptop window is what breaks layouts */
+@media(max-width:1000px){
+  .s-two-col .cols,.s-shot .split,.s-shot .split.reverse{grid-template-columns:1fr}
+  .s-shot .phones>figure{max-width:min(300px,46%)}
+  .flow .arrow{transform:rotate(90deg)}
+  .s-title .foot{align-items:flex-start}
+  .slide{padding-bottom:calc(var(--pad) + 78px)}
+  /* the peek Q costs too much width once columns stack */
+  .slide.has-peek .wrap,.slide.has-peek.peek-left .wrap{padding-right:0;padding-left:0}
+  .q-peek{display:none}
+}
+@media(max-width:520px){
+  :root{--measure-hero:14ch;--measure-head:20ch;--measure-body:30ch}
+  .s-shot .phones>figure{flex:1 1 100%;max-width:100%}
+  .s-shot .phones{--shot-h:46svh}
+}
+/* projector / very wide — keep lines short instead of letting text sprawl */
+@media(min-width:1900px){
+  .wrap{max-width:1720px}
+}
+
+/* ══ REDUCED MOTION — kill all of it ═══════════════════════════════════════ */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .stagger>*{opacity:1!important}
+  .slide{transform:none!important}
+}
+
+@media print{
+  html,body{overflow:visible;height:auto}
+  .progress,.hud,.notes-panel,.overview{display:none!important}
+  .deck{height:auto}
+  .slide{position:relative;opacity:1!important;visibility:visible!important;
+    transform:none!important;height:100vh;page-break-after:always}
+  .stagger>*{opacity:1!important}
+}
+</style>
+
+<div class="bg" aria-hidden="true"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SLIDES — the only part you edit per deck.
+     Each slide: <section class="slide s-TYPE" data-title="Overview label">
+                   <div class="wrap stagger"> …content… </div>
+                   <aside class="notes"> …speaker notes… </aside>
+                 </section>
+     Slide 1 carries `is-active` so it renders even before JS runs.
+     Types: s-title · s-section · s-agenda · s-statement · s-bullets · s-two-col ·
+            s-cards · s-quote · s-code · s-shot · s-art · s-cta · s-closing
+     ══════════════════════════════════════════════════════════════════════════ -->
+<main class="deck" id="deck">
+
+  <!-- ─── 1 · TITLE ─── -->
+  <section class="slide s-title is-active has-peek" data-title="Track every page you read">
+    <div class="wrap stagger">
+      <div class="head">
+        <div class="logo-tile lg"><img src="assets/app-icon.png" alt="Quire app icon"></div>
+        <span class="kicker">Quire · Private beta</span>
+      </div>
+      <div class="hero">Track every page you <em>read</em>.</div>
+      <p class="lead">Before the book, there was the quire — a gathering of folded pages.</p>
+      <div class="foot">
+        <span class="pill accent">A reading tracker that keeps score</span>
+      </div>
+    </div>
+    <img class="q-peek" src="assets/q-waving.png" alt="" aria-hidden="true">
+    <aside class="notes">
+      <p>Open on the name. A <b>quire</b> is a gathering of folded pages — the thing a book is
+      made from before it's a book. That's the idea: the pages come first.</p>
+      <p>Don't pitch features yet. Two sentences and move.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 2 · BIG STATEMENT ─── -->
+  <section class="slide s-statement has-peek" data-title="Reading keeps no score">
+    <div class="wrap stagger">
+      <span class="kicker accent">The gap</span>
+      <div class="statement">Reading is the one habit that keeps <em>no score</em></div>
+      <p class="lead">Your steps get counted. Your sleep gets counted. Your workouts get
+      counted. The twenty minutes you read last night vanished.</p>
+    </div>
+    <img class="q-peek" src="assets/q-thinking.png" alt="" aria-hidden="true">
+    <aside class="notes">
+      <p>This is the whole pitch compressed. Say it, then pause — let the room notice it's true
+      about them.</p>
+      <p>Everything after this slide is just how we fixed it.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 3 · TWO COLUMN ─── -->
+  <section class="slide s-two-col" data-title="Trackers log the finish">
+    <div class="wrap stagger">
+      <span class="kicker">Why tracking apps don't stick</span>
+      <h1>They log the finish. Nobody <em>finishes</em>.</h1>
+      <div class="cols">
+        <div>
+          <div class="col-head">What gets tracked today</div>
+          <ul class="bullets">
+            <li>A book, once, when it's done</li>
+            <li>A shelf that mostly reminds you what you abandoned</li>
+            <li>Nothing at all for the two weeks in between</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head accent">What actually needs tracking</div>
+          <ul class="bullets">
+            <li>The twenty minutes you read tonight</li>
+            <li>The day you didn't skip</li>
+            <li>The pace you're quietly holding</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>Land the left column first — it's the familiar, slightly sad experience. Then the right.</p>
+      <p>The reward has to land on the <b>session</b>, not the finish line. A 400-page book is
+      three weeks of no feedback whatsoever.</p>
+      <p>Don't name competitors.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 4 · FULL-BLEED ART ─── -->
+  <section class="slide s-art" data-title="Treat readers like athletes">
+    <div class="art" aria-hidden="true"><img src="assets/hero-legend.jpg" alt=""></div>
+    <div class="wrap stagger">
+      <span class="kicker">The north star</span>
+      <div class="statement">Treat readers like <em>athletes</em></div>
+      <p class="lead">Streaks, personal bests, levels you earn a name for. The gamification
+      isn't bolted onto the tracker — it <b>is</b> the product.</p>
+    </div>
+    <aside class="notes">
+      <p>This artwork is real in-app streak art — it's what you see when your streak is running.</p>
+      <p>The line that matters: a runner doesn't log the marathon, they log every run. Readers
+      deserve the same instrument.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 5 · CARDS ─── -->
+  <section class="slide s-cards" data-title="Four things that pull you back">
+    <div class="wrap stagger">
+      <span class="kicker">The core loop</span>
+      <h1>Four things that pull you <em>back</em></h1>
+      <div class="grid">
+        <div class="card">
+          <div class="ct">Streaks</div>
+          <div class="cd">Consecutive reading days, with a grace window so one bad night
+          doesn't erase a month.</div>
+        </div>
+        <div class="card fill-gold">
+          <div class="ct">Levels with names</div>
+          <div class="cd">XP on every session. You don't reach level 3 — you become a
+          Chapter Chaser.</div>
+        </div>
+        <div class="card fill-accent">
+          <div class="ct">Comeback Challenge</div>
+          <div class="cd">Break a streak and you get a short challenge to rebuild it, instead
+          of a zero and a shrug.</div>
+        </div>
+        <div class="card">
+          <div class="ct">Reading Insights</div>
+          <div class="cd">Occasional, unpredictable notes about your own reading — a milestone,
+          a best-ever session, the pace you're on.</div>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>Name all four, then expand on <b>one</b> — Comeback Challenge is the one people react to,
+      because every other tracker punishes the miss.</p>
+      <p>Insights are deliberately variable. Not every session gets one. That's the point.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 6 · SCREENSHOT: HOME ─── -->
+  <section class="slide s-shot" data-title="Home — the scoreboard">
+    <div class="wrap stagger">
+      <h1>Your reading, with a <em>scoreboard</em></h1>
+      <div class="split">
+        <figure class="frame-phone">
+          <img src="assets/home-screenshot.jpg" alt="Quire home screen: a 3-day streak card with fox artwork, pages, hours and books read, a week of flame markers, and a Chapter Chaser level badge with an XP bar.">
+        </figure>
+        <div>
+          <ul class="callouts">
+            <li><span class="tag">01</span><span><b>The streak leads.</b> It's the first thing
+            on the screen, every time you open the app.</span></li>
+            <li><span class="tag">02</span><span><b>The week, at a glance.</b> Seven dots. Lit
+            ones are days you read.</span></li>
+            <li><span class="tag">03</span><span><b>Your level has a name.</b> The name is the
+            identity — the number is just how it's counted.</span></li>
+          </ul>
+          <p class="shot-caption">Real screen · test account data</p>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>Say out loud that the numbers on screen are a <b>test account</b> — we're pre-launch and
+      not quoting traction.</p>
+      <p>Point at the flame row. That single element does most of the retention work.</p>
+      <p><b>Before sending to press:</b> this capture shows a real name and profile photo — crop
+      or swap it.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 7 · SCREENSHOT: SESSION ─── -->
+  <section class="slide s-shot" data-title="Session — timer and reward">
+    <div class="wrap stagger">
+      <h1>A timer that gets <em>out</em> of the way</h1>
+      <div class="phones">
+        <figure>
+          <div class="frame-phone">
+            <img src="assets/session-screenshot.jpg" alt="Quire session tracker: a nearly empty screen with the book title, the word Reading, a large 00:43 timer and a pause button.">
+          </div>
+          <div class="phone-cap">While you read</div>
+        </figure>
+        <figure>
+          <div class="frame-phone">
+            <img src="assets/session-finish-screenshot.jpg" alt="Quire session complete screen: the book cover with a check mark, a celebrating fox, and tiles showing pages, minutes and XP earned, above a Share your card button.">
+          </div>
+          <div class="phone-cap">The moment you stop</div>
+        </figure>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>The contrast is the argument. While you're reading: a title, a clock, a pause button.
+      Nothing to tap, nothing to look at.</p>
+      <p>The instant you stop, everything arrives at once — pages, minutes, XP, the fox. All the
+      reward is at the end so none of it interrupts the reading.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 8 · SCREENSHOT: SHARE + LIBRARY ─── -->
+  <section class="slide s-shot" data-title="Share card and library">
+    <div class="wrap stagger">
+      <h1>Proof you can <em>post</em></h1>
+      <div class="phones">
+        <figure>
+          <div class="frame-phone">
+            <img src="assets/shareable-image-screenshot.jpg" alt="Quire share composer: a transparent PNG card showing pages read, minutes and pages per hour, with Save to Photos and Share buttons.">
+          </div>
+          <div class="phone-cap">Session card · transparent PNG</div>
+        </figure>
+        <figure>
+          <div class="frame-phone">
+            <img src="assets/library-screenshot.jpg" alt="Quire library: a shelf of book covers with filters for All, Reading, TBR, Finished and Want, plus a search field and an Add book button.">
+          </div>
+          <div class="phone-cap">The shelf you're building</div>
+        </figure>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>The card exports transparent, sized for a story — it drops straight onto whatever
+      background someone's already using.</p>
+      <p>Library: add by search or barcode, filter by Reading / TBR / Finished, rate and review.
+      Audiobooks count too — they log minutes instead of pages.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 9 · DIAGRAM ─── -->
+  <section class="slide s-cards" data-title="The loop">
+    <div class="wrap stagger">
+      <span class="kicker">A week with Quire</span>
+      <h1>The whole thing is one <em>loop</em></h1>
+      <div class="flow loop">
+        <div class="node"><span class="n">01</span><span class="t">Start a session</span><span class="d">One tap, then read.</span></div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="node"><span class="n">02</span><span class="t">Log the pages</span><span class="d">Pages, minutes, pace.</span></div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="node"><span class="n">03</span><span class="t">Keep the streak</span><span class="d">The day counts now.</span></div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="node"><span class="n">04</span><span class="t">Get pulled back</span><span class="d">XP, a level, an insight.</span></div>
+      </div>
+      <p class="lead">Miss a day and the loop doesn't end — it hands you a comeback.</p>
+    </div>
+    <aside class="notes">
+      <p>Walk the arrows. Four steps, about fifteen seconds.</p>
+      <p>Then the last line: the loop is designed to survive a miss. That's the part other
+      trackers get wrong.</p>
+    </aside>
+  </section>
+
+  <!-- ─── 10 · CALL TO ACTION ─── -->
+  <section class="slide s-cta has-peek" data-title="The ask">
+    <div class="wrap stagger">
+      <span class="kicker accent">The ask</span>
+      <div class="big">Read for a week. Tell us what <em>breaks</em>.</div>
+      <div style="width:min(100%,900px)">
+        <div class="code">
+          <div class="code-head"><span class="code-lang">What to send back</span><button class="copy">Copy</button></div>
+<pre><code>1. What made you open the app on day 3?
+2. What did you stop using after the first session?
+3. Where did it feel like homework instead of reading?
+4. Anything that broke, with the screen you were on.</code></pre>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn">Join the beta</span>
+        <span class="todo">[Add link]</span>
+      </div>
+    </div>
+    <img class="q-peek" src="assets/q-proud.png" alt="" aria-hidden="true">
+    <aside class="notes">
+      <p>Ask once, then stop talking. The four questions are on the slide so people can copy them
+      straight off it — tell them the Copy button works.</p>
+      <p><b>Do not ship this slide with the red marker.</b> Put the real TestFlight / signup link
+      in <code>context.md</code> first, then rebuild the slide.</p>
+    </aside>
+  </section>
+
+</main>
+
+<!-- ══ HUD ══ -->
+<div class="progress" aria-hidden="true"><i id="bar"></i></div>
+<div class="hud">
+  <span class="keys">← →&nbsp; F&nbsp; O&nbsp; S</span>
+  <span class="counter" id="counter" aria-live="polite">1 / 1</span>
+  <button class="nav prev" id="prev" aria-label="Previous slide">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button class="nav next" id="next" aria-label="Next slide">
+    <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+</div>
+
+<!-- ══ NOTES PANEL ══ -->
+<div class="notes-panel" id="notesPanel" aria-live="polite">
+  <h4>Speaker notes</h4>
+  <div id="notesBody"></div>
+</div>
+
+<!-- ══ OVERVIEW ══ -->
+<div class="overview" id="overview">
+  <div class="ov-head">
+    <span class="t">All slides</span>
+    <span class="kicker">Click a slide · Esc or O to close</span>
+  </div>
+  <div class="ov-grid" id="ovGrid"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════════════
+   DECK ENGINE — shared by every deck. Don't edit per-deck.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+  var slides = [].slice.call(document.querySelectorAll('.slide'));
+  var n = slides.length, i = 0;
+  var bar = document.getElementById('bar');
+  var counter = document.getElementById('counter');
+  var prevBtn = document.getElementById('prev'), nextBtn = document.getElementById('next');
+  var overview = document.getElementById('overview'), ovGrid = document.getElementById('ovGrid');
+  var notesBody = document.getElementById('notesBody');
+
+  /* ── navigation ────────────────────────────────────────────────────────── */
+  function show(k, push){
+    i = Math.max(0, Math.min(n - 1, k));
+    slides.forEach(function(s, j){
+      var active = j === i;
+      s.classList.toggle('is-active', active);
+      s.classList.toggle('is-prev', j < i);
+      s.inert = !active;                       // keeps offscreen slides out of tab order
+      if(active) s.scrollTop = 0;
+    });
+    bar.style.width = ((i + 1) / n * 100) + '%';
+    counter.textContent = (i + 1) + ' / ' + n;
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === n - 1;
+    var note = slides[i].querySelector('.notes');
+    notesBody.innerHTML = note ? note.innerHTML : '<p style="color:var(--muted)">No notes for this slide.</p>';
+    [].forEach.call(ovGrid.children, function(c, j){ c.classList.toggle('here', j === i); });
+    if(push !== false){
+      var h = '#/' + (i + 1);
+      if(location.hash !== h){
+        // file:// documents have a null origin — Chrome throws SecurityError on
+        // replaceState there, so fall back to setting the hash directly.
+        try { history.replaceState(null, '', h); } catch(err){ location.hash = h; }
+      }
+    }
+  }
+  function go(d){ show(i + d); }
+
+  function fromHash(){
+    var m = /^#\/(\d+)$/.exec(location.hash);
+    show(m ? parseInt(m[1], 10) - 1 : 0, false);
+  }
+
+  /* ── keyboard ──────────────────────────────────────────────────────────── */
+  document.addEventListener('keydown', function(e){
+    if(e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if(k === 'Escape'){
+      document.body.classList.remove('ov-on','notes-on'); return;
+    }
+    switch(k){
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': case 'n':
+        e.preventDefault(); go(1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': case 'p':
+        e.preventDefault(); go(-1); break;
+      case 'Home': e.preventDefault(); show(0); break;
+      case 'End':  e.preventDefault(); show(n - 1); break;
+      case 'f': case 'F':
+        e.preventDefault();
+        if(document.fullscreenElement) document.exitFullscreen();
+        else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        break;
+      case 'o': case 'O':
+        e.preventDefault(); buildOverview();
+        document.body.classList.toggle('ov-on'); sizeThumbs(); break;
+      case 's': case 'S':
+        e.preventDefault(); document.body.classList.toggle('notes-on'); break;
+    }
+  });
+
+  prevBtn.addEventListener('click', function(){ go(-1); });
+  nextBtn.addEventListener('click', function(){ go(1); });
+  window.addEventListener('hashchange', fromHash);
+
+  /* ── swipe (phone) ─────────────────────────────────────────────────────── */
+  var tx = 0, ty = 0;
+  document.addEventListener('touchstart', function(e){
+    tx = e.changedTouches[0].clientX; ty = e.changedTouches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if(Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.6) go(dx < 0 ? 1 : -1);
+  }, {passive:true});
+
+  /* ── copy buttons ──────────────────────────────────────────────────────── */
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('.copy');
+    if(!btn) return;
+    var block = btn.closest('.code');
+    var pre = block && block.querySelector('pre');
+    if(!pre) return;
+    var text = pre.innerText;
+    var done = function(){
+      var old = btn.dataset.label || btn.textContent;
+      btn.dataset.label = old;
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('done');
+      clearTimeout(btn._t);
+      btn._t = setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1600);
+    };
+    // clipboard API, with an execCommand fallback so a double-clicked file:// deck still copies
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){ legacy(text, done); });
+    } else { legacy(text, done); }
+  });
+  function legacy(text, done){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly','');
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch(err){ /* nothing else to try */ }
+    document.body.removeChild(ta);
+  }
+
+  /* ── overview ──────────────────────────────────────────────────────────── */
+  function buildOverview(){
+    if(ovGrid.dataset.built) return;
+    slides.forEach(function(s, j){
+      var cell = document.createElement('button');
+      cell.className = 'ov-cell';
+      cell.setAttribute('aria-label', 'Go to slide ' + (j + 1) + (s.dataset.title ? ': ' + s.dataset.title : ''));
+      var stage = document.createElement('div');
+      stage.className = 'ov-stage';
+      var clone = s.cloneNode(true);
+      clone.classList.add('is-active');
+      clone.classList.remove('is-prev');
+      clone.removeAttribute('inert');
+      [].forEach.call(clone.querySelectorAll('.notes'), function(x){ x.remove(); });
+      stage.appendChild(clone);
+      var num = document.createElement('span');
+      num.className = 'ov-num'; num.textContent = j + 1;
+      cell.appendChild(stage); cell.appendChild(num);
+      cell.addEventListener('click', function(){
+        document.body.classList.remove('ov-on'); show(j);
+      });
+      ovGrid.appendChild(cell);
+    });
+    ovGrid.dataset.built = '1';
+    [].forEach.call(ovGrid.children, function(c, j){ c.classList.toggle('here', j === i); });
+  }
+  function sizeThumbs(){
+    [].forEach.call(ovGrid.children, function(c){
+      c.style.setProperty('--tz', (c.clientWidth / 1440).toFixed(4));
+    });
+  }
+  window.addEventListener('resize', function(){ if(ovGrid.dataset.built) sizeThumbs(); });
+
+  fromHash();
+})();
+</script>

@@ -39,20 +39,20 @@ export type QExpression =
 
 // Static requires — Metro resolves image assets only from literal require() calls.
 const SOURCES: Record<QExpression, number> = {
-  waving: require('@/assets/q-expressions/q-waving.png'),
-  happy: require('@/assets/q-expressions/q-happy.png'),
-  confident: require('@/assets/q-expressions/q-confident.png'),
-  levelup: require('@/assets/q-expressions/q-levelup.png'),
-  surprised: require('@/assets/q-expressions/q-surprised.png'),
-  reading: require('@/assets/q-expressions/q-reading.png'),
-  'looking-up': require('@/assets/q-expressions/q-looking-up.png'),
-  shrug: require('@/assets/q-expressions/q-shrug.png'),
-  concerned: require('@/assets/q-expressions/q-concerned.png'),
-  sleepy: require('@/assets/q-expressions/q-sleepy.png'),
-  sleeping: require('@/assets/q-expressions/q-sleeping.png'),
-  pointing: require('@/assets/q-expressions/q-pointing.png'),
-  proud: require('@/assets/q-expressions/q-proud.png'),
-  thinking: require('@/assets/q-expressions/q-thinking.png'),
+  waving: require('@/assets/q-expressions/q-waving.webp'),
+  happy: require('@/assets/q-expressions/q-happy.webp'),
+  confident: require('@/assets/q-expressions/q-confident.webp'),
+  levelup: require('@/assets/q-expressions/q-levelup.webp'),
+  surprised: require('@/assets/q-expressions/q-surprised.webp'),
+  reading: require('@/assets/q-expressions/q-reading.webp'),
+  'looking-up': require('@/assets/q-expressions/q-looking-up.webp'),
+  shrug: require('@/assets/q-expressions/q-shrug.webp'),
+  concerned: require('@/assets/q-expressions/q-concerned.webp'),
+  sleepy: require('@/assets/q-expressions/q-sleepy.webp'),
+  sleeping: require('@/assets/q-expressions/q-sleeping.webp'),
+  pointing: require('@/assets/q-expressions/q-pointing.webp'),
+  proud: require('@/assets/q-expressions/q-proud.webp'),
+  thinking: require('@/assets/q-expressions/q-thinking.webp'),
 };
 
 const LABELS: Record<QExpression, string> = {

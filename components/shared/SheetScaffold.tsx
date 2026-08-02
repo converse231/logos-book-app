@@ -9,6 +9,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
+import { CENTER_COLUMN, useIsWideScreen } from '@/theme/layout';
 
 interface SheetScaffoldProps {
   title: string;
@@ -37,6 +38,7 @@ export function SheetScaffold({ title, onClose, children, hideHeader = false, sc
   const reduce = useReducedMotion();
   const isDark = t.mode === 'dark';
   const keyboard = useAnimatedKeyboard();
+  const wide = useIsWideScreen();
 
   // Lift the whole (flex-end) sheet by the keyboard height. Padding on the root
   // pushes the anchored sheet up without disturbing the full-screen scrim.
@@ -66,7 +68,15 @@ export function SheetScaffold({ title, onClose, children, hideHeader = false, sc
       />
       <Animated.View
         entering={reduce ? undefined : SlideInDown.duration(300)}
-        style={[styles.sheet, { backgroundColor: t.bgSec, borderColor: t.border, paddingBottom: insets.bottom + 16 }]}
+        style={[
+          styles.sheet,
+          { backgroundColor: t.bgSec, borderColor: t.border, paddingBottom: insets.bottom + 16 },
+          // Tablet: a full-width sheet spanning 1024dp reads as a broken phone
+          // layout. Clamp it to the reading column and lift it off the bottom edge
+          // as a fully-bordered floating card — the safe-area inset moves from
+          // padding to margin so the internal spacing stays as designed.
+          wide && [styles.sheetWide, { paddingBottom: 16, marginBottom: insets.bottom + 20 }],
+        ]}
       >
         <View style={[styles.handle, { backgroundColor: t.bgTer }]} />
         {!hideHeader ? (
@@ -94,16 +104,28 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
-    borderWidth: 0,
-    borderTopWidth: BORDER_WIDTH_THICK,
+    // Uniform borderWidth on purpose. A per-side border (borderTopWidth alone)
+    // combined with a corner radius drops RN onto its path-drawing border
+    // renderer, which paints the corner arcs into the top edge — that's the
+    // thick black cap that appeared above every sheet. One width all round
+    // keeps the fast, correct path; the side rules read as the same ink frame
+    // every other surface has, and the bottom edge sits off-screen.
+    borderWidth: BORDER_WIDTH_THICK,
     paddingHorizontal: 20,
     paddingTop: 10,
     maxHeight: '92%',
   },
+  sheetWide: {
+    ...CENTER_COLUMN,
+    borderRadius: RADIUS.xl,
+    borderWidth: BORDER_WIDTH_THICK,
+    maxHeight: '86%',
+  },
   // flexShrink lets the ScrollView collapse (and scroll) once the sheet hits its
   // maxHeight, instead of pushing the submit button off the bottom.
   scrollBody: { flexShrink: 1 },
-  scrollContent: { paddingBottom: 4 },
+  // (No shadow slack needed here any more — the buttons now carry their own.)
+  scrollContent: {},
   handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: 14, marginBottom: 12 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   title: { fontFamily: FONTS.uiBold, fontSize: 20, textTransform: 'uppercase', letterSpacing: 0.5 },

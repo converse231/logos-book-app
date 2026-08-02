@@ -12,6 +12,7 @@ import { useApi } from '@/services/ApiContext';
 import { Badge, HomeData, ReadingGoal, Review, StatsData, UserBook, UserProfile } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { Card } from '@/components/shared/Card';
+import { BookCover } from '@/components/shared/BookCover';
 import { LevelNameBadge } from '@/components/shared/LevelNameBadge';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { BadgeGrid } from '@/components/stats/BadgeGrid';
@@ -82,6 +83,7 @@ export default function Profile() {
   const chart = useMemo(() => finishedChart(books, scope, year), [userBooks, scope, year]);
   const covers = useMemo(() => coversByDate(sessions, coverByUserBook(books)), [stats, userBooks]);
   const best = useMemo(() => bestStreak(sessionDates(sessions, scope, year)), [stats, scope, year]);
+  const currentlyReading = useMemo(() => books.filter((b) => b.status === 'reading'), [userBooks]);
 
   if (error && (!profile || !home || !stats)) {
     return (
@@ -148,6 +150,29 @@ export default function Profile() {
         {profile.bio ? (
           <Reveal i={1} reduce={reduce}>
             <Text style={[styles.bio, { color: t.textSec }]}>{profile.bio}</Text>
+          </Reveal>
+        ) : null}
+
+        {/* Currently reading — shelf of in-progress books */}
+        {currentlyReading.length > 0 ? (
+          <Reveal i={1} reduce={reduce}>
+            <View style={styles.block}>
+              <Text style={[styles.blockLabel, { color: t.textSec }]}>CURRENTLY READING</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.currentRow}>
+                {currentlyReading.map((ub) => (
+                  <Pressable
+                    key={ub.id}
+                    onPress={() => router.push(`/(tabs)/library/${ub.id}` as Href)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${ub.book.title}, currently reading`}
+                    style={styles.currentItem}
+                  >
+                    <BookCover url={ub.book.coverUrl} title={ub.book.title} format={ub.format} showFormatBadge width={84} />
+                    <Text style={[styles.currentTitle, { color: t.text }]} numberOfLines={2}>{ub.book.title}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
           </Reveal>
         ) : null}
 
@@ -423,6 +448,9 @@ const styles = StyleSheet.create({
 
   block: { gap: 8 },
   blockLabel: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginLeft: 2 },
+  currentRow: { gap: 12, paddingRight: 4, paddingVertical: 2 },
+  currentItem: { width: 84, gap: 6 },
+  currentTitle: { fontFamily: FONTS.uiMedium, fontSize: 12, lineHeight: 15 },
   calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bestStreak: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   bestStreakText: { fontFamily: FONTS.monoMedium, fontSize: 12 },

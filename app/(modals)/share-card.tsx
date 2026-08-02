@@ -18,6 +18,9 @@ import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { CENTER_COLUMN_FILL } from '@/theme/layout';
+import { CardTextColor } from '@/services/cardColors';
+import { CardColorPicker } from '@/components/shared/CardColorPicker';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
@@ -51,12 +54,18 @@ export default function ShareCard() {
   // Re-share mode: opened from a past session's detail with its stats as params.
   const params = useLocalSearchParams<{
     title?: string; cover?: string; format?: string; pages?: string; minutes?: string; pph?: string;
+    streak?: string; pagesTotal?: string; booksTotal?: string;
   }>();
   const reshare = params.pages !== undefined;
+  // Streak mode: opened from the streak celebration, so the card leads with the
+  // streak instead of a session. There's no book behind it — the canvas already
+  // falls back to the progress mark when there's no title.
+  const streakDays = params.streak ? Number(params.streak) : null;
   const [levelName, setLevelName] = useState('Reader');
   const mode: Mode = 'transparent'; // overlay only — the dark "Card" option was removed
   const [layout, setLayout] = useState<CardLayout>('feature');
   const [variant] = useState<CardVariant>('session');
+  const [textColor, setTextColor] = useState<CardTextColor>('white');
   const [status, setStatus] = useState<SaveStatus>('idle');
 
   // Off-screen, full-resolution target that the capture reads from.
@@ -71,9 +80,9 @@ export default function ShareCard() {
   // reset transient feedback when the user changes the design
   useEffect(() => {
     setStatus('idle');
-  }, [layout, variant]);
+  }, [layout, variant, textColor]);
 
-  if (!result && !reshare) {
+  if (!result && !reshare && streakDays == null) {
     return (
       <View style={[styles.fallback, { backgroundColor: t.bg }]}>
         <Text style={[styles.fallbackText, { color: t.textSec }]}>Nothing to share yet.</Text>
@@ -85,13 +94,13 @@ export default function ShareCard() {
   }
 
   // Stats come from the re-share params (a past session) or the last live result.
-  const pages = reshare ? Number(params.pages) : (result!.pagesRead ?? 0);
+  const pages = reshare ? Number(params.pages) : (result?.pagesRead ?? 0);
   const minutes = reshare
     ? Number(params.minutes)
-    : Math.max(1, Math.round(result!.durationSeconds / 60));
+    : Math.max(1, Math.round((result?.durationSeconds ?? 60) / 60));
   const pph = reshare
     ? Number(params.pph)
-    : (result!.pph ?? Math.round((pages / (result!.durationSeconds / 3600)) * 10) / 10);
+    : (result?.pph ?? Math.round((pages / ((result?.durationSeconds ?? 3600) / 3600)) * 10) / 10);
   const bookTitle = reshare ? params.title : active?.bookTitle;
   const bookCoverUrl = reshare ? (params.cover || null) : (active?.coverUrl ?? null);
   const bookFormat = (reshare ? params.format : active?.format) as CardStats['format'];
@@ -103,20 +112,32 @@ export default function ShareCard() {
   const bookStartPage = reshare || active?.startPage == null ? null : active.startPage;
   const bookEndPage = bookStartPage != null ? bookStartPage + pages : null;
 
-  const stats: CardStats = {
-    headline: String(pages),
-    headlineUnit: pages === 1 ? 'page read' : 'pages read',
-    sub: [
-      { label: 'minutes', value: String(minutes) },
-      { label: 'pages/hr', value: String(pph) },
-    ],
-    bookTitle,
-    bookCoverUrl,
-    format: bookFormat,
-    pageCount: bookPageCount,
-    startPage: bookStartPage,
-    endPage: bookEndPage,
-  };
+  const num = (v?: string) => (v && Number(v) > 0 ? Number(v).toLocaleString() : null);
+  const streakSub = [
+    num(params.pagesTotal) ? { label: 'pages read', value: num(params.pagesTotal)! } : null,
+    num(params.booksTotal) ? { label: 'books', value: num(params.booksTotal)! } : null,
+  ].filter(Boolean) as CardStats['sub'];
+
+  const stats: CardStats = streakDays != null
+    ? {
+        headline: String(streakDays),
+        headlineUnit: streakDays === 1 ? 'day read' : 'day streak',
+        sub: streakSub,
+      }
+    : {
+        headline: String(pages),
+        headlineUnit: pages === 1 ? 'page read' : 'pages read',
+        sub: [
+          { label: 'minutes', value: String(minutes) },
+          { label: 'pages/hr', value: String(pph) },
+        ],
+        bookTitle,
+        bookCoverUrl,
+        format: bookFormat,
+        pageCount: bookPageCount,
+        startPage: bookStartPage,
+        endPage: bookEndPage,
+      };
 
   // The style carousel — one page per card style. Swiping the preview left/right
   // picks the style (a 4-up segmented control couldn't fit its labels on Android).
@@ -215,6 +236,9 @@ export default function ShareCard() {
 
   return (
     <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top + 8 }]}>
+      {/* Paper bleeds to the edges; the composer is clamped to the centred reading
+          column so the preview never balloons on a tablet. */}
+      <View style={styles.column}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: t.text }]}>Share your reading</Text>
@@ -252,6 +276,7 @@ export default function ShareCard() {
                       layout={l.key}
                       stats={stats}
                       levelName={levelName}
+                      textColor={textColor}
                       width={previewW}
                     />
                   </View>
@@ -286,6 +311,10 @@ export default function ShareCard() {
             </Pressable>
           ))}
         </View>
+      </View>
+
+      <View style={styles.colorWrap}>
+        <CardColorPicker value={textColor} onChange={setTextColor} />
       </View>
 
       {/* Actions */}
@@ -330,7 +359,10 @@ export default function ShareCard() {
         </Text>
       </View>
 
-      {/* Off-screen full-res capture target (not visible) */}
+      </View>
+
+      {/* Off-screen full-res capture target (not visible). Deliberately OUTSIDE the
+          clamped column — it must not inherit the column's maxWidth. */}
       <View style={styles.offscreen} pointerEvents="none">
         <ShareCardCanvas
           ref={shotRef}
@@ -339,6 +371,7 @@ export default function ShareCard() {
           layout={layout}
           stats={stats}
           levelName={levelName}
+          textColor={textColor}
           width={CAPTURE_WIDTH}
         />
       </View>
@@ -368,6 +401,7 @@ function Checkerboard() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  column: CENTER_COLUMN_FILL,
   fallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   fallbackText: { fontFamily: FONTS.uiMedium, fontSize: 15 },
   fallbackLink: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
@@ -390,6 +424,7 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
 
+  colorWrap: { paddingHorizontal: 24, paddingTop: 14 },
   footer: { paddingHorizontal: 24, paddingTop: 14, gap: 12 },
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,

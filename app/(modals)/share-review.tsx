@@ -15,6 +15,9 @@ import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { CENTER_COLUMN_FILL } from '@/theme/layout';
+import { CardTextColor } from '@/services/cardColors';
+import { CardColorPicker } from '@/components/shared/CardColorPicker';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { BookFormat } from '@/services/types';
@@ -43,12 +46,13 @@ export default function ShareReview() {
 
   const mode: Mode = 'transparent'; // overlay only — the dark "Card" option was removed
   const [layout, setLayout] = useState<ReviewCardLayout>('cover');
+  const [textColor, setTextColor] = useState<CardTextColor>('white');
   const [status, setStatus] = useState<SaveStatus>('idle');
 
   const shotRef = useRef<View>(null);
   const [perm, requestPerm] = MediaLibrary.usePermissions();
 
-  useEffect(() => { setStatus('idle'); }, [layout]);
+  useEffect(() => { setStatus('idle'); }, [layout, textColor]);
 
   const review: ReviewCardStats = {
     rating: Number(p.rating ?? 0),
@@ -109,6 +113,9 @@ export default function ShareReview() {
 
   return (
     <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top + 8 }]}>
+      {/* Clamped to the centred reading column — the preview is sized off the
+          measured area, so this also keeps the card from ballooning on a tablet. */}
+      <View style={styles.column}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: t.text }]}>Share your review</Text>
         <Pressable
@@ -126,7 +133,7 @@ export default function ShareReview() {
         {previewW > 0 ? (
           <View style={[styles.previewBox, { width: previewW + 20 }]}>
             {mode === 'transparent' ? <Checkerboard /> : null}
-            <ReviewShareCanvas mode={mode} layout={layout} review={review} width={previewW} />
+            <ReviewShareCanvas mode={mode} layout={layout} review={review} textColor={textColor} width={previewW} />
           </View>
         ) : null}
       </View>
@@ -139,6 +146,7 @@ export default function ShareReview() {
           onChange={(v) => setLayout(v as ReviewCardLayout)}
           t={t}
         />
+        <CardColorPicker value={textColor} onChange={setTextColor} />
       </View>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -173,9 +181,12 @@ export default function ShareReview() {
         </Text>
       </View>
 
-      {/* Off-screen full-res capture target */}
+      </View>
+
+      {/* Off-screen full-res capture target. Deliberately OUTSIDE the clamped
+          column — it must not inherit the column's maxWidth. */}
       <View style={styles.offscreen} pointerEvents="none">
-        <ReviewShareCanvas ref={shotRef} mode={mode} layout={layout} review={review} width={CAPTURE_WIDTH} />
+        <ReviewShareCanvas ref={shotRef} mode={mode} layout={layout} review={review} textColor={textColor} width={CAPTURE_WIDTH} />
       </View>
     </View>
   );
@@ -231,6 +242,7 @@ function Checkerboard() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  column: CENTER_COLUMN_FILL,
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
   title: { fontFamily: FONTS.uiBold, fontSize: 22 },
   closeBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },

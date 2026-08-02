@@ -356,6 +356,13 @@ export const mockApi: QuireApi = {
     // replacing any earlier review by this user for the same book.
     const existing = (MOCK_REVIEWS[bookId] ?? []).filter((r) => r.userId !== _user.id);
     MOCK_REVIEWS[bookId] = [review, ...existing];
+
+    // Goodreads-style: rating/reviewing a book marks it finished.
+    const i = MOCK_USER_BOOKS.findIndex((b) => b.book.id === bookId);
+    if (i >= 0 && MOCK_USER_BOOKS[i].status !== 'finished') {
+      MOCK_USER_BOOKS[i] = { ...MOCK_USER_BOOKS[i], status: 'finished', finishedAt: new Date().toISOString() };
+    }
+
     return review;
   },
 

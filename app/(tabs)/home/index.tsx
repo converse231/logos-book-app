@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +30,10 @@ import { ReviewQuoteCard } from '@/components/home/ReviewQuoteCard';
 import { ReadTodayCard } from '@/components/home/ReadTodayCard';
 import { localDateString } from '@/stores/sessionStore';
 import { drainQueue } from '@/lib/sessionQueue';
+import { takeStreakCelebration } from '@/lib/streakCelebration';
+
+/** How long the shelf + lifetime stats stay good for across a tab return. */
+const SHELF_FRESH_MS = 30_000;
 
 interface FeaturedReviews {
   book: UserBook;
@@ -50,6 +54,13 @@ export default function Home() {
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // Home is the most-returned-to screen in the app, and it was refiring its whole
+  // payload on every single focus. getHomeData still runs every time — it carries the
+  // streak, the at-risk flag and the milestone the celebration keys off, and must
+  // never be stale. The shelf and lifetime stats change far more slowly, so they get
+  // a short freshness window. Pull-to-refresh (which bumps `nonce`) always bypasses it.
+  const shelfLoadedAt = useRef(0);
+  const lastNonce = useRef(-1);
 
   useFocusEffect(
     useCallback(() => {
@@ -60,13 +71,38 @@ export default function Home() {
       drainQueue(api).then((synced) => {
         if (alive && synced > 0) setNonce((n) => n + 1);
       });
-      Promise.all([api.getHomeData(), api.getUserBooks(), api.getStats()])
+      const forced = lastNonce.current !== nonce;
+      lastNonce.current = nonce;
+      const shelfFresh = !forced && Date.now() - shelfLoadedAt.current < SHELF_FRESH_MS;
+
+      Promise.all([
+        api.getHomeData(),
+        shelfFresh ? Promise.resolve(null) : api.getUserBooks(),
+        shelfFresh ? Promise.resolve(null) : api.getStats(),
+      ])
         .then(([h, s, st]) => {
           if (!alive) return;
           setData(h);
-          setShelf(s);
-          setStats(st);
-          const finished = s.find((b) => b.status === 'finished');
+          if (s) setShelf(s);
+          if (st) setStats(st);
+          if (s && st) shelfLoadedAt.current = Date.now();
+          // Streak milestones are celebrated HERE, on the way back to Home, rather
+          // than as one more screen in the finish flow. Driven off the streak count
+          // (not a session result) so it fires however the day was logged — a live
+          // session, the read-today check-in, or an offline session syncing later —
+          // and claimed from storage so it shows once, not on every focus.
+          takeStreakCelebration(h.streak.currentStreak).then((celebrate) => {
+            if (!alive || !celebrate) return;
+            router.push({
+              pathname: '/(modals)/streak-unlocked',
+              params: {
+                day: String(celebrate),
+                pages: String(st?.lifetimePages ?? ''),
+                books: String(st?.booksFinished ?? ''),
+              },
+            } as unknown as Href);
+          });
+          const finished = s?.find((b) => b.status === 'finished');
           if (finished) {
             api.getReviews(finished.book.id).then((rv) => {
               if (alive && rv.length) setFeatured({ book: finished, reviews: rv });
@@ -78,7 +114,7 @@ export default function Home() {
       return () => {
         alive = false;
       };
-    }, [api, nonce])
+    }, [api, nonce, router])
   );
 
   // Pull-to-refresh: re-run the whole load (which also drains the offline queue).

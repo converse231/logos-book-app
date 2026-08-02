@@ -146,7 +146,9 @@ export const libraryApi: Partial<QuireApi> = {
       // functions.invoke hides the real reason behind a generic message; the
       // function's JSON { error } body lives on the thrown error's .context Response.
       const detail = await readEdgeError(fnErr);
-      console.warn('[addBook] ensure_book failed:', detail, '| book:', meta.title, book.googleBooksId);
+      // Dev-only: in release the failure already surfaces as an error banner, and
+      // the ids here are noise in a production log.
+      if (__DEV__) console.warn('[addBook] ensure_book failed:', detail, '| book:', meta.title, book.googleBooksId);
       throw new Error(detail);
     }
     const bookId: string | undefined = fnData?.book?.id;
@@ -226,6 +228,16 @@ export const libraryApi: Partial<QuireApi> = {
       .select('*')
       .single();
     if (error) throw error;
+
+    // Goodreads-style: rating/reviewing a book marks it finished (best-effort —
+    // a review is already saved either way, so a failure here shouldn't surface).
+    await supabase
+      .from('user_books')
+      .update({ status: 'finished', finished_at: new Date().toISOString() })
+      .eq('user_id', uid)
+      .eq('book_id', bookId)
+      .neq('status', 'finished');
+
     // Attach the author's display name (own row) from public_profiles.
     const { data: prof } = await supabase
       .from('public_profiles')

@@ -72,8 +72,16 @@ export default function Discover() {
   const topGenre = profile?.genrePrefs?.[0];
   const openBook = (b: BookSearchResult) => {
     Haptics.selectionAsync();
-    router.push(`/(modals)/add-book?q=${encodeURIComponent(`${b.title} ${b.authors[0] ?? ''}`.trim())}` as Href);
+    // The reader already picked this book — show them the book, not a search
+    // for it. Passed whole rather than by id: the search result is already
+    // complete, so refetching would only add a spinner.
+    router.push({ pathname: '/book', params: { data: JSON.stringify(b), from: 'discover' } } as unknown as Href);
   };
+  const openAuthor = (name: string) => {
+    Haptics.selectionAsync();
+    router.push(`/author?name=${encodeURIComponent(name)}` as Href);
+  };
+
   const browse = (title: string, q: string) => {
     Haptics.selectionAsync();
     router.push(`/(tabs)/discover/browse?title=${encodeURIComponent(title)}&q=${encodeURIComponent(q)}` as Href);
@@ -173,7 +181,7 @@ export default function Discover() {
           <Text style={[styles.sectionTitle, { color: t.text }]}>Top authors</Text>
           <View style={styles.authorWrap}>
             {TOP_AUTHORS.map((a) => (
-              <AuthorCard key={a} name={a} photo={authorPhotos[a]} onPress={() => browse(a, `inauthor:${a}`)} />
+              <AuthorCard key={a} name={a} photo={authorPhotos[a]} onPress={() => openAuthor(a)} />
             ))}
           </View>
         </View>
@@ -192,7 +200,7 @@ function AuthorCard({ name, photo, onPress }: { name: string; photo: string | nu
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Browse books by ${name}`}
+      accessibilityLabel={`About ${name} and their books`}
       style={({ pressed }) => [styles.authorCard, { backgroundColor: t.bgSec, borderColor: t.border }, pressed && { opacity: 0.7 }]}
     >
       <View style={[styles.authorGlyph, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>

@@ -14,6 +14,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { CENTER_COLUMN } from '@/theme/layout';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Q } from '@/components/shared/Q';
@@ -104,7 +105,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', justifyContent: 'center', marginVertical: 4 },
   name: { fontFamily: FONTS.serifBold, fontSize: 40, lineHeight: 44, textAlign: 'center', marginTop: 6 },
   blurb: { fontFamily: FONTS.serifMedium, fontSize: 18, lineHeight: 25, textAlign: 'center', marginTop: 18, maxWidth: 320 },
-  footer: { paddingHorizontal: 24 },
+  footer: { ...CENTER_COLUMN, paddingHorizontal: 24 },
   cta: { minHeight: 54, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: INK },
 });

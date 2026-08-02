@@ -11,6 +11,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
+import { CENTER_COLUMN_FILL } from '@/theme/layout';
 import { ProgressDots } from './ProgressDots';
 
 interface OnboardingScaffoldProps {
@@ -74,6 +75,9 @@ export function OnboardingScaffold({
 
   return (
     <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top }]}>
+      {/* Everything is clamped to the centred reading column so a tablet gets the
+          designed one-question-per-screen layout, not a 780dp-wide CTA. */}
+      <View style={styles.column}>
       {/* Top bar */}
       <View style={styles.topBar}>
         {onBack ? (
@@ -113,12 +117,14 @@ export function OnboardingScaffold({
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>{footer}</View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  column: CENTER_COLUMN_FILL,
   flex: { flex: 1 },
   topBar: {
     flexDirection: 'row',

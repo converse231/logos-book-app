@@ -13,6 +13,7 @@ import Animated, {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { CENTER_COLUMN } from '@/theme/layout';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
@@ -21,6 +22,7 @@ const FRAME = 248;
 
 // ISBN scanner (blueprint Section 3). Live camera via expo-camera; on an EAN-13
 // barcode it hands the code to add-book (?q=<isbn>), where searchBooks resolves
+// the edition and tapping it opens that book's page.
 // it by ISBN. Catalog search is always available as a fallback. Deep link: quire://scan
 export default function Scanner() {
   const t = useTheme();
@@ -127,7 +129,7 @@ const styles = StyleSheet.create({
   // Opaque near-black base; the CameraView (when granted) fills behind everything.
   root: { flex: 1, backgroundColor: '#08090C', paddingHorizontal: 20 },
   scrim: { backgroundColor: 'rgba(8,9,12,0.45)' },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  topBar: { ...CENTER_COLUMN, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   topTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 17, color: '#FFFFFF' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18 },
@@ -154,5 +156,5 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderWidth: 2,
   },
   permBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
-  actions: {},
+  actions: CENTER_COLUMN,
 });

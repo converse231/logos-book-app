@@ -2,8 +2,10 @@ import { forwardRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BookCover } from './BookCover';
+import { CardWordmark } from './CardWordmark';
 import { FONTS, PALETTE } from '@/theme/tokens';
 import { BookFormat } from '@/services/types';
+import { CardTextColor, cardInk } from '@/services/cardColors';
 
 export type ReviewCardLayout = 'cover' | 'minimal';
 
@@ -22,18 +24,26 @@ interface ReviewShareCanvasProps {
   layout?: ReviewCardLayout;
   review: ReviewCardStats;
   width: number; // render width; height derived 4:5
+  /** Type colour, so the overlay can be read over any story background. */
+  textColor?: CardTextColor;
 }
 
 // Review share card (4:5, captured at 1080×1350). Two layouts:
 //   • cover   — book cover up top, then stars + the quote + attribution.
 //   • minimal — no cover; the review quote is the hero, stars larger.
-// Vermilion text + gold stars, all centered, with shadows so it reads over any
-// background in overlay mode.
+// Centered, with a halo so it reads over any background in overlay mode. The type
+// colour is the reader's choice (white / black / vermilion); the STARS stay gold
+// either way — they're a rating, not typography, and gold is what a rating means
+// across the app.
 export const ReviewShareCanvas = forwardRef<View, ReviewShareCanvasProps>(
-  ({ mode, layout = 'cover', review, width }, ref) => {
+  ({ mode, layout = 'cover', review, width, textColor = 'white' }, ref) => {
     const height = width * 1.25;
     const isDark = mode === 'dark';
     const withCover = layout === 'cover';
+    // Colour AND halo travel together — black type needs a light halo, not the
+    // dark one white and vermilion use (see services/cardColors).
+    const ink = cardInk(textColor);
+    const textShadow = ink.shadow;
 
     return (
       <View
@@ -60,7 +70,8 @@ export const ReviewShareCanvas = forwardRef<View, ReviewShareCanvasProps>(
             <Text
               style={[
                 styles.quote,
-                quoteShadow,
+                textShadow,
+                { color: ink.primary },
                 {
                   fontSize: withCover ? width * 0.05 : width * 0.062,
                   lineHeight: withCover ? width * 0.07 : width * 0.086,
@@ -73,15 +84,19 @@ export const ReviewShareCanvas = forwardRef<View, ReviewShareCanvasProps>(
           ) : null}
 
           <View style={styles.attribution}>
-            <Text style={[styles.reviewer, textShadow, { fontSize: width * 0.044 }]} numberOfLines={1}>
+            <Text style={[styles.reviewer, textShadow, { color: ink.primary, fontSize: width * 0.044 }]} numberOfLines={1}>
               {`— ${review.reviewerName}`}
             </Text>
-            <Text style={[styles.bookMeta, textShadow, { fontSize: width * 0.04 }]} numberOfLines={2}>
+            <Text style={[styles.bookMeta, textShadow, { color: ink.secondary, fontSize: width * 0.04 }]} numberOfLines={2}>
               {review.bookTitle}
               {review.author ? ` · ${review.author}` : ''}
             </Text>
           </View>
         </View>
+
+        {/* Centred on the same axis as everything above it. `inner` takes the
+            remaining height, so this sits on the bottom padding line. */}
+        <CardWordmark cardWidth={width} color={textColor} style={styles.mark} />
       </View>
     );
   }
@@ -108,18 +123,6 @@ function StarRow({ rating, size }: { rating: number; size: number }) {
   );
 }
 
-const textShadow = {
-  textShadowColor: 'rgba(0,0,0,0.55)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 6,
-} as const;
-
-const quoteShadow = {
-  textShadowColor: 'rgba(0,0,0,0.4)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 8,
-} as const;
-
 const starShadow = {
   textShadowColor: 'rgba(0,0,0,0.5)',
   textShadowOffset: { width: 0, height: 1 },
@@ -135,13 +138,14 @@ const styles = StyleSheet.create({
     borderRadius: 14, backgroundColor: 'rgba(255,61,31,0.10)',
   },
   inner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  mark: { alignSelf: 'center' },
   coverWrap: {
     borderRadius: 14,
     shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8,
   },
   starRow: { flexDirection: 'row', alignItems: 'center' },
-  quote: { fontFamily: FONTS.uiMedium, color: '#FFFFFF', textAlign: 'center' },
+  quote: { fontFamily: FONTS.uiMedium, textAlign: 'center' },
   attribution: { alignItems: 'center', gap: 4 },
-  reviewer: { fontFamily: FONTS.uiBold, color: '#FFFFFF', textAlign: 'center' },
-  bookMeta: { fontFamily: FONTS.mono, color: 'rgba(255,255,255,0.85)', textAlign: 'center', letterSpacing: 0.3 },
+  reviewer: { fontFamily: FONTS.uiBold, textAlign: 'center' },
+  bookMeta: { fontFamily: FONTS.mono, textAlign: 'center', letterSpacing: 0.3 },
 });
