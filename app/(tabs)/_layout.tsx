@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { ANIMATION, FONTS } from '@/theme/tokens';
 import { CONTENT_MAX_WIDTH } from '@/theme/layout';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { SessionFab } from '@/components/navigation/SessionFab';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -49,7 +50,9 @@ function TabIcon({
   return (
     <View style={styles.iconWrap}>
       <Animated.View style={[styles.iconPill, pillStyle, { backgroundColor: accentMuted }]} />
-      <Ionicons name={focused ? name : (`${name}-outline` as IconName)} size={22} color={color} />
+      {/* AppIcon serves hand-drawn art where it exists and falls back to the font
+          glyph otherwise, so the other ~90 Ionicons in the app are untouched. */}
+      <AppIcon name={name} focused={focused} size={22} color={color} />
     </View>
   );
 }
