@@ -35,6 +35,7 @@ import { liveApi } from '@/services/supabase';
 import { useAppStore } from '@/stores/appStore';
 import { supabase } from '@/lib/supabase';
 import { initAnalytics, identifyUser, resetAnalytics } from '@/lib/analytics';
+import { registerForPushNotifications } from '@/lib/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -65,8 +66,15 @@ export default function RootLayout() {
   useEffect(() => {
     initAnalytics();
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) identifyUser(session.user.id);
-      else resetAnalytics();
+      if (session?.user) {
+        identifyUser(session.user.id);
+        // Push token refresh (B5). Registration used to happen ONLY when the
+        // Settings master toggle flipped on — but it defaults to on, so for
+        // almost everyone that moment never comes and the server has no token to
+        // target. onAuthStateChange also fires INITIAL_SESSION, so this covers a
+        // cold launch with a restored session. Silent: never prompts.
+        registerForPushNotifications(liveApi, { prompt: false });
+      } else resetAnalytics();
     });
     return () => sub.subscription.unsubscribe();
   }, []);

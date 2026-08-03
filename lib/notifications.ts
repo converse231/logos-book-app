@@ -36,25 +36,37 @@ function getProjectId(): string | undefined {
 
 /** Ask for permission and register this device's Expo push token with the server.
  *  Idempotent and safe to call repeatedly. Returns the token, or null if it
- *  couldn't register (no permission, Expo Go, simulator, etc.). */
-export async function registerForPushNotifications(api: QuireApi): Promise<string | null> {
+ *  couldn't register (no permission, Expo Go, simulator, etc.).
+ *
+ *  `prompt: false` registers only when permission was ALREADY granted. A token
+ *  isn't a one-time thing — it rotates on reinstall, restore, and app upgrade —
+ *  so this has to run on every launch, and a launch is the wrong moment to throw
+ *  a system permission dialog at someone. The toggle in Settings is the moment
+ *  that earns the prompt, so that's the only caller passing `prompt: true`. */
+export async function registerForPushNotifications(
+  api: QuireApi,
+  { prompt = true }: { prompt?: boolean } = {}
+): Promise<string | null> {
   try {
     if (isExpoGo || !Device.isDevice) return null; // no push in Expo Go / on simulators
 
+    const existing = await Notifications.getPermissionsAsync();
+    let status = existing.status;
+    if (status !== 'granted') {
+      if (!prompt) return null;
+      const req = await Notifications.requestPermissionsAsync();
+      status = req.status;
+    }
+    if (status !== 'granted') return null;
+
+    // After the grant, so a silent launch pass doesn't create the channel for a
+    // user who never opted in.
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Reading reminders',
         importance: Notifications.AndroidImportance.DEFAULT,
       });
     }
-
-    const existing = await Notifications.getPermissionsAsync();
-    let status = existing.status;
-    if (status !== 'granted') {
-      const req = await Notifications.requestPermissionsAsync();
-      status = req.status;
-    }
-    if (status !== 'granted') return null;
 
     const projectId = getProjectId();
     const tokenRes = await Notifications.getExpoPushTokenAsync(
