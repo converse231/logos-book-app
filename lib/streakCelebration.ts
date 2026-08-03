@@ -51,17 +51,24 @@ export const FLAME_TIERS: FlameTier[] = [
 /**
  * The dead flame for the broken-streak overlay.
  *
- * Derived from day 30's artwork (luminance remapped onto a cold slate ramp), so it
- * carries the SAME silhouette and the same measured body box — flameLayout() works
- * on it unchanged. `ray`/`spark` are ash rather than fire; nothing on that screen
- * should glow.
+ * The box spans the WHOLE opaque artwork (588×922), smoke included — unlike the
+ * tier flames, whose boxes hug the flame body and let the glow spill outside the
+ * clip. Here the two smoke wisps rise to y=186, far above the body at y=433, and
+ * measuring the body alone (588×675) would have pushed them outside the square clip
+ * box and sheared them off.
+ *
+ * The trade is that the flame body lands ~27% smaller than a tier flame at the same
+ * nominal size. That reads correctly: this one is diminished, and it is never on
+ * screen next to a lit flame to be compared against.
+ *
+ * `ray`/`spark` are ash rather than fire — nothing on that screen should glow.
  */
 export const BROKEN_FLAME: FlameTier = {
   day: 0,
   source: require('@/assets/streak-fires/streak-broken.webp'),
   ray: '#8E8880',
   spark: '#B9B2AA',
-  art: { w: 1024, h: 1536, x: 239, y: 304, bw: 565, bh: 765 },
+  art: { w: 1024, h: 1536, x: 224, y: 186, bw: 588, bh: 922 },
 };
 
 const BY_DAY = new Map(FLAME_TIERS.map((f) => [f.day, f]));
