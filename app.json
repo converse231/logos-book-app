@@ -14,6 +14,7 @@
     },
     "android": {
       "package": "com.quire.app",
+      "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "backgroundColor": "#F6EEDF",
