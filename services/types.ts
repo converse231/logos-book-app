@@ -141,12 +141,44 @@ export interface QueuedSession {
   attempts: number;
 }
 
+/** How long after a break a streak can still be bought back. Mirrors the same
+ *  window in `restore_streak` — the server is the authority, this is only so the
+ *  UI can hide an offer the server would reject. */
+export const RESTORE_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+/** A break below this many days isn't worth spending a restore on. Mirrors
+ *  `restore_streak`. */
+export const RESTORE_MIN_STREAK = 3;
+
 export interface StreakState {
   currentStreak: number;
   longestStreak: number;
   lastReadLocalDate: string | null;
   isAtRisk: boolean;
-  freezeTokens: number;
+  /** Lifetime restore budget — 5 granted at signup, never refills. Maps to
+   *  `streaks.freeze_tokens`, which predates this feature. */
+  restoresLeft: number;
+  /** The last break, only while it's still restorable. Null once restored, once
+   *  the 48h window closes, or if the streak was too short to be worth it. */
+  brokenStreak: {
+    /** Days lost — what the overlay offers to buy back. */
+    value: number;
+    brokenAt: string;
+    /** brokenAt + RESTORE_WINDOW_MS, precomputed for countdown copy. */
+    expiresAt: string;
+  } | null;
+}
+
+export interface RestoreStreakResult {
+  ok: boolean;
+  /** Present on success. */
+  currentStreak?: number;
+  restoresLeft?: number;
+  /** True when a session already logged today stacked on top of the restore. */
+  countedToday?: boolean;
+  /** Present on failure: nothing_to_restore | no_restores | window_closed |
+   *  streak_too_short | no_streak. */
+  reason?: string;
 }
 
 export interface ComebackChallenge {

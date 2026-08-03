@@ -17,6 +17,7 @@ import {
   ReadingInsight,
   FeedbackKind,
   ReadingStatus,
+  RestoreStreakResult,
   Review,
   StatsData,
   ThemePref,
@@ -48,6 +49,12 @@ export interface QuireApi {
 
   // ── Home ──────────────────────────────────────────────────────────────────
   getHomeData(): Promise<HomeData>;
+  /** Spend one of the 5 lifetime restores to buy back the last broken streak.
+   *  Server-authoritative and single-use — every eligibility rule (budget, the
+   *  48h window, the 3-day floor) is re-checked in the RPC, so the client's copy
+   *  of them is presentation only. Resolves with `ok: false` + a `reason` rather
+   *  than throwing when the restore isn't allowed. */
+  restoreStreak(): Promise<RestoreStreakResult>;
 
   // ── Library ───────────────────────────────────────────────────────────────
   getUserBooks(status?: ReadingStatus): Promise<UserBook[]>;

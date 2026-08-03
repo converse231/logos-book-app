@@ -10,8 +10,9 @@
 import type { QuireApi } from '../api';
 import type {
   ComebackChallenge, CompleteSessionResult, HomeData, ReadingGoal, ReadingInsight,
-  ReadingSession, StatsData, Badge, StreakState,
+  ReadingSession, StatsData, Badge, StreakState, RestoreStreakResult,
 } from '../types';
+import { RESTORE_MIN_STREAK, RESTORE_WINDOW_MS } from '../types';
 import { supabase } from '@/lib/supabase';
 import { mapUserBook } from './library';
 
@@ -62,12 +63,26 @@ function mapSession(r: any): ReadingSession {
 }
 
 function mapStreak(r: any): StreakState {
+  // last_break_* stay on the row until a restore clears them, so a break from six
+  // months ago still reads back. The window is applied HERE rather than in the
+  // query so every consumer sees the same already-filtered shape and no screen has
+  // to re-derive "is this still offerable". restore_streak re-checks all of it
+  // anyway — this only stops the UI dangling an offer the server would refuse.
+  const brokenAt = r?.last_break_at ? new Date(r.last_break_at) : null;
+  const value = r?.last_break_streak ?? 0;
+  const expiresAt = brokenAt ? new Date(brokenAt.getTime() + RESTORE_WINDOW_MS) : null;
+  const restorable =
+    brokenAt != null && expiresAt != null && value >= RESTORE_MIN_STREAK && expiresAt.getTime() > Date.now();
+
   return {
     currentStreak: r?.current_streak ?? 0,
     longestStreak: r?.longest_streak ?? 0,
     lastReadLocalDate: r?.last_read_local_date ?? null,
     isAtRisk: r?.is_at_risk ?? false,
-    freezeTokens: r?.freeze_tokens ?? 0,
+    restoresLeft: r?.freeze_tokens ?? 0,
+    brokenStreak: restorable
+      ? { value, brokenAt: brokenAt!.toISOString(), expiresAt: expiresAt!.toISOString() }
+      : null,
   };
 }
 
@@ -203,6 +218,17 @@ export const sessionApi: Partial<QuireApi> = {
       xpToNextLevel: next,
       prevLevelXp: prev,
     };
+  },
+
+  async restoreStreak(): Promise<RestoreStreakResult> {
+    await requireUid();
+    // Single RPC so budget check, window check and the streak write are one
+    // transaction — the same reason complete_session isn't assembled client-side.
+    // A refused restore comes back as ok:false, not an exception; only a genuine
+    // transport/auth failure throws.
+    const { data, error } = await supabase.rpc('restore_streak');
+    if (error) throw error;
+    return (data ?? { ok: false, reason: 'unknown' }) as RestoreStreakResult;
   },
 
   // ── Stats view-model ────────────────────────────────────────────────────────

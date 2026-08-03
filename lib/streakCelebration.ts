@@ -48,6 +48,22 @@ export const FLAME_TIERS: FlameTier[] = [
   { day: 365,  source: require('@/assets/streak-fires/day-365-steak.webp'),    ray: '#FF5A18', spark: '#FDD54A', art: { w: 1024, h: 1536, x: 124, y: 283, bw: 766, bh: 908 } },
 ];
 
+/**
+ * The dead flame for the broken-streak overlay.
+ *
+ * Derived from day 30's artwork (luminance remapped onto a cold slate ramp), so it
+ * carries the SAME silhouette and the same measured body box — flameLayout() works
+ * on it unchanged. `ray`/`spark` are ash rather than fire; nothing on that screen
+ * should glow.
+ */
+export const BROKEN_FLAME: FlameTier = {
+  day: 0,
+  source: require('@/assets/streak-fires/streak-broken.webp'),
+  ray: '#8E8880',
+  spark: '#B9B2AA',
+  art: { w: 1024, h: 1536, x: 239, y: 304, bw: 565, bh: 765 },
+};
+
 const BY_DAY = new Map(FLAME_TIERS.map((f) => [f.day, f]));
 
 /** Exactly on a tier — the only days that earn the celebration. */
@@ -98,5 +114,26 @@ export async function takeStreakCelebration(currentStreak: number): Promise<numb
     return currentStreak;
   } catch {
     return null; // never let a storage hiccup pop a celebration on every focus
+  }
+}
+
+const BREAK_KEY = 'quire.streakBreakSeen.v1';
+
+/**
+ * Claim the broken-streak overlay for a given break, if it hasn't been shown yet.
+ *
+ * The break is detected by cron at 00:00 local while the app is closed, so the
+ * overlay can only fire on next open. Keyed on the break's TIMESTAMP rather than a
+ * boolean so a later break shows its own overlay — and so a user who dismisses
+ * without restoring isn't nagged again on every focus while the 48h window is open.
+ */
+export async function takeBreakOverlay(brokenAt: string): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(BREAK_KEY);
+    if (raw === brokenAt) return false;
+    await AsyncStorage.setItem(BREAK_KEY, brokenAt);
+    return true;
+  } catch {
+    return false;
   }
 }

@@ -467,7 +467,8 @@ export const MOCK_STREAK: StreakState = {
   longestStreak: 23,
   lastReadLocalDate: new Date().toISOString().slice(0, 10),
   isAtRisk: false,
-  freezeTokens: 0,
+  restoresLeft: 5,
+  brokenStreak: null,
 };
 
 export const MOCK_COMEBACK: ComebackChallenge = {

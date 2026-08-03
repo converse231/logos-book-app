@@ -141,6 +141,24 @@ export const mockApi: QuireApi = {
     return { ...MOCK_HOME_DATA } as HomeData;
   },
 
+  async restoreStreak() {
+    await delay(400);
+    const broken = MOCK_HOME_DATA.streak.brokenStreak;
+    if (!broken) return { ok: false, reason: 'nothing_to_restore' };
+    if (MOCK_HOME_DATA.streak.restoresLeft <= 0) return { ok: false, reason: 'no_restores' };
+    // Mutating the fixture keeps the mock honest across a re-fetch: the overlay
+    // won't offer the same restore twice, same as the real single-use RPC.
+    MOCK_HOME_DATA.streak.restoresLeft -= 1;
+    MOCK_HOME_DATA.streak.currentStreak = broken.value;
+    MOCK_HOME_DATA.streak.brokenStreak = null;
+    return {
+      ok: true,
+      currentStreak: broken.value,
+      restoresLeft: MOCK_HOME_DATA.streak.restoresLeft,
+      countedToday: false,
+    };
+  },
+
   // ── Library ─────────────────────────────────────────────────────────────
   async getUserBooks(status?: ReadingStatus) {
     await delay();

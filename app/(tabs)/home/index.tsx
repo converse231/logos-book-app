@@ -30,7 +30,7 @@ import { ReviewQuoteCard } from '@/components/home/ReviewQuoteCard';
 import { ReadTodayCard } from '@/components/home/ReadTodayCard';
 import { localDateString } from '@/stores/sessionStore';
 import { drainQueue } from '@/lib/sessionQueue';
-import { takeStreakCelebration } from '@/lib/streakCelebration';
+import { takeBreakOverlay, takeStreakCelebration } from '@/lib/streakCelebration';
 
 /** How long the shelf + lifetime stats stay good for across a tab return. */
 const SHELF_FRESH_MS = 30_000;
@@ -91,17 +91,36 @@ export default function Home() {
           // (not a session result) so it fires however the day was logged — a live
           // session, the read-today check-in, or an offline session syncing later —
           // and claimed from storage so it shows once, not on every focus.
-          takeStreakCelebration(h.streak.currentStreak).then((celebrate) => {
-            if (!alive || !celebrate) return;
-            router.push({
-              pathname: '/(modals)/streak-unlocked',
-              params: {
-                day: String(celebrate),
-                pages: String(st?.lifetimePages ?? ''),
-                books: String(st?.booksFinished ?? ''),
-              },
-            } as unknown as Href);
-          });
+          // A break and a milestone can't both be true — a streak that just broke is
+          // 0 — so these two are naturally exclusive and don't need arbitrating.
+          const broken = h.streak.brokenStreak;
+          if (broken) {
+            // The cron breaks streaks at 00:00 local with the app closed, so this is
+            // the first moment we can tell them. Claimed per break timestamp: dismiss
+            // it and it stays dismissed, but a LATER break still gets its own overlay.
+            takeBreakOverlay(broken.brokenAt).then((show) => {
+              if (!alive || !show) return;
+              router.push({
+                pathname: '/(modals)/streak-broken',
+                params: {
+                  days: String(broken.value),
+                  restoresLeft: String(h.streak.restoresLeft),
+                },
+              } as unknown as Href);
+            });
+          } else {
+            takeStreakCelebration(h.streak.currentStreak).then((celebrate) => {
+              if (!alive || !celebrate) return;
+              router.push({
+                pathname: '/(modals)/streak-unlocked',
+                params: {
+                  day: String(celebrate),
+                  pages: String(st?.lifetimePages ?? ''),
+                  books: String(st?.booksFinished ?? ''),
+                },
+              } as unknown as Href);
+            });
+          }
           const finished = s?.find((b) => b.status === 'finished');
           if (finished) {
             api.getReviews(finished.book.id).then((rv) => {
@@ -180,6 +199,28 @@ export default function Home() {
 
   // Challenges — surfaced from real gamification state, most urgent first.
   const challenges: ChallengeCardProps[] = [];
+  // A restorable break outranks everything: the offer expires in 48h and the
+  // overlay is dismissible, so this card is the second (and last) chance to take it.
+  const broken = data.streak.brokenStreak;
+  if (broken && data.streak.restoresLeft > 0) {
+    const hoursLeft = Math.max(0, Math.ceil((new Date(broken.expiresAt).getTime() - Date.now()) / 3600000));
+    challenges.push({
+      tone: 'ember',
+      icon: 'flame',
+      kicker: 'Streak ended',
+      title: `Restore your ${broken.value}-day streak`,
+      footer: `${hoursLeft}h left · ${data.streak.restoresLeft} ${data.streak.restoresLeft === 1 ? 'restore' : 'restores'} remaining`,
+      onPress: () =>
+        router.push({
+          pathname: '/(modals)/streak-broken',
+          params: { days: String(broken.value), restoresLeft: String(data.streak.restoresLeft) },
+        } as unknown as Href),
+    });
+  }
+  // LEGACY (2026-08-04): Comeback Challenges were replaced by streak restores.
+  // fn_evaluate_streaks no longer creates them, but complete_session still advances
+  // the ones already open, so this card stays until the last in-flight challenge
+  // completes or expires — then it's dead code and can go with the modal + table.
   if (data.comeback) {
     const daysLeft = Math.max(0, Math.ceil((new Date(data.comeback.expiresAt).getTime() - Date.now()) / 86400000));
     challenges.push({
@@ -192,9 +233,9 @@ export default function Home() {
       onPress: () => router.push('/(modals)/comeback' as Href),
     });
   }
-  if (!data.comeback) {
-    // While a comeback is active the streak is broken, so the "extend streak"
-    // card would contradict it — the comeback card above covers the streak.
+  if (!data.comeback && !broken) {
+    // While a comeback or a restorable break is showing, the streak is 0 — an
+    // "extend your 0-day streak" card would contradict the card above it.
     challenges.push({
       tone: 'ember',
       icon: 'flame',
