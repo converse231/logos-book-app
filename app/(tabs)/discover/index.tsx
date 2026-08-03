@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { InteractionManager, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,8 +46,18 @@ export default function Discover() {
   );
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // Discover is the app's heaviest mount — sixteen requests across profile, two
+  // recommendation rows, two NYT lists, three category shelves and eight author
+  // portraits. Fired all at once it lands squarely on top of the tab transition,
+  // which is why this tab (and Library) were the ones that stuttered.
+  //
+  // Split by what the reader can actually see. The three above-the-fold rows go
+  // immediately; everything below the fold waits for the transition to finish.
+  // InteractionManager is exactly this: "run after the animations are done".
   useEffect(() => {
     let alive = true;
+
+    // Above the fold — needed for the first screenful.
     api.getProfile().then((p) => {
       if (!alive) return;
       setProfile(p);
@@ -55,18 +65,27 @@ export default function Discover() {
       api.searchBooks(`subject:${toSubject(genre)}`).then((r) => alive && setForYou(r)).catch(() => alive && setForYou([]));
     }).catch(() => {});
     api.getRecommendedBooks().then((r) => alive && setTrending(r)).catch(() => alive && setTrending([]));
-    NYT_LISTS.forEach((l) => {
-      api.getBestsellers(l.name)
-        .then((r) => alive && setBestsellers((prev) => ({ ...prev, [l.name]: r })))
-        .catch(() => alive && setBestsellers((prev) => ({ ...prev, [l.name]: [] })));
+
+    // Below the fold — deferred until the tab has settled.
+    const handle = InteractionManager.runAfterInteractions(() => {
+      if (!alive) return;
+      NYT_LISTS.forEach((l) => {
+        api.getBestsellers(l.name)
+          .then((r) => alive && setBestsellers((prev) => ({ ...prev, [l.name]: r })))
+          .catch(() => alive && setBestsellers((prev) => ({ ...prev, [l.name]: [] })));
+      });
+      TOP_CATEGORIES.forEach((c) => {
+        api.searchBooks(`subject:${toSubject(c)}`).then((r) => alive && setCats((prev) => ({ ...prev, [c]: r }))).catch(() => alive && setCats((prev) => ({ ...prev, [c]: [] })));
+      });
+      Promise.all(TOP_AUTHORS.map(async (a) => [a, await fetchAuthorPhoto(a)] as const))
+        .then((pairs) => alive && setAuthorPhotos(Object.fromEntries(pairs)))
+        .catch(() => {});
     });
-    TOP_CATEGORIES.forEach((c) => {
-      api.searchBooks(`subject:${toSubject(c)}`).then((r) => alive && setCats((prev) => ({ ...prev, [c]: r }))).catch(() => alive && setCats((prev) => ({ ...prev, [c]: [] })));
-    });
-    Promise.all(TOP_AUTHORS.map(async (a) => [a, await fetchAuthorPhoto(a)] as const))
-      .then((pairs) => alive && setAuthorPhotos(Object.fromEntries(pairs)))
-      .catch(() => {});
-    return () => { alive = false; };
+
+    return () => {
+      alive = false;
+      handle.cancel();
+    };
   }, [api]);
 
   const topGenre = profile?.genrePrefs?.[0];
