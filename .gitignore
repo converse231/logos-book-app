@@ -18,6 +18,15 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Firebase service-account keys (FCM V1 push). Full admin on the Firebase
+# project — this repo is public, so these must never land in it. They belong in
+# Expo's credentials store, not the tree. NOT the same file as
+# google-services.json, which is a public client config and IS committed
+# (the Android build reads it via app.json → android.googleServicesFile).
+*-firebase-adminsdk-*.json
+*service-account*.json
+*serviceAccount*.json
+
 # Metro
 .metro-health-check*
 
