@@ -55,7 +55,8 @@ export interface QuireApi {
   /** Add a searched book to the shelf. Pass the full search result (not just an
    *  id) so no second catalog round-trip is needed — the metadata is already in hand. */
   addBook(book: BookSearchResult, format: BookFormat): Promise<UserBook>;
-  searchBooks(query: string): Promise<BookSearchResult[]>;
+  /** `page` is 0-based; omit it for the first page. */
+  searchBooks(query: string, page?: number): Promise<BookSearchResult[]>;
   /** Curated suggestions shown in add-book before the user has typed anything. */
   getRecommendedBooks(): Promise<BookSearchResult[]>;
   /** NYT bestsellers for a list (e.g. 'hardcover-fiction'), ordered by rank.

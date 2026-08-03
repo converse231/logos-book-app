@@ -165,8 +165,9 @@ export async function enrichFromOpenLibrary(meta: EnsureBookInput): Promise<Ensu
   }
 }
 
-async function googleSearch(query: string, max = 20): Promise<EnsureBookInput[]> {
-  const u = `${GOOGLE}?q=${encodeURIComponent(query)}&maxResults=${max}&printType=books${gbKey('&')}`;
+async function googleSearch(query: string, max = 20, startIndex = 0): Promise<EnsureBookInput[]> {
+  const u = `${GOOGLE}?q=${encodeURIComponent(query)}&maxResults=${max}&startIndex=${startIndex}` +
+    `&printType=books${gbKey('&')}`;
   const res = await fetch(u);
   if (!res.ok) throw new Error(`Google Books ${res.status}`);
   const data = await res.json();
@@ -191,8 +192,10 @@ function mapOlDoc(d: any): EnsureBookInput {
   };
 }
 
-async function openLibrarySearch(query: string, max = 20): Promise<EnsureBookInput[]> {
-  const res = await fetch(`${OPENLIB}?q=${encodeURIComponent(query)}&limit=${max}&fields=${OL_FIELDS}`);
+async function openLibrarySearch(query: string, max = 20, offset = 0): Promise<EnsureBookInput[]> {
+  const res = await fetch(
+    `${OPENLIB}?q=${encodeURIComponent(query)}&limit=${max}&offset=${offset}&fields=${OL_FIELDS}`
+  );
   if (!res.ok) throw new Error(`Open Library ${res.status}`);
   const data = await res.json();
   return (data.docs ?? []).map(mapOlDoc);
@@ -213,28 +216,234 @@ function asIsbn(q: string): string | null {
   return /^\d{13}$/.test(clean) || /^\d{9}[\dXx]$/.test(clean) ? clean : null;
 }
 
-/** Search the public catalog. A bare ISBN (e.g. from the scanner) is matched by
- *  ISBN across BOTH providers (Google `isbn:` → Open Library `isbn=`), since
- *  neither alone has complete ISBN coverage. Keyword queries: Google → OL. */
-export async function searchBooks(query: string): Promise<BookSearchResult[]> {
+// ─── Query building ──────────────────────────────────────────────────────────
+
+/** Google's fielded operators. Discover passes `subject:Mystery` straight through
+ *  searchBooks, so an already-structured query must never be rewritten. */
+const FIELDED = /\b(intitle|inauthor|isbn|subject|inpublisher):/i;
+
+/** Google uses intitle/inauthor; Open Library's Solr index uses title/author. */
+function toOpenLibraryQuery(q: string): string {
+  return q
+    .replace(/\bintitle:/gi, 'title:')
+    .replace(/\binauthor:/gi, 'author:')
+    .replace(/\binpublisher:/gi, 'publisher:');
+}
+
+/**
+ * Turn what someone typed into a query the provider ranks well.
+ *
+ * "atomic habits by james clear" as a bare keyword string ranks poorly — the words
+ * "by james clear" compete with the title. Split on an explicit " by " and the two
+ * halves can be aimed at the right fields, which moves the real book to rank 1.
+ * Only fires on that unambiguous signal; anything else is passed through, because
+ * guessing which words are the author does more harm than good.
+ */
+interface BuiltQuery {
+  google: string;
+  openLibrary: string;
+  /** What to score TITLES against — the title half only, when we split one out. */
+  titleHint: string;
+  /** What to score AUTHORS against, when the query named one. */
+  authorHint: string;
+}
+
+function buildQuery(raw: string): BuiltQuery {
+  const q = raw.trim().replace(/\s+/g, ' ');
+  if (FIELDED.test(q)) {
+    return { google: q, openLibrary: toOpenLibraryQuery(q), titleHint: q, authorHint: '' };
+  }
+
+  const m = q.match(/^(.{2,}?)\s+by\s+(.{2,})$/i);
+  if (m) {
+    const [, title, author] = m;
+    return {
+      google: `intitle:"${title}" inauthor:"${author}"`,
+      openLibrary: `title:"${title}" author:"${author}"`,
+      // Scoring the whole string would mean no title ever matches exactly, so the
+      // clean edition loses to whichever variant happens to carry more metadata.
+      titleHint: title,
+      authorHint: author,
+    };
+  }
+  return { google: q, openLibrary: q, titleHint: q, authorHint: q };
+}
+
+// ─── Merge + rank ────────────────────────────────────────────────────────────
+
+const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/**
+ * Collapse duplicate rows: same full title + same first author.
+ *
+ * Two earlier attempts were worse. Keying on ISBN split every printing of a popular
+ * book into its own row ("Knowing God" filled ranks 1, 2 and 5). Keying on the
+ * SUBTITLE-STRIPPED title (workKey, as the author bibliography does) over-merged in
+ * the other direction — "Normal People: The Scripts" and "Normal People (Tamil)"
+ * collapsed into the novel and then won the row on metadata richness, hiding the
+ * book being searched for. Comparing full titles keeps distinct works distinct; a
+ * few subtitle variants surviving as separate rows is the cheaper mistake.
+ */
+const mergeKey = (b: BookSearchResult) => `${norm(b.title)}|${norm(b.authors[0] ?? '')}`;
+
+/** How complete a record is — picks the better of two copies of the same work, and
+ *  nudges well-populated books up the ranking. */
+const richness = (b: BookSearchResult): number =>
+  (b.coverUrl ? 8 : 0) + (b.description ? 4 : 0) + (b.pageCount ? 2 : 0) + (b.publishedYear ? 1 : 0);
+
+/**
+ * Score a result against what was actually typed.
+ *
+ * Google and Open Library each return their own relevance order, and those orders
+ * are not comparable — interleaving them raw puts noise from one catalog above the
+ * right answer from the other. Scoring against the query gives one shared yardstick.
+ * `both` is a strong signal on its own: a work that exists in two independent
+ * catalogs is almost always the real, well-known edition someone meant.
+ */
+function score(b: BookSearchResult, built: BuiltQuery, rank: number, both: boolean): number {
+  const nq = norm(built.titleHint);
+  const nt = norm(b.title);
+  const na = norm(b.authors.join(' '));
+  const tokens = nq.split(' ').filter(Boolean);
+  const authorTokens = norm(built.authorHint).split(' ').filter((t) => t.length > 2);
+
+  let s = 0;
+  if (nt === nq) s += 120;
+  else if (nt.startsWith(nq)) s += 70;
+  else if (nt.includes(nq)) s += 45;
+  const inTitle = tokens.filter((t) => nt.includes(t)).length;
+  s += (inTitle / Math.max(1, tokens.length)) * 35;
+  const inAuthor = authorTokens.filter((t) => na.includes(t)).length;
+  s += inAuthor * 12;
+  if (both) s += 18;
+  s += richness(b);
+  s -= rank * 0.6; // keep each provider's own ordering as the tiebreak
+  return s;
+}
+
+// ─── Cache ───────────────────────────────────────────────────────────────────
+// Search is driven by a debounced text field, so backspacing a character re-runs a
+// query we just answered. A small LRU makes that instant and free; catalog data is
+// public and slow-moving, so a few minutes of staleness costs nothing.
+
+const CACHE_MAX = 60;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const cache = new Map<string, { at: number; results: BookSearchResult[] }>();
+
+function cacheGet(key: string): BookSearchResult[] | null {
+  const hit = cache.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > CACHE_TTL_MS) {
+    cache.delete(key);
+    return null;
+  }
+  cache.delete(key); // re-insert so Map order is least-recently-used first
+  cache.set(key, hit);
+  return hit.results;
+}
+
+function cacheSet(key: string, results: BookSearchResult[]) {
+  cache.set(key, { at: Date.now(), results });
+  while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value as string);
+}
+
+/** Drop everything cached. Exposed for pull-to-refresh / tests. */
+export function clearSearchCache() {
+  cache.clear();
+}
+
+export const SEARCH_PAGE_SIZE = 20;
+
+/** Past this, a provider is dropped from the merge rather than stalling the list. */
+const PROVIDER_TIMEOUT_MS = 3500;
+
+/**
+ * Search the public catalog.
+ *
+ * Both providers are queried IN PARALLEL and merged, rather than Google-then-
+ * Open-Library-if-Google-is-empty. The old order had two problems: the catalogs
+ * genuinely disagree (measured: only 1–2 of their top 5 titles overlap), so a book
+ * Open Library had was unreachable whenever Google returned anything at all; and
+ * when the Google key failed, results silently became a completely different set of
+ * books rather than degrading. Merging means a provider going down thins the
+ * results instead of replacing them.
+ *
+ * A bare ISBN (from the scanner) is matched by ISBN on both — neither has complete
+ * ISBN coverage; in spot checks Google missed several that Open Library had.
+ */
+export async function searchBooks(query: string, page = 0): Promise<BookSearchResult[]> {
   const q = query.trim();
   if (!q) return [];
-  const isbn = asIsbn(q);
 
-  // Google first (both modes).
-  try {
-    const g = await googleSearch(isbn ? `isbn:${isbn}` : q);
-    if (g.length > 0) return g.map(toSearchResult);
-  } catch {
-    // fall through
+  const key = `${q.toLowerCase()}#${page}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const isbn = asIsbn(q);
+  const built = buildQuery(q);
+  const offset = page * SEARCH_PAGE_SIZE;
+
+  // Browsing a subject is a different job from finding a specific book. Discover
+  // fires four `subject:` carousels on mount, and merging would double that to eight
+  // requests for no real gain — nobody is hunting one title in a "Mystery" shelf, and
+  // Google's subject taxonomy is the better-curated one anyway. So subject browsing
+  // keeps the cheap single-provider path (with Open Library still there if Google
+  // comes back empty), and the merge is reserved for actual searches.
+  if (/^subject:/i.test(q)) {
+    const g = await googleSearch(built.google, SEARCH_PAGE_SIZE, offset).catch(() => [] as EnsureBookInput[]);
+    const list = g.length
+      ? g
+      : await openLibrarySearch(built.openLibrary, SEARCH_PAGE_SIZE, offset).catch(() => [] as EnsureBookInput[]);
+    const out = list.map(toSearchResult);
+    cacheSet(key, out);
+    return out;
   }
-  // Open Library fallback — ISBN-keyed for a scan, keyword otherwise.
-  try {
-    const ol = isbn ? await openLibraryByIsbn(isbn) : await openLibrarySearch(q);
-    return ol.map(toSearchResult);
-  } catch {
-    return [];
-  }
+
+  // One provider failing — or merely being slow — must never take the other down
+  // with it. Open Library regularly runs 2s+; past the budget we ship what we have.
+  const budget = <T,>(p: Promise<T[]>) =>
+    Promise.race([p.catch(() => [] as T[]), new Promise<T[]>((r) => setTimeout(() => r([]), PROVIDER_TIMEOUT_MS))]);
+
+  const [g, o] = await Promise.all([
+    budget(isbn
+      ? googleSearch(`isbn:${isbn}`, SEARCH_PAGE_SIZE, offset)
+      : googleSearch(built.google, SEARCH_PAGE_SIZE, offset)),
+    budget(isbn
+      ? openLibraryByIsbn(isbn)
+      : openLibrarySearch(built.openLibrary, SEARCH_PAGE_SIZE, offset)),
+  ]);
+
+  const merged = new Map<string, { book: BookSearchResult; rank: number; both: boolean }>();
+  const absorb = (list: EnsureBookInput[], fromGoogle: boolean) => {
+    list.forEach((raw, i) => {
+      const b = toSearchResult(raw);
+      if (!b.title) return;
+      const k = mergeKey(b);
+      const prev = merged.get(k);
+      if (!prev) {
+        merged.set(k, { book: b, rank: i, both: false });
+        return;
+      }
+      // Same work from both catalogs — keep the better record, flag the agreement.
+      prev.both = prev.both || !fromGoogle;
+      if (richness(b) > richness(prev.book)) {
+        prev.book = { ...b, isbn13: b.isbn13 ?? prev.book.isbn13, googleBooksId: b.googleBooksId || prev.book.googleBooksId };
+      } else if (!prev.book.isbn13 && b.isbn13) {
+        prev.book.isbn13 = b.isbn13;
+      }
+      prev.rank = Math.min(prev.rank, i);
+    });
+  };
+  absorb(g, true);
+  absorb(o, false);
+
+  const results = [...merged.values()]
+    .map((e) => ({ b: e.book, s: score(e.book, built, e.rank, e.both) }))
+    .sort((a, b) => b.s - a.s)
+    .map((e) => e.b);
+
+  cacheSet(key, results);
+  return results;
 }
 
 /** Author headshot from Open Library (Google Books has none). Resolves the
@@ -419,10 +628,6 @@ function workKey(title: string): string {
     .replace(/^(the|a|an)\s+/, '')
     .replace(/[^a-z0-9]/g, '');
 }
-
-/** How complete a record is — used to pick the best edition of a duplicated work. */
-const richness = (b: BookSearchResult): number =>
-  (b.coverUrl ? 4 : 0) + (b.pageCount ? 2 : 0) + (b.description ? 1 : 0);
 
 /**
  * An author's bibliography: one entry per WORK, best edition of each, in Google's

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,19 +29,42 @@ export default function Browse() {
   const [books, setBooks] = useState<BookSearchResult[] | null>(null);
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       setError(false);
       setBooks(null);
+      setPage(0);
+      setExhausted(false);
       api
         .searchBooks(q ?? '')
-        .then((r) => alive && setBooks(r))
+        .then((r) => { if (alive) { setBooks(r); setExhausted(r.length === 0); } })
         .catch(() => alive && setError(true));
       return () => { alive = false; };
     }, [api, q, nonce])
   );
+
+  // A category can run to hundreds of titles; the first page is only 20 of them.
+  const loadMore = useCallback(() => {
+    if (!books || loadingMore || exhausted) return;
+    const next = page + 1;
+    setLoadingMore(true);
+    api.searchBooks(q ?? '', next)
+      .then((more) => {
+        if (more.length === 0) { setExhausted(true); return; }
+        setBooks((prev) => {
+          const seen = new Set((prev ?? []).map((b) => b.googleBooksId || b.title));
+          return [...(prev ?? []), ...more.filter((b) => !seen.has(b.googleBooksId || b.title))];
+        });
+        setPage(next);
+      })
+      .catch(() => setExhausted(true))
+      .finally(() => setLoadingMore(false));
+  }, [api, q, books, page, loadingMore, exhausted]);
 
   const openBook = (b: BookSearchResult) => {
     Haptics.selectionAsync();
@@ -92,6 +115,9 @@ export default function Browse() {
           initialNumToRender={12}
           maxToRenderPerBatch={12}
           windowSize={7}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
+          ListFooterComponent={loadingMore ? <ActivityIndicator color={t.accent} style={styles.more} /> : null}
           renderItem={({ item }) => (
             <Pressable onPress={() => openBook(item)} accessibilityRole="button" accessibilityLabel={`${item.title} by ${item.authors.join(', ')}`} style={({ pressed }) => [styles.cell, { width: cellWidth }, pressed && { opacity: 0.75 }]}>
               <BookCover url={item.coverUrl} title={item.title} width={cellWidth} />
@@ -113,6 +139,7 @@ const styles = StyleSheet.create({
   gridContent: { paddingHorizontal: 18, gap: 16 },
   gridRow: { gap: 12 },
   cell: { gap: 5 },
+  more: { paddingVertical: 18 },
   bookTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 12, lineHeight: 15 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   emptyText: { fontFamily: FONTS.uiRegular, fontSize: 15 },

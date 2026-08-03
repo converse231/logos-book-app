@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -24,6 +25,17 @@ const SHELF_LABEL: Record<ReadingStatus, string> = {
 // reward accent palette.
 const OWNED_GREEN = '#5E8C4F';
 
+/** Identity for de-duplicating across pages — mirrors the catalog's own merge key. */
+const resultKey = (b: BookSearchResult) =>
+  `${b.title.toLowerCase().replace(/[^a-z0-9]/g, '')}|${(b.authors[0] ?? '').toLowerCase()}`;
+
+/** Warm the covers for a page of results so tapping through feels instant. Purely
+ *  opportunistic — failures are ignored, and expo-image dedupes against its cache. */
+function prefetchCovers(list: BookSearchResult[]) {
+  const urls = list.slice(0, 10).map((b) => b.coverUrl).filter(Boolean) as string[];
+  if (urls.length) ExpoImage.prefetch(urls).catch(() => {});
+}
+
 // FIND a book (blueprint Section 3): browse recommendations, search the catalog, or
 // scan an ISBN. Tapping a result opens its BOOK PAGE, which is where shelf, format
 // and the actual add now live — this sheet used to own a second "confirm" step, which
@@ -41,6 +53,11 @@ export default function AddBook() {
   const [recommended, setRecommended] = useState<BookSearchResult[]>([]);
   const [owned, setOwned] = useState<UserBook[]>([]);
   const [searching, setSearching] = useState(false);
+  // Paging state for the live search. `exhausted` stops us asking for a page the
+  // catalog has already told us doesn't exist.
+  const [page, setPage] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
   const reqId = useRef(0);
 
   // Recommendations fill the screen before any query. Static enough to fetch once.
@@ -76,17 +93,48 @@ export default function AddBook() {
       return;
     }
     setSearching(true);
+    setPage(0);
+    setExhausted(false);
     const id = ++reqId.current;
     const handle = setTimeout(() => {
       api.searchBooks(q).then((r) => {
-        if (id === reqId.current) {
-          setResults(r);
-          setSearching(false);
-        }
+        if (id !== reqId.current) return;
+        setResults(r);
+        setSearching(false);
+        setExhausted(r.length === 0);
+        prefetchCovers(r);
       });
     }, 350);
     return () => clearTimeout(handle);
   }, [query, api]);
+
+  // Pull the next page when the list nears its end. Guarded on every axis that
+  // could otherwise fire a duplicate request: a search already in flight, a page
+  // already loading, or a catalog that has run out of results.
+  const loadMore = useCallback(() => {
+    const q = query.trim();
+    if (!q || searching || loadingMore || exhausted) return;
+    const next = page + 1;
+    const id = reqId.current;
+    setLoadingMore(true);
+    api.searchBooks(q, next)
+      .then((more) => {
+        if (id !== reqId.current) return; // the query changed under us
+        if (more.length === 0) {
+          setExhausted(true);
+        } else {
+          // The two catalogs can return the same work on consecutive pages, so the
+          // merge has to happen across pages too, not just within one.
+          setResults((prev) => {
+            const seen = new Set(prev.map(resultKey));
+            return [...prev, ...more.filter((b) => !seen.has(resultKey(b)))];
+          });
+          setPage(next);
+          prefetchCovers(more);
+        }
+      })
+      .finally(() => setLoadingMore(false));
+  }, [api, query, page, searching, loadingMore, exhausted]);
 
   const close = () => router.back();
 
@@ -204,6 +252,15 @@ export default function AddBook() {
               }
               ItemSeparatorComponent={() => <View style={[styles.sep, { backgroundColor: t.border }]} />}
               renderItem={renderRow}
+              onEndReached={showingResults ? loadMore : undefined}
+              onEndReachedThreshold={0.6}
+              ListFooterComponent={
+                loadingMore ? (
+                  <View style={styles.moreRow}>
+                    <ActivityIndicator color={t.accent} />
+                  </View>
+                ) : null
+              }
             />
           )}
         </View>
@@ -231,6 +288,7 @@ const styles = StyleSheet.create({
   searchState: { paddingTop: 40, alignItems: 'center' },
   searchEmpty: { fontFamily: FONTS.uiRegular, fontSize: 14, paddingTop: 24, textAlign: 'center' },
   sep: { height: StyleSheet.hairlineWidth },
+  moreRow: { paddingVertical: 16, alignItems: 'center' },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   resultInfo: { flex: 1, gap: 2 },
   resultTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },

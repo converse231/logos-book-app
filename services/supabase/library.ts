@@ -91,8 +91,8 @@ async function requireUid(): Promise<string> {
 
 export const libraryApi: Partial<QuireApi> = {
   // ── Search (client-side catalog, no DB) ─────────────────────────────────────
-  async searchBooks(query) {
-    return catalogSearch(query);
+  async searchBooks(query, page) {
+    return catalogSearch(query, page);
   },
 
   async getRecommendedBooks() {
