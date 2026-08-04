@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 
@@ -20,7 +21,11 @@ export function StatTile({ label, value, delta, icon, color }: StatTileProps) {
   const tint = color ?? t.accent;
   return (
     <View style={[styles.tile, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-      {icon ? <Ionicons name={icon} size={18} color={tint} style={styles.icon} /> : null}
+      {/* AppIcon serves hand-drawn art for the glyphs that have it and falls back to
+          the font for the rest, so the tiles can convert one icon at a time. Only
+          safe because every tile's `color` already matches its art: the streak tile
+          is ember and the longest-streak tile is gold. */}
+      {icon ? <AppIcon name={icon} size={18} color={tint} style={styles.icon} /> : null}
       <Text style={[styles.value, { color: t.text }]} numberOfLines={1}>
         {value}
       </Text>
