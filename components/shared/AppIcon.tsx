@@ -32,9 +32,28 @@ const CUSTOM: Partial<Record<string, { active: number; inactive: number }>> = {
   },
 };
 
-/** The art is fitted to 90% of its canvas so nothing clips, so drawing it at the
- *  nominal size would make it read ~10% smaller than an Ionicon beside it. */
+/**
+ * Single-variant art: one baked-in colour, no focused/unfocused pair.
+ *
+ * Because the colour is painted in, these can only stand in where the call site
+ * already wanted that exact colour — the ember flame, the gold trophy/ribbon/star,
+ * the coral sparkle. `flame` in particular is drawn in seven different tints across
+ * the app; the other six call sites must stay on the font glyph, so DON'T blanket
+ * replace Ionicons with AppIcon. Check the colour first.
+ */
+const SOLID: Partial<Record<string, number>> = {
+  flame: require('@/assets/ui-icons/flame-icon.webp'),
+  trophy: require('@/assets/ui-icons/trophy-icon.webp'),
+  sparkles: require('@/assets/ui-icons/sparkle-icon.webp'),
+  ribbon: require('@/assets/ui-icons/ribbon-icon.webp'),
+  star: require('@/assets/ui-icons/star-icon.webp'),
+};
+
+/** The art is fitted to a fraction of its canvas so nothing clips, so drawing it at
+ *  the nominal size would make it read smaller than an Ionicon beside it. Tab art is
+ *  fitted to 90%, the ui-icons to 88%. */
 const ART_SCALE = 1 / 0.9;
+const SOLID_SCALE = 1 / 0.88;
 
 interface AppIconProps {
   /** An Ionicons name. With `focused`, pass the FILLED name — the outline variant
@@ -57,13 +76,16 @@ interface AppIconProps {
  * on custom icons; the palette lives in the artwork.
  */
 export function AppIcon({ name, focused, size = 24, color, style }: AppIconProps) {
-  const art = focused === undefined ? undefined : CUSTOM[name];
+  // `focused` is what distinguishes the two registries: pass it and you're asking
+  // for a two-state tab icon, omit it and you get the single-variant art (if any).
+  const pair = focused === undefined ? undefined : CUSTOM[name];
+  const source = pair ? (focused ? pair.active : pair.inactive) : focused === undefined ? SOLID[name] : undefined;
 
-  if (art) {
-    const s = Math.round(size * ART_SCALE);
+  if (source) {
+    const s = Math.round(size * (pair ? ART_SCALE : SOLID_SCALE));
     return (
       <Image
-        source={focused ? art.active : art.inactive}
+        source={source}
         style={[{ width: s, height: s }, style]}
         contentFit="contain"
         // The tab bar swaps these on every press; a fade would read as a flicker.

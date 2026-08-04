@@ -10,6 +10,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
@@ -103,7 +104,7 @@ export function ReadingInsightCard({ insight, onShare, onSave, onAutoDismiss }: 
           <View style={[styles.grabberBar, { backgroundColor: t.border }]} />
         </View>
         <View style={styles.header}>
-          <Ionicons name="sparkles" size={16} color={accent} />
+          <AppIcon name="sparkles" size={16} />
           <Text style={[styles.headerText, { color: accent }]}>READING INSIGHT</Text>
         </View>
         <Text style={[styles.body, { color: t.text }]}>{insight.text}</Text>

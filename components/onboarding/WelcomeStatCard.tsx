@@ -9,7 +9,7 @@ import Animated, {
   Easing,
   useReducedMotion,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 import { CountUp } from './CountUp';
@@ -43,7 +43,7 @@ export function WelcomeStatCard() {
       {/* framing header — tells the user this is their future */}
       <View style={styles.header}>
         <View style={styles.overlineRow}>
-          <Ionicons name="sparkles" size={13} color={t.accent} />
+          <AppIcon name="sparkles" size={13} />
           <Text style={[styles.overline, { color: t.accent }]}>ONE YEAR FROM NOW</Text>
         </View>
         <View style={[styles.pill, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
@@ -55,7 +55,7 @@ export function WelcomeStatCard() {
       <View style={styles.flameRow}>
         <View style={styles.flameWrap}>
           <Animated.View style={flameStyle}>
-            <Ionicons name="flame" size={48} color={t.ember} />
+            <AppIcon name="flame" size={48} />
           </Animated.View>
         </View>
         <View style={styles.flameText}>

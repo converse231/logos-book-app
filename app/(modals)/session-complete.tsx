@@ -14,6 +14,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, ANIMATION, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, type ThemeTokens } from '@/theme/tokens';
 import { CENTER_COLUMN_FILL } from '@/theme/layout';
@@ -159,7 +160,7 @@ export default function SessionComplete() {
             <View style={styles.badges}>
               {result.newBadges.map((b) => (
                 <View key={b.id} style={[styles.badge, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-                  <Ionicons name="ribbon" size={18} color={t.gold} />
+                  <AppIcon name="ribbon" size={18} />
                   <Text style={[styles.badgeText, { color: t.text }]}>{b.name.toUpperCase()}</Text>
                 </View>
               ))}

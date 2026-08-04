@@ -13,6 +13,7 @@ import {
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
@@ -174,7 +175,7 @@ export default function MoodReader() {
               <Ionicons name="chevron-back" size={22} color={t.text} />
             </Pressable>
             <View style={[styles.aiTag, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-              <Ionicons name="sparkles" size={13} color={t.accent} />
+              <AppIcon name="sparkles" size={13} />
               <Text style={[styles.aiTagText, { color: t.accent }]}>MOOD READER</Text>
             </View>
           </View>

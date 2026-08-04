@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
@@ -150,7 +151,7 @@ function SessionRow({ row, onPress, t }: { row: Row; onPress: () => void; t: Ret
         </Text>
       </View>
       <View style={styles.rowRight}>
-        {s.isPersonalBest ? <Ionicons name="trophy" size={14} color={t.gold} /> : null}
+        {s.isPersonalBest ? <AppIcon name="trophy" size={14} /> : null}
         <Text style={[styles.rowDate, { color: t.textTer }]}>{shortDate(s.startedAt)}</Text>
       </View>
     </Pressable>

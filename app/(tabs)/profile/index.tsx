@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
@@ -300,7 +301,7 @@ export default function Profile() {
             <View style={styles.calHead}>
               <Text style={[styles.blockLabel, { color: t.textSec }]}>READING STREAK</Text>
               <View style={styles.bestStreak}>
-                <Ionicons name="flame" size={14} color={t.ember} />
+                <AppIcon name="flame" size={14} />
                 <Text style={[styles.bestStreakText, { color: t.text }]}>
                   Best {scopeWord}: {best} day{best === 1 ? '' : 's'}
                 </Text>

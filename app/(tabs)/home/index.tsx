@@ -7,6 +7,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
@@ -595,7 +596,7 @@ function RecentSessionRow({
         <Text style={[styles.sessionTitle, { color: t.text }]} numberOfLines={1}>{book?.book.title ?? 'A book'}</Text>
         <Text style={[styles.sessionStats, { color: t.textSec }]} numberOfLines={1}>{primary}</Text>
       </View>
-      {session.isPersonalBest ? <Ionicons name="trophy" size={14} color={t.gold} /> : null}
+      {session.isPersonalBest ? <AppIcon name="trophy" size={14} /> : null}
       <Ionicons name="chevron-forward" size={16} color={t.textTer} />
     </Pressable>
   );

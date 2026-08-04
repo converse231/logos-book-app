@@ -4,6 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD, GENRE_PALETTE } from '@/theme/tokens';
@@ -365,7 +366,7 @@ export default function BookDetail() {
                 accessibilityLabel={`Rated ${ratingAvg.toFixed(1)} from ${ratingCount} reviews`}
                 style={[styles.chip, { backgroundColor: 'rgba(255,197,61,0.14)' }]}
               >
-                <Ionicons name="star" size={14} color={t.gold} />
+                <AppIcon name="star" size={14} />
                 <Text style={[styles.chipText, { color: t.gold }]}>
                   {ratingAvg.toFixed(1)} ({ratingCount})
                 </Text>
@@ -420,7 +421,7 @@ export default function BookDetail() {
               accessibilityLabel={`See more books by ${book.authors[0]}`}
               style={[styles.authorBanner, { backgroundColor: t.accentMuted }]}
             >
-              <Ionicons name="sparkles" size={18} color={t.accent} />
+              <AppIcon name="sparkles" size={18} />
               <Text style={[styles.authorBannerText, { color: t.accent }]} numberOfLines={1}>
                 Loved it? More by {book.authors[0]}
               </Text>

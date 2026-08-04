@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
@@ -281,7 +282,7 @@ function DaySessionsSheet({
                     <Text style={[styles.dayRowTitle, { color: t.text }]} numberOfLines={1}>{ub?.book.title ?? 'A book'}</Text>
                     <Text style={[styles.dayRowStats, { color: t.textSec }]} numberOfLines={1}>{primary}</Text>
                   </View>
-                  {s.isPersonalBest ? <Ionicons name="trophy" size={14} color={t.gold} /> : null}
+                  {s.isPersonalBest ? <AppIcon name="trophy" size={14} /> : null}
                   <Ionicons name="chevron-forward" size={16} color={t.textTer} />
                 </Pressable>
               );

@@ -12,7 +12,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
@@ -75,7 +75,7 @@ export default function MilestoneCelebration() {
           <Text style={[styles.kicker, { color: accent }]}>{cfg.kicker.toUpperCase()}</Text>
         </Reveal>
 
-        <FireStreak count={count} ember={t.ember} reduce={reduce} />
+        <FireStreak count={count} reduce={reduce} />
 
         <Reveal d={reduce ? 0 : 420} reduce={reduce}>
           <Text style={[styles.label, { color: t.textSec }]}>DAY STREAK</Text>
@@ -114,7 +114,7 @@ function blurbFor(count: number): string {
 // Ink on the warm flame keeps the neubrutalist black-on-colour contrast, and the
 // digit-aware size keeps even 365 inside the flame. Reduced motion → a static
 // flame glyph with the final number.
-function FireStreak({ count, ember, reduce }: { count: number; ember: string; reduce: boolean }) {
+function FireStreak({ count, reduce }: { count: number; reduce: boolean }) {
   const SIZE = 236;
   const numFont = count >= 100 ? 62 : count >= 10 ? 88 : 104;
 
@@ -131,7 +131,7 @@ function FireStreak({ count, ember, reduce }: { count: number; ember: string; re
       accessibilityLabel={`${count} day streak`}
     >
       {reduce ? (
-        <Ionicons name="flame" size={SIZE} color={ember} />
+        <AppIcon name="flame" size={SIZE} />
       ) : (
         <Image
           source={require('@/assets/fire.webp')}
