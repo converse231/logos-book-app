@@ -42,11 +42,11 @@ const CUSTOM: Partial<Record<string, { active: number; inactive: number }>> = {
  * replace Ionicons with AppIcon. Check the colour first.
  */
 const SOLID: Partial<Record<string, number>> = {
-  flame: require('@/assets/ui-icons/flame-icon.webp'),
-  trophy: require('@/assets/ui-icons/trophy-icon.webp'),
-  sparkles: require('@/assets/ui-icons/sparkle-icon.webp'),
-  ribbon: require('@/assets/ui-icons/ribbon-icon.webp'),
-  star: require('@/assets/ui-icons/star-icon.webp'),
+  flame: require('@/assets/ui-icons/flame-ember.webp'),
+  trophy: require('@/assets/ui-icons/trophy-gold.webp'),
+  sparkles: require('@/assets/ui-icons/sparkles-accent.webp'),
+  ribbon: require('@/assets/ui-icons/ribbon-gold.webp'),
+  star: require('@/assets/ui-icons/star-gold.webp'),
 };
 
 /** The art is fitted to a fraction of its canvas so nothing clips, so drawing it at
