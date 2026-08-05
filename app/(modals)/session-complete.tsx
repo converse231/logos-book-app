@@ -1,111 +1,124 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
-  Easing,
   FadeIn,
   FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withSpring,
-  withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, ANIMATION, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, type ThemeTokens } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS, NO_FONT_PAD } from '@/theme/tokens';
 import { CENTER_COLUMN_FILL } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
-import type { BookFormat } from '@/services/types';
 import { useSessionStore } from '@/stores/sessionStore';
-import { CountUp } from '@/components/onboarding/CountUp';
+import { celebrationFor } from '@/lib/sessionCelebration';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { ReadingInsightCard } from '@/components/session/ReadingInsightCard';
-import { BookCover } from '@/components/shared/BookCover';
-import { Sparkle } from '@/components/shared/Sparkle';
 import { Q } from '@/components/shared/Q';
 
-// The Duolingo moment (blueprint Section 5 timeline). The book cover is the hero —
-// it springs in, big, under a hard ink shadow with a celebration stamp — then the
-// telemetry lands beneath it as neubrutalist stat blocks whose figures count up
-// on the UI thread. Confetti fires from two side cannons + a centre pop (bigger
-// for a personal best); the variable-reward insight slides up after ~2s if the
-// server granted one. All motion is reduced-motion gated.
+// Session Success — the celebration, and only the celebration.
+//
+// Restructured (2026-08-06) from a packed screen — cover hero, three tall stat
+// cards, badge chips, share and done — into one image and one stub. Q now owns
+// roughly two-thirds of the screen; the numbers are a single bordered ticket
+// pinned above the buttons.
+//
+// Q's pose and the headline both come from lib/sessionCelebration's priority
+// ladder, so finishing a book, setting a personal best and logging four pages
+// before bed no longer look identical.
+//
+// Motion: entrance ONLY. Q springs in once, confetti fires, the stub fades up —
+// then everything is still. The idle bob is deliberately off (`animated={false}`);
+// a mascot that floats forever reads as cheap.
+//
+// Unchanged: a level-up still takes over at 650ms, and the variable-reward insight
+// still slides up at 2s when nothing bigger took over.
 export default function SessionComplete() {
+  const params = useLocalSearchParams<{ finished?: string }>();
   const t = useTheme();
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
+  const { height } = useWindowDimensions();
 
   const result = useSessionStore((s) => s.lastResult);
   const active = useSessionStore((s) => s.active);
   const clearResult = useSessionStore((s) => s.clearResult);
   const endSession = useSessionStore((s) => s.endSession);
 
-  const [showInsight, setShowInsight] = useState(false);
   const [fireConfetti, setFireConfetti] = useState(false);
+  const [showInsight, setShowInsight] = useState(false);
 
+  const finishedBook = params.finished === '1';
+
+  const celebration = useMemo(
+    () =>
+      celebrationFor({
+        finishedBook,
+        isPersonalBest: result?.isPersonalBest ?? false,
+        badgeCount: result?.newBadges.length ?? 0,
+        durationSeconds: result?.durationSeconds ?? 0,
+        pagesRead: result?.pagesRead ?? null,
+        isAudiobook: active?.format === 'audiobook',
+        localHour: new Date().getHours(),
+      }),
+    [finishedBook, result, active]
+  );
+
+  // Entrance: one spring, no loop.
+  const pop = useSharedValue(reduce ? 1 : 0.6);
   useEffect(() => {
     if (!result) {
       router.replace('/(tabs)/home' as Href);
       return;
     }
     const c = setTimeout(() => setFireConfetti(true), 150);
-    // Escalation composited on top of this celebration: a streak milestone wins;
-    // otherwise a level-up. Mutually exclusive so we never stack two full-screen
-    // takeovers on one session.
-    let escalate: ReturnType<typeof setTimeout> | null = null;
-    // Streak milestones no longer escalate from here — they're celebrated on Home
-    // (see lib/streakCelebration), which covers every way a day can be logged and
-    // keeps this flow from firing two streak animations back to back. Level-ups
-    // still take over, since nothing downstream celebrates those.
-    if (result.leveledUp) {
-      escalate = setTimeout(
-        () => router.push(`/(modals)/level-up?level=${result.level}&name=${encodeURIComponent(result.levelName)}` as Href),
-        650
-      );
-    }
-    // The insight only slides up when nothing bigger took over.
-    const i =
-      result.insight && !result.leveledUp
-        ? setTimeout(() => setShowInsight(true), 2000)
-        : null;
+    if (!reduce) pop.value = withDelay(60, withSpring(1, { damping: 13, stiffness: 140, mass: 0.9 }));
+
+    // Level-up is the one thing still allowed to take the screen. Streak milestones
+    // celebrate on Home (see lib/streakCelebration) so they can't stack here.
+    const escalate = result.leveledUp
+      ? setTimeout(
+          () =>
+            router.push(
+              `/(modals)/level-up?level=${result.level}&name=${encodeURIComponent(result.levelName)}` as Href
+            ),
+          650
+        )
+      : null;
+    const i = result.insight && !result.leveledUp ? setTimeout(() => setShowInsight(true), 2000) : null;
     return () => {
       clearTimeout(c);
       if (escalate) clearTimeout(escalate);
       if (i) clearTimeout(i);
     };
-  }, [result, router]);
+  }, [result, router, reduce, pop]);
+
+  const qStyle = useAnimatedStyle(() => ({
+    opacity: reduce ? 1 : Math.min(1, (pop.value - 0.55) * 3.4),
+    transform: [{ scale: pop.value }],
+  }));
 
   if (!result) return <View style={{ flex: 1, backgroundColor: t.bg }} />;
 
   const isAudio = active?.format === 'audiobook';
   const minutes = Math.max(1, Math.round(result.durationSeconds / 60));
   const pages = result.pagesRead ?? 0;
-  const isPB = result.isPersonalBest;
+  const badge = result.newBadges[0] ?? null;
   const d = (n: number) => (reduce ? 0 : n);
 
-  const showStreak = result.streak.incremented;
-
-  // One tidy row of cards telling the session's story: what you read, the streak
-  // it fed, and the XP it earned. Streak takes the middle slot when it ticked;
-  // otherwise minutes fills it (audiobooks lead with minutes, so they skip it).
-  const cards: StatSpec[] = [
-    isAudio
-      ? { key: 'primary', value: minutes, label: 'MINUTES', tint: t.accentMuted, valueColor: t.text }
-      : { key: 'primary', value: pages, label: pages === 1 ? 'PAGE' : 'PAGES', tint: t.accentMuted, valueColor: t.text },
-  ];
-  if (showStreak) {
-    cards.push({ key: 'streak', value: result.streak.current, label: 'DAY STREAK', tint: 'rgba(255,138,30,0.16)', valueColor: t.ember });
-  } else if (!isAudio) {
-    cards.push({ key: 'minutes', value: minutes, label: 'MINUTES', tint: t.bgSec, valueColor: t.text });
-  }
-  cards.push({ key: 'xp', value: result.xpGained, label: 'XP EARNED', tint: 'rgba(255,197,61,0.16)', valueColor: t.gold, prefix: '+' });
+  // Q takes the top two-thirds, clamped so a short phone doesn't crush the stub
+  // and a tall one doesn't leave him marooned.
+  const qSize = Math.max(190, Math.min(300, height * 0.34));
+  const gold = celebration.halo === 'gold';
 
   const finish = () => {
     clearResult();
@@ -116,84 +129,91 @@ export default function SessionComplete() {
 
   return (
     <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top }]}>
-      <Confetti fire={fireConfetti} particleCount={isPB ? 120 : 80} />
+      <Confetti fire={fireConfetti} particleCount={gold ? 120 : 80} />
 
-      {/* Confetti stays full-bleed; the celebration itself is clamped to the
-          centred reading column so a tablet gets the designed layout. */}
       <View style={styles.column}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Hero — the book, big, springing in under a hard shadow with a stamp */}
-        <CoverHero
-          coverUrl={active?.coverUrl}
-          title={active?.bookTitle ?? 'Book'}
-          format={active?.format}
-          isPB={isPB}
-          reduce={reduce}
-        />
+        {/* Hero — Q, with nothing behind or over him. */}
+        <View style={styles.stage}>
+          <View
+            style={[
+              styles.halo,
+              {
+                width: qSize * 1.08,
+                height: qSize * 1.08,
+                borderRadius: qSize,
+                backgroundColor: gold ? 'rgba(243,194,76,0.30)' : t.accentMuted,
+              },
+            ]}
+          />
+          <Animated.View style={qStyle}>
+            <Q expression={celebration.expression} size={qSize} animated={false} decorative />
+          </Animated.View>
+        </View>
 
-        <Reveal d={d(120)} reduce={reduce}>
-          <View style={styles.titleBlock}>
-            <Q expression={isPB ? 'surprised' : 'happy'} size={74} />
-            <Text style={[styles.title, { color: isPB ? t.gold : t.text }]}>
-              {isPB ? 'Personal best' : 'Session complete'}
+        {/* Copy sits BELOW the art — it used to be behind it. */}
+        <Animated.View entering={reduce ? undefined : FadeInUp.delay(d(280)).duration(420)}>
+          <Text style={[styles.headline, { color: gold ? t.gold : t.text }]}>{celebration.headline}</Text>
+          {active?.bookTitle ? (
+            <Text style={[styles.sub, { color: t.textSec }]} numberOfLines={1}>
+              {active.bookTitle}
             </Text>
-            {active?.bookTitle ? (
-              <Text style={[styles.bookCtx, { color: t.textSec }]} numberOfLines={1}>
-                {active.bookTitle.toUpperCase()}
+          ) : null}
+        </Animated.View>
+
+        <View style={styles.spacer} />
+
+        {/* The stub: three cells, plus a torn-off footer only when a badge landed. */}
+        <Animated.View
+          entering={reduce ? undefined : FadeInUp.delay(d(400)).duration(420)}
+          style={[styles.ticket, { backgroundColor: t.bgSec, borderColor: t.border }]}
+        >
+          <View style={styles.ticketRow}>
+            <Cell
+              value={isAudio ? String(minutes) : String(pages)}
+              label={isAudio ? 'MINUTES' : pages === 1 ? 'PAGE' : 'PAGES'}
+              t={t}
+            />
+            <Cell
+              value={String(isAudio ? result.streak.current : minutes)}
+              label={isAudio ? 'DAY STREAK' : 'MINUTES'}
+              t={t}
+              divider
+            />
+            <Cell value={`+${result.xpGained}`} label="XP" t={t} divider tint={t.gold} />
+          </View>
+          {badge ? (
+            <View style={[styles.ticketFoot, { borderTopColor: t.textTer }]}>
+              <Ionicons name="ribbon" size={15} color={t.gold} />
+              <Text style={[styles.ticketFootText, { color: t.text }]} numberOfLines={1}>
+                Achievement unlocked — {badge.name}
               </Text>
-            ) : null}
-          </View>
-        </Reveal>
-
-        {/* One row of stat cards — figures counting up */}
-        <Reveal d={d(210)} reduce={reduce}>
-          <View style={styles.cardRow}>
-            {cards.map((c) => (
-              <StatCard key={c.key} spec={c} t={t} />
-            ))}
-          </View>
-        </Reveal>
-
-        {/* Badges */}
-        {result.newBadges.length > 0 ? (
-          <Reveal d={d(460)} reduce={reduce}>
-            <View style={styles.badges}>
-              {result.newBadges.map((b) => (
-                <View key={b.id} style={[styles.badge, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-                  <AppIcon name="ribbon" tint="gold" size={18} />
-                  <Text style={[styles.badgeText, { color: t.text }]}>{b.name.toUpperCase()}</Text>
-                </View>
-              ))}
             </View>
-          </Reveal>
-        ) : null}
-      </ScrollView>
+          ) : null}
+        </Animated.View>
 
-      {/* Actions */}
-      <Animated.View
-        entering={reduce ? undefined : FadeIn.delay(d(620))}
-        style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}
-      >
-        <PressBlock
-          onPress={share}
-          accessibilityLabel="Share your reading card"
-          style={[styles.shareBtn, { backgroundColor: t.accent }]}
+        <Animated.View
+          entering={reduce ? undefined : FadeIn.delay(d(520)).duration(380)}
+          style={[styles.actions, { paddingBottom: insets.bottom + 14 }]}
         >
-          <Ionicons name="share-social" size={20} color={PALETTE.onAccent} />
-          <Text style={styles.shareBtnText}>SHARE YOUR CARD</Text>
-        </PressBlock>
-        <PressBlock
-          onPress={finish}
-          haptic="light"
-          accessibilityLabel="Done"
-          style={[styles.doneBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
-        >
-          <Text style={[styles.doneText, { color: t.text }]}>DONE</Text>
-        </PressBlock>
-      </Animated.View>
+          <PressBlock
+            onPress={finish}
+            haptic="light"
+            accessibilityLabel="Finish"
+            style={[styles.primary, { backgroundColor: t.accent, borderColor: INK }]}
+          >
+            <Text style={styles.primaryText}>FINISH</Text>
+          </PressBlock>
+          <PressBlock
+            onPress={share}
+            accessibilityLabel="Share your reading card"
+            style={[styles.secondary, { backgroundColor: t.bgSec, borderColor: t.border }]}
+          >
+            <Ionicons name="share-social" size={17} color={t.text} />
+            <Text style={[styles.secondaryText, { color: t.text }]}>SHARE YOUR CARD</Text>
+          </PressBlock>
+        </Animated.View>
       </View>
 
-      {/* Variable-reward insight */}
       {showInsight && result.insight ? (
         <ReadingInsightCard
           insight={{ id: result.insight.id, type: result.insight.insightType, text: result.insight.insightText }}
@@ -209,123 +229,29 @@ export default function SessionComplete() {
   );
 }
 
-const COVER_W = 160;
-const LIFT_OFFSET = 7; // final hard-shadow offset — how far the block lifts
-
-// The centrepiece. A layered, weighted reveal rather than a scale-from-nothing
-// bounce — three beats that overlap:
-//   1. SETTLE — the cover rises with a slight 3D tilt that straightens out, on a
-//      well-damped spring (it lands; it doesn't wobble).
-//   2. LIFT   — its hard ink shadow then slides out from flush, so the block
-//      visibly peels off the page. This is the Paper & Ink signature, shared with
-//      the add-book reveal.
-//   3. STAMP  — the seal presses onto the corner last, with a tight pop.
-// Reduced motion renders the settled end-state with no travel.
-function CoverHero({
-  coverUrl,
-  title,
-  format,
-  isPB,
-  reduce,
+function Cell({
+  value,
+  label,
+  t,
+  divider = false,
+  tint,
 }: {
-  coverUrl?: string | null;
-  title: string;
-  format?: BookFormat;
-  isPB: boolean;
-  reduce: boolean;
-}) {
-  const t = useTheme();
-  const settle = useSharedValue(reduce ? 1 : 0);
-  const lift = useSharedValue(reduce ? 1 : 0);
-  const stamp = useSharedValue(reduce ? 1 : 0);
-
-  useEffect(() => {
-    if (reduce) return;
-    settle.value = withDelay(60, withSpring(1, ANIMATION.springSmooth));
-    lift.value = withDelay(260, withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) }));
-    stamp.value = withDelay(440, withSpring(1, ANIMATION.springBouncy));
-  }, [reduce, settle, lift, stamp]);
-
-  const coverStyle = useAnimatedStyle(() => ({
-    opacity: settle.value,
-    transform: [
-      { perspective: 900 },
-      { translateY: (1 - settle.value) * 24 },
-      { rotateY: `${(1 - settle.value) * -14}deg` },
-      { scale: 0.9 + settle.value * 0.1 },
-    ],
-  }));
-
-  // The ink block starts flush behind the cover and slides to its offset.
-  const liftStyle = useAnimatedStyle(() => ({
-    opacity: lift.value,
-    transform: [
-      { translateX: lift.value * LIFT_OFFSET },
-      { translateY: lift.value * LIFT_OFFSET },
-    ],
-  }));
-
-  const stampStyle = useAnimatedStyle(() => ({
-    opacity: stamp.value,
-    transform: [{ scale: stamp.value }, { rotate: `${(1 - stamp.value) * -30}deg` }],
-  }));
-
-  return (
-    <View style={styles.coverWrap}>
-      <Sparkle size={28} color={PALETTE.gold} delay={0} style={styles.sparkTL} />
-      <Sparkle size={20} color={PALETTE.level} delay={320} style={styles.sparkR} />
-      <Sparkle size={18} color={PALETTE.ember} delay={640} style={styles.sparkBL} />
-
-      <Animated.View style={coverStyle}>
-        <Animated.View style={[styles.liftBlock, liftStyle]} pointerEvents="none" />
-        <BookCover url={coverUrl} title={title} format={format} width={COVER_W} />
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.coverSticker,
-          stampStyle,
-          { backgroundColor: isPB ? t.gold : t.accent, borderColor: t.border },
-        ]}
-      >
-        <Ionicons name={isPB ? 'trophy' : 'checkmark'} size={22} color={isPB ? INK : t.onAccent} />
-      </Animated.View>
-    </View>
-  );
-}
-
-// Module-level so confetti / insight state changes don't remount these and
-// replay every entrance + the count-ups (the old inline-component double-fire).
-function Reveal({ d, reduce, children }: { d: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(d).duration(440)}>{children}</Animated.View>;
-}
-
-type StatSpec = {
-  key: string;
-  value: number;
+  value: string;
   label: string;
-  tint: string;
-  valueColor: string;
-  prefix?: string;
-};
-
-// One neubrutalist stat card: a tinted, ink-bordered block on a hard shadow with
-// a figure that counts up on the UI thread and a mono label. A row of these
-// summarises the session under the cover hero.
-function StatCard({ spec, t }: { spec: StatSpec; t: ThemeTokens }) {
+  t: ReturnType<typeof useTheme>;
+  divider?: boolean;
+  tint?: string;
+}) {
   return (
     <View
-      style={[styles.card, { backgroundColor: spec.tint, borderColor: t.border }]}
-      accessible
-      accessibilityLabel={`${spec.prefix ?? ''}${spec.value} ${spec.label}`}
+      style={[
+        styles.cell,
+        divider && { borderLeftWidth: BORDER_WIDTH, borderLeftColor: t.textTer, borderStyle: 'dashed' },
+      ]}
     >
-      <View style={styles.cardValueRow}>
-        {spec.prefix ? <Text style={[styles.cardValue, { color: spec.valueColor }]}>{spec.prefix}</Text> : null}
-        <CountUp to={spec.value} style={[styles.cardValue, { color: spec.valueColor }]} />
-      </View>
-      <Text style={[styles.cardLabel, { color: t.textSec }]} numberOfLines={2}>
-        {spec.label}
+      <Text style={[styles.cellValue, { color: tint ?? t.text }]}>{value}</Text>
+      <Text style={[styles.cellLabel, { color: t.textSec }]} numberOfLines={1}>
+        {label}
       </Text>
     </View>
   );
@@ -333,51 +259,49 @@ function StatCard({ spec, t }: { spec: StatSpec; t: ThemeTokens }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  column: CENTER_COLUMN_FILL,
-  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 28, gap: 16 },
+  column: { ...CENTER_COLUMN_FILL, paddingHorizontal: 22 },
 
-  // Cover hero
-  coverWrap: { alignSelf: 'center', position: 'relative', marginBottom: 4 },
-  // Sits flush behind the (opaque) cover and slides out to its offset, so only the
-  // L-shape shows — a hard ink shadow that animates, which a boxShadow can't do.
-  liftBlock: { ...StyleSheet.absoluteFillObject, backgroundColor: INK, borderRadius: 14 },
-  coverSticker: {
-    position: 'absolute', top: -14, right: -14, width: 42, height: 42, borderRadius: 21,
-    borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center',
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
+  halo: { position: 'absolute' },
+
+  headline: { fontFamily: FONTS.serifBold, fontSize: 27, lineHeight: 32, textAlign: 'center', ...NO_FONT_PAD },
+  sub: { fontFamily: FONTS.uiRegular, fontSize: 13, textAlign: 'center', marginTop: 6 },
+
+  // Absorbs the slack so the stub sits at the foot of the screen rather than
+  // floating just under the copy.
+  spacer: { flex: 0.42 },
+
+  ticket: {
+    borderWidth: BORDER_WIDTH_THICK,
+    borderRadius: RADIUS.md,
+    overflow: 'hidden',
+    boxShadow: `4px 4px 0px ${INK}`,
   },
-  sparkTL: { position: 'absolute', top: -6, left: -12, zIndex: 2 },
-  sparkR: { position: 'absolute', top: 74, right: -16, zIndex: 2 },
-  sparkBL: { position: 'absolute', bottom: 26, left: -8, zIndex: 2 },
-
-  // Title block
-  titleBlock: { alignItems: 'center', gap: 4 },
-  title: { fontFamily: FONTS.serifBold, fontSize: 38, lineHeight: 40, letterSpacing: 0, textAlign: 'center' },
-  bookCtx: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.6, textAlign: 'center', maxWidth: 280 },
-
-  // One row of stat cards
-  cardRow: { flexDirection: 'row', alignSelf: 'stretch', gap: 10 },
-  card: {
-    flex: 1, borderRadius: 14, borderWidth: BORDER_WIDTH, ...SHADOW.sm,
-    paddingVertical: 18, paddingHorizontal: 8, minHeight: 96,
-    alignItems: 'center', justifyContent: 'center', gap: 6,
+  ticketRow: { flexDirection: 'row' },
+  cell: { flex: 1, alignItems: 'center', paddingVertical: 13, paddingHorizontal: 4 },
+  cellValue: { fontFamily: FONTS.monoBold, fontSize: 24, fontVariant: ['tabular-nums'], ...NO_FONT_PAD },
+  cellLabel: { fontFamily: FONTS.mono, fontSize: 8.5, letterSpacing: 1.1, marginTop: 4 },
+  ticketFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    borderTopWidth: BORDER_WIDTH,
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(243,194,76,0.18)',
   },
-  cardValueRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  cardValue: { fontFamily: FONTS.monoBold, fontSize: 34, lineHeight: 36, fontVariant: ['tabular-nums'], padding: 0 },
-  cardLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5, textAlign: 'center' },
+  ticketFootText: { flex: 1, fontFamily: FONTS.uiBold, fontSize: 12.5, letterSpacing: 0.2 },
 
-  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: BORDER_WIDTH },
-  badgeText: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 0.5 },
-
-  actions: { paddingHorizontal: 24, gap: 12 },
-  shareBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,
-    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+  actions: { paddingTop: 14, gap: 10 },
+  primary: {
+    minHeight: 54, alignItems: 'center', justifyContent: 'center',
+    borderWidth: BORDER_WIDTH_THICK, borderRadius: RADIUS.md,
   },
-  shareBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent },
-  doneBtn: {
-    minHeight: 50, alignItems: 'center', justifyContent: 'center',
-    borderRadius: 14, borderWidth: BORDER_WIDTH,
+  primaryText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
+  secondary: {
+    minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderWidth: BORDER_WIDTH_THICK, borderRadius: RADIUS.md,
   },
-  doneText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
+  secondaryText: { fontFamily: FONTS.uiBold, fontSize: 13, letterSpacing: 0.8 },
 });

@@ -98,6 +98,11 @@ export default function RootLayout() {
                 name="session/[userBookId]"
                 options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
               />
+              {/* Review sits on the root stack above the tabs, like the tracker it
+                  follows — back returns to the still-running session. Swipe-back is
+                  left on deliberately: nothing has been saved yet, so retreating is
+                  always safe. */}
+              <Stack.Screen name="session/review" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen
                 name="(modals)"
                 options={{ presentation: 'transparentModal', animation: 'fade' }}

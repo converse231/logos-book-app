@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   AppState,
   KeyboardAvoidingView,
@@ -28,10 +27,9 @@ import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FO
 import { CENTER_COLUMN } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
-import { localDateString, useSessionStore, uuidv4 } from '@/stores/sessionStore';
+import { useSessionStore } from '@/stores/sessionStore';
 import { track } from '@/lib/analytics';
 import { startReadingActivity, updateReadingActivity, endReadingActivity } from '@/lib/liveActivity';
-import { sendOrQueue } from '@/lib/sessionQueue';
 import { loadActiveSession, saveActiveSession, clearActiveSession } from '@/lib/activeSession';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { LoadingIndicator } from '@/components/shared/LoadingIndicator';
@@ -61,7 +59,6 @@ export default function SessionTracker() {
   const reduce = useReducedMotion();
 
   const startSession = useSessionStore((s) => s.startSession);
-  const setResult = useSessionStore((s) => s.setResult);
   const endSession = useSessionStore((s) => s.endSession);
 
   // Currently-reading shelf for the picker; selection drives which book starts.
@@ -81,9 +78,6 @@ export default function SessionTracker() {
   const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MIN); // committed focus length
   const [paused, setPaused] = useState(false);
   const [elapsedWhole, setElapsedWhole] = useState(0); // whole seconds, drives the focus-lock + cancel window
-  const [showEndEntry, setShowEndEntry] = useState(false);
-  const [endPage, setEndPage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   // Correct the starting page (e.g. you read ahead without tracking). null = use
   // the book's stored currentPage. Reset whenever the picker selection changes.
   const [startOverride, setStartOverride] = useState<number | null>(null);
@@ -369,9 +363,13 @@ export default function SessionTracker() {
     }
   };
 
+  // Finish hands off to the Review screen rather than submitting. Nothing is
+  // recorded here any more, and crucially the recovery snapshot is NOT cleared —
+  // it now survives until Review saves, so a crash between the two restores the
+  // session instead of losing it. The elapsed time travels as a param because a
+  // paused session's elapsed differs from now-minus-startedAt.
   const beginFinish = () => {
-    setEndPage(String(sessionBook?.currentPage ?? ''));
-    setShowEndEntry(true);
+    router.push(`/session/review?elapsedMs=${computeElapsedMs()}` as Href);
   };
 
   // Focus-mode escape hatch: long-pressing the locked Finish button ends the
@@ -412,65 +410,6 @@ export default function SessionTracker() {
     );
   };
 
-  const confirmFinish = async () => {
-    if (!sessionBook || submitting) return; // guard double-submit (each call = a new session)
-    setSubmitting(true);
-    const elapsedMs = computeElapsedMs();
-    const start = sessionBook.currentPage;
-    // Clamp the end page to the book's length (when known) so a fat-fingered
-    // number can't over-count pages_read.
-    const maxPage = sessionBook.pageCountOverride ?? sessionBook.book.pageCount ?? null;
-    let end = Math.max(start, parseInt(endPage, 10) || start);
-    if (maxPage && maxPage > 0) end = Math.min(end, maxPage);
-    const queued = {
-      clientUuid: uuidv4(),
-      userBookId: sessionBook.id,
-      bookId: sessionBook.book.id,
-      format: sessionBook.format,
-      startedAt: new Date(startedAtRef.current).toISOString(),
-      endedAt: new Date(startedAtRef.current + elapsedMs).toISOString(),
-      startPage: sessionBook.format === 'audiobook' ? null : start,
-      endPage: sessionBook.format === 'audiobook' ? null : end,
-      minutesListened: sessionBook.format === 'audiobook' ? Math.round(elapsedMs / 60000) : null,
-      endPositionMin: null,
-      localDate: localDateString(), // frozen at capture — the streak's source of truth
-      source: 'live' as const,
-      enqueuedAt: Date.now(),
-      attempts: 0,
-    };
-
-    try {
-      // Send now; if offline/transient the session is persisted and synced later.
-      const result = await sendOrQueue(api, queued);
-      endReadingActivity(); // dismiss the lock-screen activity either way
-      clearActiveSession(); // recorded (or queued) — the recovery snapshot is done
-
-      if (result) {
-        setResult(result);
-        track('session_completed', {
-          format: sessionBook.format,
-          pagesRead: result.pagesRead,
-          durationSeconds: result.durationSeconds,
-          isPersonalBest: result.isPersonalBest,
-          xpGained: result.xpGained,
-          source: 'live',
-        });
-        // Keep `active` set so the celebration + share card can read the book
-        // title/cover; the celebration's Done action clears it.
-        router.replace('/(modals)/session-complete' as Href);
-      } else {
-        // Offline / failed — queued. No server result yet, so no celebration;
-        // it (and the streak) sync automatically next time we reach the server.
-        router.replace('/(tabs)/home' as Href);
-        Alert.alert(
-          'Saved offline',
-          "You're offline, so we saved this session. It'll sync — along with your streak and XP — automatically once you're back online.",
-        );
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const goAddReading = () => router.push('/(modals)/add-book?status=reading' as Href);
 
@@ -732,46 +671,6 @@ export default function SessionTracker() {
         />
       </View>
 
-      {/* End-page entry overlay */}
-      {showEndEntry ? (
-        <KeyboardAvoidingView
-          style={styles.entryOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <Pressable style={styles.entryBackdrop} onPress={() => !submitting && setShowEndEntry(false)} />
-          <View style={[styles.entrySheet, { backgroundColor: t.bgSec, paddingBottom: insets.bottom + 20 }]}>
-            <Text style={[styles.entryTitle, { color: t.text }]}>
-              {isAudio ? 'Where did you stop?' : 'What page are you on?'}
-            </Text>
-            <Text style={[styles.entryHint, { color: t.textSec }]}>
-              You started on page {book.currentPage}. Leave it the same if you didn’t turn a page.
-            </Text>
-            <TextInput
-              value={endPage}
-              onChangeText={setEndPage}
-              keyboardType="number-pad"
-              returnKeyType="done"
-              autoFocus
-              selectTextOnFocus
-              maxLength={5}
-              style={[styles.entryInput, { color: t.text, borderColor: t.accent }]}
-              accessibilityLabel="End page"
-            />
-            <PressBlock
-              onPress={confirmFinish}
-              disabled={submitting}
-              accessibilityLabel="Finish session"
-              style={[styles.entryBtn, { backgroundColor: t.accent, borderColor: INK }, submitting && styles.btnBusy]}
-            >
-              {submitting ? (
-                <ActivityIndicator color={PALETTE.onAccent} />
-              ) : (
-                <Text style={styles.entryBtnText}>Finish session</Text>
-              )}
-            </PressBlock>
-          </View>
-        </KeyboardAvoidingView>
-      ) : null}
     </Animated.View>
   );
 }
