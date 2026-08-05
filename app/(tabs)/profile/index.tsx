@@ -459,6 +459,8 @@ const styles = StyleSheet.create({
   badgeSection: { gap: 14 },
   badgeHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { fontFamily: FONTS.uiBold, fontSize: 17 },
-  reviewsRow: { gap: 12, paddingRight: 4, paddingVertical: 2 },
+  // paddingBottom covers ReviewQuoteCard's 4px hard shadow plus its 2px pressed
+  // translate; a horizontal ScrollView would otherwise shear both off.
+  reviewsRow: { gap: 12, paddingRight: 4, paddingTop: 2, paddingBottom: 8 },
   seeAll: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
 });

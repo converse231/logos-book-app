@@ -125,7 +125,12 @@ export default function Home() {
           const finished = s?.find((b) => b.status === 'finished');
           if (finished) {
             api.getReviews(finished.book.id).then((rv) => {
-              if (alive && rv.length) setFeatured({ book: finished, reviews: rv });
+              // "What readers are saying" needs someone to have said something.
+              // Ratings are words-optional, so a book can carry plenty of reviews
+              // and no prose — in which case the section stays hidden rather than
+              // showing cards with a name, some stars and a blank space.
+              const withText = rv.filter((r) => r.body?.trim());
+              if (alive && withText.length) setFeatured({ book: finished, reviews: withText });
             });
           }
         })
@@ -753,7 +758,12 @@ const styles = StyleSheet.create({
   sessionTitle: { fontFamily: FONTS.uiBold, fontSize: 14 },
   sessionStats: { fontFamily: FONTS.mono, fontSize: 11 },
   carousel: { marginHorizontal: -18 },
-  carouselContent: { paddingHorizontal: 18, gap: 12 },
+  // A horizontal ScrollView clips vertical overflow, and these cards carry
+  // SHADOW.card — a 4px offset that sits OUTSIDE their layout box — plus a pressed
+  // state that translates 2px further down. Without reserving that here the bottom
+  // of every card's shadow is sheared off. Same failure as the clipped POST REVIEW
+  // button: hard shadows have to be paid for in the scroller's padding.
+  carouselContent: { paddingHorizontal: 18, paddingBottom: 8, gap: 12 },
   tbrItem: { width: 96, gap: 6 },
   pressed: { opacity: 0.8 },
   tbrTitle: { fontFamily: FONTS.uiMedium, fontSize: 12 },

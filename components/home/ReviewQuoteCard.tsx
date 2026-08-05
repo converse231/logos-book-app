@@ -19,6 +19,10 @@ interface ReviewQuoteCardProps {
 // read like a pull-quote, not a UI string.
 export function ReviewQuoteCard({ bookTitle, coverUrl, format, rating, body, author, onPress }: ReviewQuoteCardProps) {
   const t = useTheme();
+  // Ratings are words-optional — the book-detail screen lets you leave stars without
+  // writing anything — so `body` is routinely empty. Rendering it anyway produced a
+  // pair of quote marks with nothing between them.
+  const quote = body.trim();
   return (
     <Pressable
       onPress={onPress}
@@ -36,9 +40,11 @@ export function ReviewQuoteCard({ bookTitle, coverUrl, format, rating, body, aut
         </View>
       </View>
 
-      <Text style={[styles.quote, { color: t.text }]} numberOfLines={3}>
-        “{body}”
-      </Text>
+      {quote ? (
+        <Text style={[styles.quote, { color: t.text }]} numberOfLines={3}>
+          “{quote}”
+        </Text>
+      ) : null}
 
       <Text style={[styles.author, { color: t.textSec }]} numberOfLines={1}>
         {author}
