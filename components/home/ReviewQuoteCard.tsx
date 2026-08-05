@@ -15,8 +15,19 @@ interface ReviewQuoteCardProps {
   onPress: () => void;
 }
 
-// A community review surfaced on Home. The quote is set in the literary serif to
-// read like a pull-quote, not a UI string.
+/** "5 stars", "4.5 stars", "1 star" — ratings persist in 0.5 steps, so whole
+ *  numbers must not render as "5.0". */
+function starLabel(rating: number): string {
+  const n = Number.isInteger(rating) ? String(rating) : rating.toFixed(1);
+  return `${n} ${rating === 1 ? 'star' : 'stars'}`;
+}
+
+// A community review surfaced on Home, in one of two forms.
+//
+// Rating is words-optional — the book-detail screen takes stars on their own — so
+// plenty of reviews have no prose. Rather than hide those, they render as a stated
+// rating ("Daniel rated this 5 stars") in the same serif slot the pull-quote uses.
+// Same card, same shape, still says something true about the book.
 export function ReviewQuoteCard({ bookTitle, coverUrl, format, rating, body, author, onPress }: ReviewQuoteCardProps) {
   const t = useTheme();
   // Ratings are words-optional — the book-detail screen lets you leave stars without
@@ -41,14 +52,21 @@ export function ReviewQuoteCard({ bookTitle, coverUrl, format, rating, body, aut
       </View>
 
       {quote ? (
+        <>
+          <Text style={[styles.quote, { color: t.text }]} numberOfLines={3}>
+            “{quote}”
+          </Text>
+          <Text style={[styles.author, { color: t.textSec }]} numberOfLines={1}>
+            {author}
+          </Text>
+        </>
+      ) : (
+        // Rated-only: the same serif slot, but the sentence IS the statement, so
+        // the separate byline underneath would just repeat the name.
         <Text style={[styles.quote, { color: t.text }]} numberOfLines={3}>
-          “{quote}”
+          {author} rated this {starLabel(rating)}
         </Text>
-      ) : null}
-
-      <Text style={[styles.author, { color: t.textSec }]} numberOfLines={1}>
-        {author}
-      </Text>
+      )}
     </Pressable>
   );
 }

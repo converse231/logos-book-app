@@ -125,12 +125,13 @@ export default function Home() {
           const finished = s?.find((b) => b.status === 'finished');
           if (finished) {
             api.getReviews(finished.book.id).then((rv) => {
-              // "What readers are saying" needs someone to have said something.
-              // Ratings are words-optional, so a book can carry plenty of reviews
-              // and no prose — in which case the section stays hidden rather than
-              // showing cards with a name, some stars and a blank space.
-              const withText = rv.filter((r) => r.body?.trim());
-              if (alive && withText.length) setFeatured({ book: finished, reviews: withText });
+              // Written reviews lead — a pull-quote says more than a number — but
+              // rating-only ones still feature, rendered by ReviewQuoteCard as
+              // "Daniel rated this 5 stars" rather than being dropped.
+              const ranked = [...rv].sort(
+                (a, b) => Number(!!b.body?.trim()) - Number(!!a.body?.trim())
+              );
+              if (alive && ranked.length) setFeatured({ book: finished, reviews: ranked });
             });
           }
         })
