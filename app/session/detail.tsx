@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
@@ -131,7 +132,7 @@ export default function SessionDetail() {
               {deleting ? (
                 <ActivityIndicator size="small" color={t.danger} />
               ) : (
-                <Ionicons name="trash-outline" size={20} color={t.danger} />
+                <AppIcon name="trash" tint="danger" size={20} />
               )}
             </Pressable>
           ) : (

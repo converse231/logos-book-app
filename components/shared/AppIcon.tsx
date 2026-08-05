@@ -33,20 +33,56 @@ const CUSTOM: Partial<Record<string, { active: number; inactive: number }>> = {
 };
 
 /**
- * Single-variant art: one baked-in colour, no focused/unfocused pair.
- *
- * Because the colour is painted in, these can only stand in where the call site
- * already wanted that exact colour — the ember flame, the gold trophy/ribbon/star,
- * the coral sparkle. `flame` in particular is drawn in seven different tints across
- * the app; the other six call sites must stay on the font glyph, so DON'T blanket
- * replace Ionicons with AppIcon. Check the colour first.
+ * Which theme colour a piece of art is painted in. Painted icons can't be tinted,
+ * so the colour is part of the identity of the file, not a runtime prop.
  */
-const SOLID: Partial<Record<string, number>> = {
-  flame: require('@/assets/ui-icons/flame-ember.webp'),
-  trophy: require('@/assets/ui-icons/trophy-gold.webp'),
-  sparkles: require('@/assets/ui-icons/sparkles-accent.webp'),
-  ribbon: require('@/assets/ui-icons/ribbon-gold.webp'),
-  star: require('@/assets/ui-icons/star-gold.webp'),
+export type IconTint = 'accent' | 'ember' | 'gold' | 'ink' | 'muted' | 'lilac' | 'danger';
+
+/**
+ * Single-variant art, keyed by glyph then by the colour it's drawn in.
+ *
+ * `tint` is REQUIRED to get art — there is deliberately no default. Six of these
+ * glyphs exist in more than one colour (flame in ember and ink, book in accent,
+ * muted and ink…) and a wrong default would silently paint an ember flame onto a
+ * coral fill. Ask for a tint the art doesn't have and you get the font glyph, which
+ * is always a safe outcome.
+ *
+ * One wrinkle worth knowing: `book` at tint `ink` is an OPEN book (it's the
+ * "Getting Deep" achievement) while `accent` and `muted` are closed books. Same
+ * glyph name, different drawings, because they live on unrelated surfaces.
+ *
+ * Metro resolves image assets only from literal require() calls.
+ */
+const SOLID: Partial<Record<string, Partial<Record<IconTint, number>>>> = {
+  barcode:          { accent: require('@/assets/ui-icons/barcode-accent.webp') },
+  book:             { accent: require('@/assets/ui-icons/book-accent.webp'),
+                      muted:  require('@/assets/ui-icons/book-muted.webp'),
+                      ink:    require('@/assets/ui-icons/book-open-ink.webp') },
+  bookmarks:        { muted:  require('@/assets/ui-icons/bookmarks-muted.webp') },
+  business:         { accent: require('@/assets/ui-icons/business-accent.webp') },
+  calendar:         { accent: require('@/assets/ui-icons/calendar-accent.webp'),
+                      ink:    require('@/assets/ui-icons/calendar-ink.webp') },
+  'checkmark-done': { gold:   require('@/assets/ui-icons/checkmark-done-gold.webp') },
+  'cloud-offline':  { muted:  require('@/assets/ui-icons/cloud-offline-muted.webp') },
+  flame:            { ember:  require('@/assets/ui-icons/flame-ember.webp'),
+                      ink:    require('@/assets/ui-icons/flame-ink.webp') },
+  flash:            { ink:    require('@/assets/ui-icons/flash-ink.webp') },
+  footsteps:        { ink:    require('@/assets/ui-icons/footsteps-ink.webp') },
+  globe:            { accent: require('@/assets/ui-icons/globe-accent.webp') },
+  library:          { gold:   require('@/assets/ui-icons/library-gold.webp'),
+                      ink:    require('@/assets/ui-icons/library-ink.webp') },
+  medal:            { ink:    require('@/assets/ui-icons/medal-ink.webp') },
+  person:           { accent: require('@/assets/ui-icons/person-accent.webp') },
+  reader:           { accent: require('@/assets/ui-icons/reader-accent.webp') },
+  ribbon:           { gold:   require('@/assets/ui-icons/ribbon-gold.webp'),
+                      ink:    require('@/assets/ui-icons/ribbon-ink.webp') },
+  sparkles:         { accent: require('@/assets/ui-icons/sparkles-accent.webp') },
+  speedometer:      { lilac:  require('@/assets/ui-icons/speedometer-lilac.webp') },
+  star:             { gold:   require('@/assets/ui-icons/star-gold.webp') },
+  time:             { ember:  require('@/assets/ui-icons/time-ember.webp') },
+  trash:            { danger: require('@/assets/ui-icons/trash-danger.webp') },
+  trophy:           { gold:   require('@/assets/ui-icons/trophy-gold.webp'),
+                      ink:    require('@/assets/ui-icons/trophy-ink.webp') },
 };
 
 /** The art is fitted to a fraction of its canvas so nothing clips, so drawing it at
@@ -61,6 +97,9 @@ interface AppIconProps {
   name: IoniconName;
   /** Omit entirely for a plain icon; pass it for a two-state (tab) icon. */
   focused?: boolean;
+  /** Which painted variant to use. Required to get art — omit it and you get the
+   *  font glyph. Must match the colour the call site would otherwise have passed. */
+  tint?: IconTint;
   size?: number;
   /** Tints font glyphs. Ignored by custom art, which carries its own colour. */
   color?: string;
@@ -75,11 +114,21 @@ interface AppIconProps {
  * files rather than one shape in two colours. That also means `color` has no effect
  * on custom icons; the palette lives in the artwork.
  */
-export function AppIcon({ name, focused, size = 24, color, style }: AppIconProps) {
+export function AppIcon({ name, focused, tint, size = 24, color, style }: AppIconProps) {
+  // Call sites name the FILLED glyph in some places and the -outline one in others
+  // ("reader" vs "reader-outline"). The painted art draws no such distinction, so
+  // the registry is keyed on the base name and the suffix is stripped for lookup.
+  const base = name.replace(/-outline$/, '');
   // `focused` is what distinguishes the two registries: pass it and you're asking
   // for a two-state tab icon, omit it and you get the single-variant art (if any).
-  const pair = focused === undefined ? undefined : CUSTOM[name];
-  const source = pair ? (focused ? pair.active : pair.inactive) : focused === undefined ? SOLID[name] : undefined;
+  const pair = focused === undefined ? undefined : CUSTOM[base];
+  const source = pair
+    ? focused
+      ? pair.active
+      : pair.inactive
+    : focused === undefined && tint
+      ? SOLID[base]?.[tint]
+      : undefined;
 
   if (source) {
     const s = Math.round(size * (pair ? ART_SCALE : SOLID_SCALE));

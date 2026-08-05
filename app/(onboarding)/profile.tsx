@@ -11,6 +11,7 @@ import {
 import { useRouter, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
@@ -145,7 +146,7 @@ export default function Profile() {
                 {avatar ? (
                   <Image source={{ uri: avatar.uri }} style={styles.avatarImg} contentFit="cover" />
                 ) : (
-                  <Ionicons name="person" size={42} color={t.accent} />
+                  <AppIcon name="person" tint="accent" size={42} />
                 )}
               </View>
               <View style={[styles.avatarBadge, { backgroundColor: t.accent, borderColor: t.border }]}>

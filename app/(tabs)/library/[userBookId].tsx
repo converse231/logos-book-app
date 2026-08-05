@@ -366,7 +366,7 @@ export default function BookDetail() {
                 accessibilityLabel={`Rated ${ratingAvg.toFixed(1)} from ${ratingCount} reviews`}
                 style={[styles.chip, { backgroundColor: 'rgba(255,197,61,0.14)' }]}
               >
-                <AppIcon name="star" size={14} />
+                <AppIcon name="star" tint="gold" size={14} />
                 <Text style={[styles.chipText, { color: t.gold }]}>
                   {ratingAvg.toFixed(1)} ({ratingCount})
                 </Text>
@@ -421,7 +421,7 @@ export default function BookDetail() {
               accessibilityLabel={`See more books by ${book.authors[0]}`}
               style={[styles.authorBanner, { backgroundColor: t.accentMuted }]}
             >
-              <AppIcon name="sparkles" size={18} />
+              <AppIcon name="sparkles" tint="accent" size={18} />
               <Text style={[styles.authorBannerText, { color: t.accent }]} numberOfLines={1}>
                 Loved it? More by {book.authors[0]}
               </Text>
@@ -548,7 +548,7 @@ export default function BookDetail() {
                 <ActivityIndicator size="small" color={t.danger} />
               ) : (
                 <>
-                  <Ionicons name="trash-outline" size={18} color={t.danger} />
+                  <AppIcon name="trash" tint="danger" size={18} />
                   <Text style={[styles.removeText, { color: t.danger }]}>Remove from library</Text>
                 </>
               )}
@@ -710,7 +710,10 @@ function DetailTile({
   return (
     <View style={[styles.dTile, { backgroundColor: t.bgSec, borderColor: t.border }, wide ? styles.dTileWide : styles.dTileHalf]}>
       <View style={[styles.dIcon, { backgroundColor: t.bgTer }]}>
-        <Ionicons name={icon} size={16} color={t.accent} />
+        {/* Every About row is coral at 16px, so one tint covers the lot. Rows whose
+            glyph has no art yet (audiobook length's clock, say) fall through to the
+            font on their own. */}
+        <AppIcon name={icon} tint="accent" size={16} color={t.accent} />
       </View>
       <View style={styles.dText}>
         <Text style={[styles.dValue, { color: t.text }]} numberOfLines={wide ? 1 : 2}>

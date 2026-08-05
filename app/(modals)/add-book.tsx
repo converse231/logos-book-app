@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, Vi
 import { Image as ExpoImage } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
@@ -224,7 +225,7 @@ export default function AddBook() {
           accessibilityLabel="Scan an ISBN instead"
           style={({ pressed }) => [styles.scanRow, pressed && { opacity: 0.7 }]}
         >
-          <Ionicons name="barcode-outline" size={18} color={t.accent} />
+          <AppIcon name="barcode" tint="accent" size={18} />
           <Text style={[styles.scanText, { color: t.accent }]}>Scan an ISBN instead</Text>
         </Pressable>
 

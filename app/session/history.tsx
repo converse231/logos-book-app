@@ -151,7 +151,7 @@ function SessionRow({ row, onPress, t }: { row: Row; onPress: () => void; t: Ret
         </Text>
       </View>
       <View style={styles.rowRight}>
-        {s.isPersonalBest ? <AppIcon name="trophy" size={14} /> : null}
+        {s.isPersonalBest ? <AppIcon name="trophy" tint="gold" size={14} /> : null}
         <Text style={[styles.rowDate, { color: t.textTer }]}>{shortDate(s.startedAt)}</Text>
       </View>
     </Pressable>

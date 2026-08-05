@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
 import { coverGrid } from '@/theme/layout';
@@ -103,7 +104,7 @@ export default function TBR() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={[styles.emptyIcon, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-                <Ionicons name="bookmarks-outline" size={26} color={t.textSec} />
+                <AppIcon name="bookmarks" tint="muted" size={26} />
               </View>
               <Text style={[styles.emptyTitle, { color: t.text }]}>Nothing on the list yet</Text>
               <Text style={[styles.emptyBody, { color: t.textSec }]}>

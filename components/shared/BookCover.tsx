@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
 import { BookFormat } from '@/services/types';
@@ -40,7 +40,7 @@ export function BookCover({
     >
       {showPlaceholder ? (
         <View style={styles.placeholder}>
-          <Ionicons name="book" size={width * 0.3} color={t.textTer} />
+          <AppIcon name="book" tint="muted" size={width * 0.3} />
           <Text style={[styles.placeholderTitle, { color: t.textSec }]} numberOfLines={3}>
             {title}
           </Text>

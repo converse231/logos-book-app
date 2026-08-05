@@ -160,7 +160,7 @@ export default function SessionComplete() {
             <View style={styles.badges}>
               {result.newBadges.map((b) => (
                 <View key={b.id} style={[styles.badge, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-                  <AppIcon name="ribbon" size={18} />
+                  <AppIcon name="ribbon" tint="gold" size={18} />
                   <Text style={[styles.badgeText, { color: t.text }]}>{b.name.toUpperCase()}</Text>
                 </View>
               ))}

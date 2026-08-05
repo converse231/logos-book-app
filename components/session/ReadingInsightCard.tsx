@@ -104,7 +104,7 @@ export function ReadingInsightCard({ insight, onShare, onSave, onAutoDismiss }: 
           <View style={[styles.grabberBar, { backgroundColor: t.border }]} />
         </View>
         <View style={styles.header}>
-          <AppIcon name="sparkles" size={16} />
+          <AppIcon name="sparkles" tint="accent" size={16} />
           <Text style={[styles.headerText, { color: accent }]}>READING INSIGHT</Text>
         </View>
         <Text style={[styles.body, { color: t.text }]}>{insight.text}</Text>

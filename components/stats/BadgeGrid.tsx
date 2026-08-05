@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 import { Badge } from '@/services/types';
@@ -43,10 +44,18 @@ function BadgeMedallion({ badge, onPress }: { badge: Badge; onPress?: (b: Badge)
             : { backgroundColor: t.bgTer, borderColor: t.border },
         ]}
       >
-        <Ionicons
+        {/* All nine badge glyphs are painted in ink, which is exactly what an
+            unlocked medallion wants on its gold fill. The locked state is the SAME
+            file at low opacity rather than a second muted set — ink at 0.38 over
+            the cream tile lands on roughly textTer, which is what the font glyph
+            used, and it halves the artwork. `color` still drives the font
+            fallback for any badge whose art hasn't landed. */}
+        <AppIcon
           name={badge.iconName as keyof typeof Ionicons.glyphMap}
+          tint="ink"
           size={26}
           color={unlocked ? '#241E19' : t.textTer}
+          style={unlocked ? undefined : { opacity: 0.38 }}
         />
         {!unlocked && ratio === 0 ? (
           <View style={[styles.lock, { backgroundColor: t.bgSec, borderColor: t.border }]}>

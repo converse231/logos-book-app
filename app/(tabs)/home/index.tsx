@@ -7,7 +7,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { AppIcon } from '@/components/shared/AppIcon';
+import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
@@ -334,9 +334,9 @@ export default function Home() {
               onAction={() => router.push('/(tabs)/stats' as Href)}
             />
             <View style={styles.statBlocks}>
-              <StatBlock icon="reader-outline" tint={t.accentMuted} color={t.accent} value={stats.lifetimePages.toLocaleString()} label="PAGES" t={t} />
-              <StatBlock icon="time-outline" tint="rgba(242,145,63,0.16)" color={t.ember} value={`${stats.lifetimeHours}h`} label="READ" t={t} />
-              <StatBlock icon="checkmark-done-outline" tint="rgba(243,194,76,0.18)" color={t.gold} value={`${stats.booksFinished}`} label="BOOKS" t={t} />
+              <StatBlock icon="reader-outline" art="accent" tint={t.accentMuted} color={t.accent} value={stats.lifetimePages.toLocaleString()} label="PAGES" t={t} />
+              <StatBlock icon="time-outline" art="ember" tint="rgba(242,145,63,0.16)" color={t.ember} value={`${stats.lifetimeHours}h`} label="READ" t={t} />
+              <StatBlock icon="checkmark-done-outline" art="gold" tint="rgba(243,194,76,0.18)" color={t.gold} value={`${stats.booksFinished}`} label="BOOKS" t={t} />
             </View>
           </View>
         </Reveal>
@@ -541,6 +541,7 @@ function Reveal({ index, reduce, children }: { index: number; reduce: boolean; c
 // same neubrutalist language as the session-complete cards.
 function StatBlock({
   icon,
+  art,
   tint,
   color,
   value,
@@ -548,6 +549,8 @@ function StatBlock({
   t,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
+  /** Painted variant to serve; StatBlock's own `tint` is the tile background. */
+  art?: IconTint;
   tint: string;
   color: string;
   value: string;
@@ -556,7 +559,7 @@ function StatBlock({
 }) {
   return (
     <View style={[styles.statBlock, { backgroundColor: tint, borderColor: t.border }]}>
-      <Ionicons name={icon} size={20} color={color} />
+      <AppIcon name={icon} tint={art} size={20} color={color} />
       <Text style={[styles.statBlockValue, { color: t.text }]} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
@@ -596,7 +599,7 @@ function RecentSessionRow({
         <Text style={[styles.sessionTitle, { color: t.text }]} numberOfLines={1}>{book?.book.title ?? 'A book'}</Text>
         <Text style={[styles.sessionStats, { color: t.textSec }]} numberOfLines={1}>{primary}</Text>
       </View>
-      {session.isPersonalBest ? <AppIcon name="trophy" size={14} /> : null}
+      {session.isPersonalBest ? <AppIcon name="trophy" tint="gold" size={14} /> : null}
       <Ionicons name="chevron-forward" size={16} color={t.textTer} />
     </Pressable>
   );

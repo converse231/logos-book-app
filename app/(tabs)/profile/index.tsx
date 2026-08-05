@@ -301,7 +301,7 @@ export default function Profile() {
             <View style={styles.calHead}>
               <Text style={[styles.blockLabel, { color: t.textSec }]}>READING STREAK</Text>
               <View style={styles.bestStreak}>
-                <AppIcon name="flame" size={14} />
+                <AppIcon name="flame" tint="ember" size={14} />
                 <Text style={[styles.bestStreakText, { color: t.text }]}>
                   Best {scopeWord}: {best} day{best === 1 ? '' : 's'}
                 </Text>

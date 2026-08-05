@@ -15,6 +15,7 @@ import { Q } from '@/components/shared/Q';
 import { Card } from '@/components/shared/Card';
 import { BookCover } from '@/components/shared/BookCover';
 import { StatTile } from '@/components/shared/StatTile';
+import type { IconTint } from '@/components/shared/AppIcon';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { XpLevelCard } from '@/components/stats/XpLevelCard';
@@ -24,7 +25,7 @@ import { BadgeGrid } from '@/components/stats/BadgeGrid';
 import { AlmostThereBanner } from '@/components/gamification/AlmostThereBanner';
 import { RefreshingOverlay, HIDDEN_SPINNER } from '@/components/shared/RefreshingOverlay';
 
-type Tile = { icon: keyof typeof Ionicons.glyphMap; value: string; label: string; color: string };
+type Tile = { icon: keyof typeof Ionicons.glyphMap; value: string; label: string; color: string; tint: IconTint };
 
 export default function Stats() {
   const t = useTheme();
@@ -82,12 +83,12 @@ export default function Stats() {
   }
 
   const tiles: Tile[] = [
-    { icon: 'reader', value: stats.lifetimePages.toLocaleString(), label: 'Pages read', color: t.accent },
-    { icon: 'time', value: `${stats.lifetimeHours}h`, label: 'Time read', color: t.ember },
-    { icon: 'library', value: `${stats.booksFinished}`, label: 'Books finished', color: t.gold },
-    { icon: 'speedometer', value: stats.avgPph != null ? `${stats.avgPph}` : '—', label: 'Avg pages/hr', color: t.level },
-    { icon: 'flame', value: `${stats.currentStreak}`, label: 'Current streak', color: t.ember },
-    { icon: 'trophy', value: `${stats.longestStreak}`, label: 'Longest streak', color: t.gold },
+    { icon: 'reader', value: stats.lifetimePages.toLocaleString(), label: 'Pages read', color: t.accent, tint: 'accent' },
+    { icon: 'time', value: `${stats.lifetimeHours}h`, label: 'Time read', color: t.ember, tint: 'ember' },
+    { icon: 'library', value: `${stats.booksFinished}`, label: 'Books finished', color: t.gold, tint: 'gold' },
+    { icon: 'speedometer', value: stats.avgPph != null ? `${stats.avgPph}` : '—', label: 'Avg pages/hr', color: t.level, tint: 'lilac' },
+    { icon: 'flame', value: `${stats.currentStreak}`, label: 'Current streak', color: t.ember, tint: 'ember' },
+    { icon: 'trophy', value: `${stats.longestStreak}`, label: 'Longest streak', color: t.gold, tint: 'gold' },
   ];
   const rows: Tile[][] = [];
   for (let i = 0; i < tiles.length; i += 2) rows.push(tiles.slice(i, i + 2));
@@ -160,7 +161,7 @@ export default function Stats() {
                 {rows.map((row, ri) => (
                   <View key={ri} style={styles.statRow}>
                     {row.map((tile) => (
-                      <StatTile key={tile.label} icon={tile.icon} value={tile.value} label={tile.label} color={tile.color} />
+                      <StatTile key={tile.label} icon={tile.icon} tint={tile.tint} value={tile.value} label={tile.label} color={tile.color} />
                     ))}
                   </View>
                 ))}
@@ -282,7 +283,7 @@ function DaySessionsSheet({
                     <Text style={[styles.dayRowTitle, { color: t.text }]} numberOfLines={1}>{ub?.book.title ?? 'A book'}</Text>
                     <Text style={[styles.dayRowStats, { color: t.textSec }]} numberOfLines={1}>{primary}</Text>
                   </View>
-                  {s.isPersonalBest ? <AppIcon name="trophy" size={14} /> : null}
+                  {s.isPersonalBest ? <AppIcon name="trophy" tint="gold" size={14} /> : null}
                   <Ionicons name="chevron-forward" size={16} color={t.textTer} />
                 </Pressable>
               );

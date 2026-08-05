@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -323,7 +324,7 @@ export default function Settings() {
                   {profile?.avatarUrl ? (
                     <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
                   ) : (
-                    <Ionicons name="person" size={34} color={t.accent} />
+                    <AppIcon name="person" tint="accent" size={34} />
                   )}
                 </View>
                 <View style={[styles.avatarBadge, { backgroundColor: t.accent, borderColor: t.border }]}>
@@ -441,7 +442,7 @@ export default function Settings() {
               accessibilityLabel="Delete account"
               style={({ pressed }) => [styles.menuRow, { borderBottomWidth: 0 }, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="trash-outline" size={20} color={t.danger} />
+              <AppIcon name="trash" tint="danger" size={20} />
               <Text style={[styles.menuLabel, { color: t.danger }]}>
                 {busy === 'delete' ? 'Deleting…' : 'Delete account'}
               </Text>

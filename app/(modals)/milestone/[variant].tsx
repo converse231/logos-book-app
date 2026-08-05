@@ -131,7 +131,7 @@ function FireStreak({ count, reduce }: { count: number; reduce: boolean }) {
       accessibilityLabel={`${count} day streak`}
     >
       {reduce ? (
-        <AppIcon name="flame" size={SIZE} />
+        <AppIcon name="flame" tint="ember" size={SIZE} />
       ) : (
         <Image
           source={require('@/assets/fire.webp')}

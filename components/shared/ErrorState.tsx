@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 import { PressBlock } from '@/components/shared/PressBlock';
@@ -21,7 +22,7 @@ export function ErrorState({
   return (
     <View style={styles.wrap}>
       <View style={[styles.icon, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-        <Ionicons name="cloud-offline-outline" size={28} color={t.textSec} />
+        <AppIcon name="cloud-offline" tint="muted" size={28} />
       </View>
       <Text style={[styles.title, { color: t.text }]}>{title}</Text>
       <Text style={[styles.message, { color: t.textSec }]}>{message}</Text>

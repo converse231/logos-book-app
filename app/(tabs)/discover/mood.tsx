@@ -175,7 +175,7 @@ export default function MoodReader() {
               <Ionicons name="chevron-back" size={22} color={t.text} />
             </Pressable>
             <View style={[styles.aiTag, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-              <AppIcon name="sparkles" size={13} />
+              <AppIcon name="sparkles" tint="accent" size={13} />
               <Text style={[styles.aiTagText, { color: t.accent }]}>MOOD READER</Text>
             </View>
           </View>

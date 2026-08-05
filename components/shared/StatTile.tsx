@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppIcon } from '@/components/shared/AppIcon';
+import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 
@@ -12,27 +12,30 @@ interface StatTileProps {
   /** Reward hue for the icon + delta so a bento of tiles reads as a palette,
    *  not a wall of coral. Defaults to the coral accent. */
   color?: string;
+  /** Which painted variant to serve, when art exists for this glyph. Must name the
+   *  same colour as `color` — see AppIcon. Omit for the font glyph. */
+  tint?: IconTint;
 }
 
 // Single bento metric tile (blueprint #14). Tabular value figures so columns of
 // tiles don't reflow as numbers change.
-export function StatTile({ label, value, delta, icon, color }: StatTileProps) {
+export function StatTile({ label, value, delta, icon, color, tint }: StatTileProps) {
   const t = useTheme();
-  const tint = color ?? t.accent;
+  const iconColor = color ?? t.accent;
   return (
     <View style={[styles.tile, { backgroundColor: t.bgSec, borderColor: t.border }]}>
       {/* AppIcon serves hand-drawn art for the glyphs that have it and falls back to
           the font for the rest, so the tiles can convert one icon at a time. Only
           safe because every tile's `color` already matches its art: the streak tile
           is ember and the longest-streak tile is gold. */}
-      {icon ? <AppIcon name={icon} size={18} color={tint} style={styles.icon} /> : null}
+      {icon ? <AppIcon name={icon} tint={tint} size={18} color={iconColor} style={styles.icon} /> : null}
       <Text style={[styles.value, { color: t.text }]} numberOfLines={1}>
         {value}
       </Text>
       <Text style={[styles.label, { color: t.textSec }]} numberOfLines={1}>
         {label}
       </Text>
-      {delta ? <Text style={[styles.delta, { color: tint }]}>{delta}</Text> : null}
+      {delta ? <Text style={[styles.delta, { color: iconColor }]}>{delta}</Text> : null}
     </View>
   );
 }
