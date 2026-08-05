@@ -120,10 +120,12 @@ export default function SessionComplete() {
   const badge = result.newBadges[0] ?? null;
   const d = (n: number) => (reduce ? 0 : n);
 
-  // 0.90 of the measured stage leaves room for the halo (1.08x) to sit inside it,
-  // so `overflow: hidden` on the stage can act as a hard guarantee that nothing
-  // reaches the headline without ever clipping the artwork. The window-based value
-  // is only the first-frame estimate, replaced on layout.
+  // 0.90 of the measured stage. That figure is what keeps everything inside without
+  // needing a clip: the halo sits at 1.08x (0.97 of the stage) and the entrance
+  // spring — damping 13, stiffness 140, mass 0.9, so underdamped and overshooting
+  // ~11% — peaks at 0.997. Raising this much above 0.90 makes the overshoot collide
+  // with the headline again, which is the bug this replaced.
+  // The window-based value is only the first-frame estimate, replaced on layout.
   const qSize = stageH > 0
     ? Math.max(150, Math.min(320, stageH * 0.9))
     : Math.max(190, Math.min(300, height * 0.34));
@@ -276,9 +278,11 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   column: { ...CENTER_COLUMN_FILL, paddingHorizontal: 22 },
 
-  // overflow:hidden is the guarantee, not the mechanism — qSize is measured to fit,
-  // and this makes it impossible for the art to reach the headline regardless.
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0, overflow: 'hidden' },
+  // No overflow:hidden. Q is measured to fit the stage, so a clip could never fire —
+  // and if a future change made it fire, silently cropping the mascot is a worse
+  // outcome than seeing the layout break. minHeight:0 is what actually lets this
+  // flex child shrink.
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
   halo: { position: 'absolute' },
 
   headline: { fontFamily: FONTS.serifBold, fontSize: 27, lineHeight: 32, textAlign: 'center', ...NO_FONT_PAD },
