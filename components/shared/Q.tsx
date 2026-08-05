@@ -35,7 +35,19 @@ export type QExpression =
   | 'sleeping'
   | 'pointing'
   | 'proud'
-  | 'thinking';
+  | 'thinking'
+  // Session-success ladder poses (lib/sessionCelebration). Full-body, each with
+  // one prop, drawn to be read at ~250dp — unlike the older portrait crops above,
+  // several of which are used as small as 42dp.
+  | 'book-finished'
+  | 'personal-best'
+  | 'medal'
+  | 'marathon'
+  | 'celebrating'
+  | 'headphones'
+  | 'late-night'
+  | 'thumbsup'
+  | 'everyday';
 
 // Static requires — Metro resolves image assets only from literal require() calls.
 const SOURCES: Record<QExpression, number> = {
@@ -53,6 +65,15 @@ const SOURCES: Record<QExpression, number> = {
   pointing: require('@/assets/q-expressions/q-pointing.webp'),
   proud: require('@/assets/q-expressions/q-proud.webp'),
   thinking: require('@/assets/q-expressions/q-thinking.webp'),
+  'book-finished': require('@/assets/q-expressions/q-book-finished.webp'),
+  'personal-best': require('@/assets/q-expressions/q-personal-best.webp'),
+  medal: require('@/assets/q-expressions/q-medal.webp'),
+  marathon: require('@/assets/q-expressions/q-marathon.webp'),
+  celebrating: require('@/assets/q-expressions/q-celebrating.webp'),
+  headphones: require('@/assets/q-expressions/q-headphones.webp'),
+  'late-night': require('@/assets/q-expressions/q-late-night.webp'),
+  thumbsup: require('@/assets/q-expressions/q-thumbsup.webp'),
+  everyday: require('@/assets/q-expressions/q-everyday.webp'),
 };
 
 const LABELS: Record<QExpression, string> = {
@@ -70,6 +91,15 @@ const LABELS: Record<QExpression, string> = {
   pointing: 'Q the fox, pointing ahead',
   proud: 'Q the fox, giving a thumbs-up',
   thinking: 'Q the fox, thinking',
+  'book-finished': 'Q the fox, hugging a finished book',
+  'personal-best': 'Q the fox, leaping with a stopwatch',
+  medal: 'Q the fox, holding up a medal',
+  marathon: 'Q the fox, resting beside a stack of books',
+  celebrating: 'Q the fox, celebrating with a book',
+  headphones: 'Q the fox, listening with headphones',
+  'late-night': 'Q the fox, reading late by candlelight',
+  thumbsup: 'Q the fox, giving a thumbs-up',
+  everyday: 'Q the fox, closing a book',
 };
 
 interface QProps {

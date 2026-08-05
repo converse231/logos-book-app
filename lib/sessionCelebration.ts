@@ -8,21 +8,10 @@
 // conditions, and every tier is forced to declare the same fields.
 //
 // ── Artwork ───────────────────────────────────────────────────────────────────
-// Six poses are commissioned but not yet drawn. Each tier below therefore points at
-// the closest EXISTING expression so the ladder works today, with the intended file
-// named in `art`. When a pose lands: add it to Q.tsx's SOURCES, then change that
-// tier's `expression` to the new key. Nothing else moves.
-//
-//   tier              intended art          rendering as (today)
-//   finished-book     q-book-finished       proud
-//   personal-best     q-personal-best       surprised
-//   achievement       q-medal               proud
-//   marathon          q-marathon            confident
-//   big               q-celebrating         happy
-//   audiobook         q-headphones          happy
-//   late-night        —                     sleepy      ✓ final
-//   solid             q-thumbsup            happy
-//   everyday          —                     happy       ✓ final
+// All nine poses are drawn (2026-08-06): full body, one prop each, sized to read at
+// ~250dp. They are NOT the older portrait crops — q-sleepy and q-happy stay in the
+// cast untouched because Home renders sleepy at 42dp, where a full-body fox with a
+// candle would be an illegible speck.
 
 import type { QExpression } from '@/components/shared/Q';
 
@@ -57,42 +46,42 @@ const LADDER: Tier[] = [
   {
     key: 'finished-book',
     when: (c) => c.finishedBook,
-    expression: 'proud', // → q-book-finished
+    expression: 'book-finished',
     headline: 'You finished it',
     halo: 'gold',
   },
   {
     key: 'personal-best',
     when: (c) => c.isPersonalBest,
-    expression: 'surprised', // → q-personal-best
+    expression: 'personal-best',
     headline: 'Personal best',
     halo: 'gold',
   },
   {
     key: 'achievement',
     when: (c) => c.badgeCount > 0,
-    expression: 'proud', // → q-medal
+    expression: 'medal',
     headline: 'Achievement unlocked',
     halo: 'gold',
   },
   {
     key: 'marathon',
     when: (c) => c.durationSeconds >= 60 * MIN || (c.pagesRead ?? 0) >= 40,
-    expression: 'confident', // → q-marathon
+    expression: 'marathon',
     headline: 'That was a session',
     halo: 'coral',
   },
   {
     key: 'big',
     when: (c) => c.durationSeconds >= 30 * MIN || (c.pagesRead ?? 0) >= 20,
-    expression: 'happy', // → q-celebrating
+    expression: 'celebrating',
     headline: 'Great run',
     halo: 'coral',
   },
   {
     key: 'audiobook',
     when: (c) => c.isAudiobook,
-    expression: 'happy', // → q-headphones
+    expression: 'headphones',
     headline: 'Listened well',
     halo: 'coral',
   },
@@ -101,21 +90,21 @@ const LADDER: Tier[] = [
     // marathon first and a late night second.
     key: 'late-night',
     when: (c) => c.localHour >= 22 || c.localHour < 5,
-    expression: 'sleepy',
+    expression: 'late-night',
     headline: 'Burning the midnight oil',
     halo: 'coral',
   },
   {
     key: 'solid',
     when: (c) => c.durationSeconds >= 10 * MIN || (c.pagesRead ?? 0) >= 8,
-    expression: 'happy', // → q-thumbsup
+    expression: 'thumbsup',
     headline: 'Nice work',
     halo: 'coral',
   },
   {
     key: 'everyday',
     when: () => true, // the floor — most nights land here, and that's the point
-    expression: 'happy',
+    expression: 'everyday',
     headline: 'Session logged',
     halo: 'coral',
   },

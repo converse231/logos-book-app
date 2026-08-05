@@ -56,6 +56,11 @@ export default function SessionComplete() {
 
   const [fireConfetti, setFireConfetti] = useState(false);
   const [showInsight, setShowInsight] = useState(false);
+  // Q is sized from the space the stage ACTUALLY got, not from the window. Deriving
+  // it from window height meant that on layouts where the copy or the badge footer
+  // ran tall, Q was drawn bigger than its flex allocation and bled over the
+  // headline beneath it.
+  const [stageH, setStageH] = useState(0);
 
   const finishedBook = params.finished === '1';
 
@@ -115,9 +120,13 @@ export default function SessionComplete() {
   const badge = result.newBadges[0] ?? null;
   const d = (n: number) => (reduce ? 0 : n);
 
-  // Q takes the top two-thirds, clamped so a short phone doesn't crush the stub
-  // and a tall one doesn't leave him marooned.
-  const qSize = Math.max(190, Math.min(300, height * 0.34));
+  // 0.90 of the measured stage leaves room for the halo (1.08x) to sit inside it,
+  // so `overflow: hidden` on the stage can act as a hard guarantee that nothing
+  // reaches the headline without ever clipping the artwork. The window-based value
+  // is only the first-frame estimate, replaced on layout.
+  const qSize = stageH > 0
+    ? Math.max(150, Math.min(320, stageH * 0.9))
+    : Math.max(190, Math.min(300, height * 0.34));
   const gold = celebration.halo === 'gold';
 
   const finish = () => {
@@ -133,7 +142,13 @@ export default function SessionComplete() {
 
       <View style={styles.column}>
         {/* Hero — Q, with nothing behind or over him. */}
-        <View style={styles.stage}>
+        <View
+          style={styles.stage}
+          onLayout={(e) => {
+            const h = e.nativeEvent.layout.height;
+            if (Math.abs(h - stageH) > 1) setStageH(h);
+          }}
+        >
           <View
             style={[
               styles.halo,
@@ -261,7 +276,9 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   column: { ...CENTER_COLUMN_FILL, paddingHorizontal: 22 },
 
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
+  // overflow:hidden is the guarantee, not the mechanism — qSize is measured to fit,
+  // and this makes it impossible for the art to reach the headline regardless.
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0, overflow: 'hidden' },
   halo: { position: 'absolute' },
 
   headline: { fontFamily: FONTS.serifBold, fontSize: 27, lineHeight: 32, textAlign: 'center', ...NO_FONT_PAD },
