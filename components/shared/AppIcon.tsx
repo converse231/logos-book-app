@@ -36,7 +36,7 @@ const CUSTOM: Partial<Record<string, { active: number; inactive: number }>> = {
  * Which theme colour a piece of art is painted in. Painted icons can't be tinted,
  * so the colour is part of the identity of the file, not a runtime prop.
  */
-export type IconTint = 'accent' | 'ember' | 'gold' | 'ink' | 'muted' | 'lilac' | 'danger';
+export type IconTint = 'accent' | 'ember' | 'gold' | 'ink' | 'muted' | 'lilac' | 'danger' | 'cream';
 
 /**
  * Single-variant art, keyed by glyph then by the colour it's drawn in.
@@ -54,17 +54,22 @@ export type IconTint = 'accent' | 'ember' | 'gold' | 'ink' | 'muted' | 'lilac' |
  * Metro resolves image assets only from literal require() calls.
  */
 const SOLID: Partial<Record<string, Partial<Record<IconTint, number>>>> = {
+  'bar-chart':      { accent: require('@/assets/ui-icons/bar-chart-accent.webp') },
   barcode:          { accent: require('@/assets/ui-icons/barcode-accent.webp') },
   book:             { accent: require('@/assets/ui-icons/book-accent.webp'),
                       muted:  require('@/assets/ui-icons/book-muted.webp'),
                       ink:    require('@/assets/ui-icons/book-open-ink.webp') },
-  bookmarks:        { muted:  require('@/assets/ui-icons/bookmarks-muted.webp') },
+  bookmarks:        { accent: require('@/assets/ui-icons/bookmarks-accent.webp'),
+                      muted:  require('@/assets/ui-icons/bookmarks-muted.webp') },
   business:         { accent: require('@/assets/ui-icons/business-accent.webp') },
   calendar:         { accent: require('@/assets/ui-icons/calendar-accent.webp'),
                       ink:    require('@/assets/ui-icons/calendar-ink.webp') },
   'checkmark-done': { gold:   require('@/assets/ui-icons/checkmark-done-gold.webp') },
+  'chatbubble-ellipses': { accent: require('@/assets/ui-icons/chatbubble-ellipses-accent.webp') },
   'cloud-offline':  { muted:  require('@/assets/ui-icons/cloud-offline-muted.webp') },
-  flame:            { ember:  require('@/assets/ui-icons/flame-ember.webp'),
+  flag:             { gold:   require('@/assets/ui-icons/flag-gold.webp') },
+  flame:            { cream:  require('@/assets/ui-icons/flame-cream.webp'),
+                      ember:  require('@/assets/ui-icons/flame-ember.webp'),
                       ink:    require('@/assets/ui-icons/flame-ink.webp') },
   flash:            { ink:    require('@/assets/ui-icons/flash-ink.webp') },
   footsteps:        { ink:    require('@/assets/ui-icons/footsteps-ink.webp') },
@@ -77,6 +82,7 @@ const SOLID: Partial<Record<string, Partial<Record<IconTint, number>>>> = {
   ribbon:           { gold:   require('@/assets/ui-icons/ribbon-gold.webp'),
                       ink:    require('@/assets/ui-icons/ribbon-ink.webp') },
   sparkles:         { accent: require('@/assets/ui-icons/sparkles-accent.webp') },
+  settings:         { accent: require('@/assets/ui-icons/settings-accent.webp') },
   speedometer:      { lilac:  require('@/assets/ui-icons/speedometer-lilac.webp') },
   star:             { gold:   require('@/assets/ui-icons/star-gold.webp') },
   time:             { ember:  require('@/assets/ui-icons/time-ember.webp') },

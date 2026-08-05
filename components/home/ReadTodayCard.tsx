@@ -60,7 +60,7 @@ export function ReadTodayCard({
                     ]}
                   >
                     {read ? (
-                      <AppIcon name="flame" tint="ember" size={15} />
+                      <AppIcon name="flame" tint="cream" size={15} />
                     ) : (
                       <Text style={[styles.dayLetter, { color: future ? t.textTer : t.textSec }]}>{LETTERS[i]}</Text>
                     )}
@@ -84,7 +84,7 @@ export function ReadTodayCard({
             {readToday ? (
               <Ionicons name="checkmark" size={16} color={t.textSec} />
             ) : (
-              <AppIcon name="flame" tint="ember" size={18} />
+              <AppIcon name="flame" tint="cream" size={18} />
             )}
             <Text style={[styles.btnText, { color: readToday ? t.textSec : t.onAccent }]}>
               {readToday ? 'Read today' : 'I read today'}
