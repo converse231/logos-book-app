@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
@@ -138,7 +139,7 @@ export default function More() {
                         { backgroundColor: item.tint === 'gold' ? 'rgba(255,197,61,0.14)' : t.accentMuted },
                       ]}
                     >
-                      <Ionicons name={item.icon} size={19} color={item.tint === 'gold' ? t.gold : t.accent} />
+                      <AppIcon name={item.icon} tint={item.tint === 'gold' ? 'gold' : 'accent'} size={19} color={item.tint === 'gold' ? t.gold : t.accent} />
                     </View>
                     <View style={styles.rowText}>
                       <Text style={[styles.rowLabel, { color: t.text }]}>{item.label}</Text>

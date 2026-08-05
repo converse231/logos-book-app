@@ -1,6 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
 import { UserBook } from '@/services/types';
@@ -60,7 +59,7 @@ export function ReadTodayCard({
                     ]}
                   >
                     {read ? (
-                      <AppIcon name="flame" tint="ink" size={13} />
+                      <Ionicons name="flame" size={13} color={t.onAccent} />
                     ) : (
                       <Text style={[styles.dayLetter, { color: future ? t.textTer : t.textSec }]}>{LETTERS[i]}</Text>
                     )}
@@ -81,11 +80,7 @@ export function ReadTodayCard({
               { backgroundColor: readToday ? t.bgTer : t.accent, borderColor: t.border },
             ]}
           >
-            {readToday ? (
-              <Ionicons name="checkmark" size={16} color={t.textSec} />
-            ) : (
-              <AppIcon name="flame" tint="ink" size={16} />
-            )}
+            <Ionicons name={readToday ? 'checkmark' : 'flame'} size={16} color={readToday ? t.textSec : t.onAccent} />
             <Text style={[styles.btnText, { color: readToday ? t.textSec : t.onAccent }]}>
               {readToday ? 'Read today' : 'I read today'}
             </Text>
