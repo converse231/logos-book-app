@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quire — Privacy Policy</title>
+<style>
+  :root{
+    --bg:#F6EEDF; --card:#FCF8ED; --ink:#241E19; --ink2:#6E6250; --ink3:#9A8E79;
+    --accent:#F0764F; --rule:rgba(36,30,25,.14);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#1B1712; --card:#241E17; --ink:#F4EFE3; --ink2:#B3AA98; --ink3:#7E7566;
+           --accent:#F6875D; --rule:rgba(244,239,227,.16); }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:760px;margin:0 auto;padding:48px 22px 96px}
+  h1{font-size:clamp(30px,6vw,42px);line-height:1.1;margin:0 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--ink2);margin:0 0 8px}
+  .updated{color:var(--ink3);font-size:14px;margin:0 0 36px}
+  h2{font-size:21px;margin:38px 0 10px;line-height:1.25}
+  h3{font-size:16px;margin:22px 0 6px}
+  p,li{color:var(--ink2)}
+  strong{color:var(--ink)}
+  a{color:var(--accent)}
+  ul{padding-left:20px}
+  li{margin:5px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:15px;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:10px 12px 10px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+  th{color:var(--ink);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+  .box{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:18px 20px;margin:20px 0}
+  .box p:last-child{margin-bottom:0}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);color:var(--ink3);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Privacy Policy</h1>
+  <p class="sub">Quire — a reading tracker.</p>
+  <p class="updated">Last updated 6 August 2026</p>
+
+  <p>This policy explains what Quire collects, why, who it is shared with, and how to
+  get rid of it. It covers the Quire mobile app and its backend.</p>
+
+  <div class="box">
+    <p><strong>The short version.</strong> Quire stores what you read so it can show you
+    your reading back to you. We don't sell your data, we don't run ads, and we don't
+    track you across other apps or websites. You can export everything or delete your
+    account from inside the app at any time.</p>
+  </div>
+
+  <h2>Who we are</h2>
+  <p>Quire is operated by the developer of the app. For any privacy question, or to
+  request deletion of your data, contact <a href="mailto:danielparagas5@gmail.com">danielparagas5@gmail.com</a>.</p>
+
+  <h2>Age requirement</h2>
+  <p>Quire is for readers aged <strong>13 and over</strong>. We ask for your birth year
+  before an account is created and block sign-up for anyone under 13. We do not
+  knowingly collect information from children under 13; if you believe a child has
+  created an account, contact us and we will delete it.</p>
+  <p>Accounts belonging to 13–17 year olds are flagged as minors and are prevented
+  from publishing public reviews.</p>
+
+  <h2>What we collect</h2>
+
+  <table>
+    <thead><tr><th>Data</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Email address</strong></td><td>To create and sign you into your account.</td></tr>
+      <tr><td><strong>Birth year</strong></td><td>To enforce the 13+ age requirement. We store the year only, never a full date of birth.</td></tr>
+      <tr><td><strong>Display name, username, bio, profile photo</strong></td><td>Optional. Shown on your profile and next to any public review you write.</td></tr>
+      <tr><td><strong>Reading sessions</strong> — pages read, minutes, start and end times, which book</td><td>The core of the app: your stats, streak, pace and reading history.</td></tr>
+      <tr><td><strong>Your books</strong> — shelves, status, progress, favourites, reading goals, preferred genres</td><td>To keep your library and recommendations.</td></tr>
+      <tr><td><strong>Reviews and ratings</strong></td><td>Shown to other readers when public. See “Content you publish”.</td></tr>
+      <tr><td><strong>Time zone</strong></td><td>Streaks depend on your local date, so we store your device's time zone and UTC offset.</td></tr>
+      <tr><td><strong>Notification token</strong></td><td>Only if you enable notifications, so we can send reading reminders to your device.</td></tr>
+      <tr><td><strong>Usage events</strong></td><td>A small set of product analytics — see “Analytics” below.</td></tr>
+    </tbody>
+  </table>
+
+  <p>We do <strong>not</strong> collect your location, contacts, calendar, microphone,
+  or the contents of your device. The camera is used only when you choose to scan a
+  book's barcode, and photos only when you choose one as a profile picture — neither
+  is uploaded anywhere except a profile picture you deliberately set.</p>
+
+  <h2>Analytics</h2>
+  <p>We use <strong>PostHog</strong> to understand how the app is used. It records a
+  handful of named events — completing onboarding, finishing a reading session, adding
+  a book, using the mood recommender, checking in for the day — along with your account
+  identifier and basic properties of the event (for example how many pages a session
+  covered).</p>
+  <p>We do not use advertising identifiers, we do not build advertising profiles, and
+  we do not track you across other apps or websites.</p>
+
+  <h2>Content you publish</h2>
+  <p>Reviews and ratings you write are <strong>public by default</strong>: other Quire
+  readers can see them, along with your display name and profile picture, on the book's
+  page. Don't put anything in a review you wouldn't want a stranger to read.</p>
+  <p>Every review has a <strong>Report</strong> action. Reporting a review sends it to us
+  for review and immediately stops that reader's reviews from appearing to you. We remove
+  content that is hateful, harassing, sexually explicit, violent, or spam, and we may
+  suspend accounts that repeatedly post it.</p>
+
+  <h2>Who we share it with</h2>
+  <p>We do not sell your data. We share it only with the services needed to run the app:</p>
+
+  <table>
+    <thead><tr><th>Service</th><th>What it receives</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Supabase</strong> — database, authentication and file storage</td><td>All of your account and reading data. This is where Quire's data lives.</td></tr>
+      <tr><td><strong>PostHog</strong> — product analytics</td><td>Your account identifier and the usage events described above.</td></tr>
+      <tr><td><strong>Google Books API</strong> and <strong>Open Library</strong> — book catalogue</td><td>The words you type when searching for a book. No account identifier is sent.</td></tr>
+      <tr><td><strong>Anthropic</strong> — AI book recommendations</td><td>Only when you use the mood recommender: the mood you describe, your genre preferences, and the titles of a few books you've read recently. No name or email is sent.</td></tr>
+      <tr><td><strong>Expo push service</strong> and <strong>Google Firebase Cloud Messaging</strong></td><td>Your notification token and the text of notifications, only if you enable them.</td></tr>
+      <tr><td><strong>Google</strong> — if you sign in with Google</td><td>Standard sign-in. Google gives us your email address and basic profile; we don't get access to anything else in your Google account.</td></tr>
+    </tbody>
+  </table>
+
+  <p>We may also disclose information if legally required to do so.</p>
+
+  <h2>Where your data is stored</h2>
+  <p>Quire's database and file storage are hosted by Supabase, and analytics by PostHog,
+  on servers in the United States. If you use Quire from outside the US, your data is
+  transferred and stored there.</p>
+
+  <h2>How long we keep it</h2>
+  <p>We keep your data for as long as your account exists. Delete your account and it is
+  removed, permanently and immediately — see below.</p>
+
+  <h2>Your choices</h2>
+  <h3>Export your data</h3>
+  <p><strong>Settings → Account → Export my data</strong> produces a file containing
+  everything we hold about you.</p>
+
+  <h3>Delete your account</h3>
+  <p><strong>Settings → Account → Delete account</strong> permanently deletes your
+  account and all associated data — sessions, books, reviews, stats and profile. This
+  cannot be undone. If you can't access the app, email
+  <a href="mailto:danielparagas5@gmail.com">danielparagas5@gmail.com</a> from your
+  account's email address and we'll do it for you.</p>
+
+  <h3>Notifications</h3>
+  <p>Turn any notification off in <strong>Settings → Notifications</strong>, or all of
+  them off in your device settings.</p>
+
+  <h3>Your rights</h3>
+  <p>Depending on where you live, you may have the right to access, correct, export or
+  delete your personal data, and to object to certain processing. The export and delete
+  controls above cover most of this directly; for anything else, contact us.</p>
+
+  <h2>Security</h2>
+  <p>Traffic is encrypted in transit. Your data is protected by row-level security rules
+  that restrict every record to its owner, so one account cannot read another's data.
+  Passwords are hashed and never stored in readable form. No system is perfectly secure,
+  but we take reasonable measures to protect your information.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy changes materially we will update the date at the top and, where the
+  change is significant, tell you in the app.</p>
+
+  <footer>
+    Quire · <a href="mailto:danielparagas5@gmail.com">danielparagas5@gmail.com</a>
+  </footer>
+
+</main>
+</body>
+</html>
