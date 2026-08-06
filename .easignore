@@ -36,6 +36,15 @@ yarn-debug.*
 yarn-error.*
 .DS_Store
 
+# ── agent tooling ────────────────────────────────────────────────────────────
+# .claude/skills contains SYMLINKS into .agents/skills. EAS copies the working
+# tree into a shallow clone and tries to recreate them, which fails on Windows
+# without developer mode:
+#   EPERM: operation not permitted, symlink '.agents/skills/…' -> '…/.claude/skills/…'
+# None of it is app code, so it should never have been in the upload regardless.
+.claude/
+.agents/
+
 # ── not part of the app ──────────────────────────────────────────────────────
 # 179MB of source art kept after optimisation — the shipped WebPs live beside
 # them in assets/, and nothing in the app require()s these.
