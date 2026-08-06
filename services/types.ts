@@ -65,6 +65,8 @@ export interface UserProfile {
   levelName: LevelName;
   subscriptionStatus: SubStatus;
   onboardingCompletedAt: string | null;
+  /** Moderator. Gates the review-report queue in Settings. */
+  isAdmin: boolean;
 }
 
 export interface Book {
@@ -236,6 +238,23 @@ export interface ReadingGoal {
   year: number;
   goalBooks: number;
   goalPages: number | null;
+}
+
+/** A flagged review, as the moderation queue shows it. */
+export interface ReviewReport {
+  id: string;
+  reviewId: string;
+  reason: string;
+  createdAt: string;
+  reporterName: string | null;
+  /** Null once the underlying review has already been deleted. */
+  review: {
+    body: string | null;
+    rating: number;
+    authorId: string;
+    authorName: string | null;
+    bookTitle: string | null;
+  } | null;
 }
 
 export interface Review {

@@ -369,6 +369,15 @@ export const mockApi: QuireApi = {
     await delay();
   },
 
+  async getReviewReports() {
+    await delay();
+    return [];
+  },
+
+  async resolveReport(_reportId, _action) {
+    await delay();
+  },
+
   async writeReview(bookId: string, rating: number, body?: string, spoiler = false) {
     await delay(300);
     const review: Review = {

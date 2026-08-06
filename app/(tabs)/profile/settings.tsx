@@ -413,6 +413,20 @@ export default function Settings() {
                 <Text style={[styles.menuLabel, { color: t.text }]} numberOfLines={1}>{profile.email}</Text>
               </View>
             ) : null}
+            {/* Moderation queue. The link is hidden for everyone else, but RLS is
+                the real gate — this is convenience, not security. */}
+            {profile?.isAdmin ? (
+              <Pressable
+                onPress={() => router.push('/(tabs)/profile/moderation' as Href)}
+                accessibilityRole="button"
+                accessibilityLabel="Reported reviews"
+                style={({ pressed }) => [styles.menuRow, { borderBottomColor: t.border }, pressed && { opacity: 0.7 }]}
+              >
+                <Ionicons name="flag-outline" size={20} color={t.textSec} />
+                <Text style={[styles.menuLabel, { color: t.text }]}>Reported reviews</Text>
+                <Ionicons name="chevron-forward" size={18} color={t.textTer} />
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={exportData}
               disabled={!!busy}

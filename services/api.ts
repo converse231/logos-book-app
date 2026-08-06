@@ -19,6 +19,7 @@ import {
   ReadingStatus,
   RestoreStreakResult,
   Review,
+  ReviewReport,
   StatsData,
   ThemePref,
   UserBook,
@@ -121,6 +122,12 @@ export interface QuireApi {
    *  writing. Reporting also blocks: the reporter must SEE the content go, not
    *  just be told a form was filed. Idempotent — re-reporting is a no-op. */
   reportReview(reviewId: string, authorId: string, reason: string): Promise<void>;
+  /** Open reports, newest first. Admin-only — RLS returns nothing for everyone
+   *  else, so there's no separate permission check to keep in sync. */
+  getReviewReports(): Promise<ReviewReport[]>;
+  /** Resolve a report. 'removed' deletes the review; 'dismissed' leaves it up.
+   *  Either way the report leaves the queue. */
+  resolveReport(reportId: string, action: 'removed' | 'dismissed'): Promise<void>;
   writeReview(bookId: string, rating: number, body?: string, spoiler?: boolean): Promise<Review>;
   getReviews(bookId: string): Promise<Review[]>;
   /** The caller's own reviews (newest first), for the profile compilation. */

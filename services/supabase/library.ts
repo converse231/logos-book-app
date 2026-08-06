@@ -213,6 +213,74 @@ export const libraryApi: Partial<QuireApi> = {
   },
 
   // ── Reviews ─────────────────────────────────────────────────────────────────
+  // ── Moderation queue (admin) ────────────────────────────────────────────────
+  // No permission check here on purpose: RLS decides. A non-admin gets an empty
+  // list and a failed update, so there's no client-side gate to drift out of sync
+  // with the policy.
+  async getReviewReports() {
+    const { data, error } = await supabase
+      .from('review_reports')
+      .select('id, review_id, reason, created_at, reporter_id, review:reviews(body, rating, user_id, book:books(title))')
+      .is('resolved_at', null)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    const rows = data ?? [];
+    if (rows.length === 0) return [];
+
+    // Names for both sides in one query — reporters and authors together.
+    const ids = [...new Set(rows.flatMap((r: any) => [r.reporter_id, r.review?.user_id]).filter(Boolean))];
+    const { data: profs } = await supabase
+      .from('public_profiles')
+      .select('id, display_name')
+      .in('id', ids);
+    const byId = new Map((profs ?? []).map((p: any) => [p.id, p.display_name as string | null]));
+
+    return rows.map((r: any) => ({
+      id: r.id,
+      reviewId: r.review_id,
+      reason: r.reason,
+      createdAt: r.created_at,
+      reporterName: byId.get(r.reporter_id) ?? null,
+      // The review is gone if a previous report already removed it — the report
+      // row survives (it's an audit trail), so the UI has to tolerate the null.
+      review: r.review
+        ? {
+            body: r.review.body ?? null,
+            rating: Number(r.review.rating ?? 0),
+            authorId: r.review.user_id,
+            authorName: byId.get(r.review.user_id) ?? null,
+            bookTitle: r.review.book?.title ?? null,
+          }
+        : null,
+    }));
+  },
+
+  async resolveReport(reportId, action) {
+    // Read the review id back rather than trusting one passed in — this is the
+    // call that can delete someone's writing.
+    const { data: rep, error: readErr } = await supabase
+      .from('review_reports')
+      .select('review_id')
+      .eq('id', reportId)
+      .single();
+    if (readErr) throw readErr;
+
+    if (action === 'removed' && rep?.review_id) {
+      const { error: delErr } = await supabase.from('reviews').delete().eq('id', rep.review_id);
+      if (delErr) throw delErr;
+    }
+    // Resolve EVERY open report on that review, not just this one — two people
+    // flagging the same thing shouldn't leave a second card in the queue after
+    // it's been dealt with.
+    const { error: updErr } = await supabase
+      .from('review_reports')
+      .update({ resolved_at: new Date().toISOString(), resolved_action: action })
+      .eq('review_id', rep!.review_id)
+      .is('resolved_at', null);
+    if (updErr) throw updErr;
+  },
+
   async reportReview(reviewId, authorId, reason) {
     const uid = await requireUid();
     // The report is the record you moderate from; the block is what the reporter

@@ -58,6 +58,7 @@ function rowToProfile(r: Record<string, any>, email: string | null = null): User
     levelName: r.level_name as LevelName,
     subscriptionStatus: r.subscription_status as SubStatus,
     onboardingCompletedAt: r.onboarding_completed_at ?? null,
+    isAdmin: r.is_admin ?? false,
   };
 }
 

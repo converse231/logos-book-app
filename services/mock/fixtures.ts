@@ -41,6 +41,7 @@ export const MOCK_USER: UserProfile = {
   levelName: 'Shelf Builder',
   subscriptionStatus: 'free',
   onboardingCompletedAt: null,
+  isAdmin: false,
 };
 
 export const MOCK_BOOK: Book = {
