@@ -6,6 +6,11 @@
 #
 # Do NOT add google-services.json: the Android build reads it via
 # app.json → android.googleServicesFile.
+#
+# LEADING SLASHES MATTER. A bare `supabase/` matches at any depth, so it also
+# excluded services/supabase — the entire Supabase API layer — and the build died
+# with "Unable to resolve module @/services/supabase". Anchor anything that names
+# a specific project directory.
 
 # ── secrets ──────────────────────────────────────────────────────────────────
 .env
@@ -42,18 +47,18 @@ yarn-error.*
 # without developer mode:
 #   EPERM: operation not permitted, symlink '.agents/skills/…' -> '…/.claude/skills/…'
 # None of it is app code, so it should never have been in the upload regardless.
-.claude/
-.agents/
+/.claude/
+/.agents/
 
 # ── not part of the app ──────────────────────────────────────────────────────
 # 179MB of source art kept after optimisation — the shipped WebPs live beside
 # them in assets/, and nothing in the app require()s these.
-assets/_originals/
+/assets/_originals/
 # Store listing screenshots; not bundled (Metro only bundles require()d assets).
-assets/screenshots/
+/assets/screenshots/
 # SQL migrations and Deno edge functions — server-side, never in the APK.
-supabase/
+/supabase/
 # Privacy policy served from GitHub Pages.
-docs/
+/docs/
 # Standalone HTML decks.
-presentations/
+/presentations/
