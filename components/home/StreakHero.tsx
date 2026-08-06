@@ -109,7 +109,7 @@ export function StreakHero({
   readToday,
   onPress,
 }: StreakHeroProps) {
-  const tour = useTourTarget('streak');
+  const tour = useTourTarget('streak', RADIUS.card);
   const hour = new Date().getHours();
   const variant = pickStreakVariant({ currentStreak, isAtRisk, hasComeback, hasEverRead, almostThere, readToday, hour });
   const spec = VARIANTS[variant];

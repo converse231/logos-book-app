@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { BookSearchResult, UserProfile } from '@/services/types';
 import { fetchAuthorPhoto, toSubject } from '@/lib/bookSearch';
@@ -114,18 +114,29 @@ export default function Discover() {
       >
         <Text style={[styles.title, { color: t.text }]}>Discover</Text>
 
-        {/* Mood Reader banner */}
+        {/* Mood Reader banner — parked. Every open spends Anthropic credit, and
+            it isn't worth funding before launch, so the banner teases without
+            routing anywhere. Re-enable by restoring the onPress and dropping
+            `disabled`; the whole feature underneath is built and working. */}
         <View style={styles.padded}>
-          <PressBlock onPress={() => router.push('/(tabs)/discover/mood' as Href)} accessibilityLabel="Open Mood Reader" style={[styles.banner, { backgroundColor: t.accent, borderColor: t.border }]}>
+          <PressBlock
+            onPress={() => {}}
+            disabled
+            accessibilityLabel="Mood Reader, coming soon"
+            accessibilityState={{ disabled: true }}
+            style={[styles.banner, { backgroundColor: t.bgTer, borderColor: t.border }]}
+          >
             <View style={styles.bannerText}>
               <View style={styles.bannerTag}>
-                <Ionicons name="sparkles" size={13} color={t.onAccent} />
-                <Text style={[styles.bannerTagText, { color: t.onAccent }]}>MOOD READER</Text>
+                <Ionicons name="sparkles" size={13} color={t.textSec} />
+                <Text style={[styles.bannerTagText, { color: t.textSec }]}>MOOD READER</Text>
               </View>
-              <Text style={[styles.bannerTitle, { color: t.onAccent }]}>Find your next read by vibe</Text>
-              <Text style={[styles.bannerSub, { color: t.onAccent }]}>Pick a mood, swipe through picks →</Text>
+              <Text style={[styles.bannerTitle, { color: t.text }]}>Find your next read by vibe</Text>
+              <Text style={[styles.bannerSub, { color: t.textSec }]}>Pick a mood, get picks that match</Text>
             </View>
-            <Ionicons name="arrow-forward-circle" size={36} color={t.onAccent} />
+            <View style={[styles.soon, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+              <Text style={[styles.soonText, { color: t.textSec }]}>SOON</Text>
+            </View>
           </PressBlock>
         </View>
 
@@ -244,6 +255,11 @@ const styles = StyleSheet.create({
   bannerTag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   bannerTagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5, opacity: 0.85 },
   bannerTitle: { fontFamily: FONTS.displayBold, fontSize: 22, lineHeight: 25 },
+  soon: {
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm,
+    borderWidth: BORDER_WIDTH, alignSelf: 'center',
+  },
+  soonText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1.2 },
   bannerSub: { fontFamily: FONTS.uiMedium, fontSize: 13, opacity: 0.9 },
 
   section: { gap: 12, paddingHorizontal: 18 },

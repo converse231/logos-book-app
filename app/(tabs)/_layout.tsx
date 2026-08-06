@@ -39,7 +39,7 @@ function TabIcon({
   const reduce = useReducedMotion();
   // Always called (hooks can't be conditional); only the Library tab passes a key,
   // and a null key registers nothing.
-  const tour = useTourTarget(tourKey ?? null);
+  const tour = useTourTarget(tourKey ?? null, 14);
   const p = useSharedValue(focused ? 1 : 0);
 
   useEffect(() => {

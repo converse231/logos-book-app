@@ -22,7 +22,7 @@ export function SessionFab() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
-  const tour = useTourTarget('record');
+  const tour = useTourTarget('record', 14);
 
   const onPress = async () => {
     if (loading) return;

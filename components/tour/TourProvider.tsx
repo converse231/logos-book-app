@@ -17,7 +17,7 @@ import { TOUR_STEPS, markTourSeen, type TourTargetKey } from '@/lib/tour';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Q } from '@/components/shared/Q';
 
-interface Frame { x: number; y: number; width: number; height: number }
+interface Frame { x: number; y: number; width: number; height: number; radius: number }
 
 interface TourContextValue {
   /** A spotlightable element reporting where it is, in window coordinates. */
@@ -48,7 +48,7 @@ export function useTour(): TourContextValue {
  * and the tab icon in the tabs layout, the streak on Home). Window coordinates are
  * the only frame all three can express in common.
  */
-export function useTourTarget(key: TourTargetKey | null) {
+export function useTourTarget(key: TourTargetKey | null, radius = 12) {
   const { register, measureNonce } = useTour();
   const ref = useRef<View>(null);
 
@@ -61,9 +61,9 @@ export function useTourTarget(key: TourTargetKey | null) {
     // A frame of zeroes means "not laid out yet"; registering it would put the
     // spotlight in the top-left corner.
     ref.current?.measureInWindow((x, y, width, height) => {
-      if (width > 0 && height > 0) register(key, { x, y, width, height });
+      if (width > 0 && height > 0) register(key, { x, y, width, height, radius });
     });
-  }, [key, register]);
+  }, [key, register, radius]);
 
   // onLayout covers first paint; measureNonce covers "the tour just started and
   // the screen may have moved since".
@@ -158,6 +158,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
                   start();
                 }}
                 accessibilityLabel="Show me around"
+                radius={RADIUS.md}
+                containerStyle={styles.btnWrap}
                 style={[styles.primary, { backgroundColor: t.accent, borderColor: INK }]}
               >
                 <Text style={styles.primaryText}>SHOW ME AROUND</Text>
@@ -165,6 +167,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
               <PressBlock
                 onPress={decline}
                 accessibilityLabel="Skip the tour"
+                radius={RADIUS.md}
+                containerStyle={styles.btnWrapSecond}
                 style={[styles.secondary, { backgroundColor: t.bgSec, borderColor: t.border }]}
               >
                 <Text style={[styles.secondaryText, { color: t.text }]}>I&rsquo;LL EXPLORE MYSELF</Text>
@@ -199,6 +203,9 @@ export function TourProvider({ children }: { children: ReactNode }) {
                       left: frame.x - PAD,
                       width: frame.width + PAD * 2,
                       height: frame.height + PAD * 2,
+                      // Concentric with the element: its own radius plus the gap.
+                      // A fixed radius made a squircle FAB look boxed-in.
+                      borderRadius: frame.radius + PAD,
                       borderColor: t.accent,
                     },
                   ]}
@@ -246,6 +253,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
                   <PressBlock
                     onPress={advance}
                     accessibilityLabel={step + 1 >= TOUR_STEPS.length ? 'Done' : 'Next step'}
+                    radius={RADIUS.sm}
                     style={[styles.next, { backgroundColor: t.accent, borderColor: INK }]}
                   >
                     <Text style={styles.nextText}>{step + 1 >= TOUR_STEPS.length ? 'DONE' : 'NEXT'}</Text>
@@ -266,7 +274,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: SCRIM },
   dim: { position: 'absolute', backgroundColor: SCRIM },
-  ring: { position: 'absolute', borderRadius: RADIUS.lg, borderWidth: 2 },
+  ring: { position: 'absolute', borderWidth: 2 },
 
   sheet: {
     position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center',
@@ -275,13 +283,18 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { fontFamily: FONTS.serifBold, fontSize: 23, textAlign: 'center', marginTop: 4, ...NO_FONT_PAD },
   sheetBody: { fontFamily: FONTS.uiRegular, fontSize: 14, textAlign: 'center', marginTop: 6, marginBottom: 18, lineHeight: 20 },
+  // PressBlock renders its hard shadow OUTSIDE the face and reserves the overhang
+  // as padding on its container — so alignSelf and margins belong there, not on
+  // the face. Putting them on `style` is what made these look clipped and cramped.
+  btnWrap: { alignSelf: 'stretch' },
+  btnWrapSecond: { alignSelf: 'stretch', marginTop: 6 },
   primary: {
-    alignSelf: 'stretch', minHeight: 54, alignItems: 'center', justifyContent: 'center',
+    minHeight: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16,
     borderWidth: BORDER_WIDTH_THICK, borderRadius: RADIUS.md,
   },
   primaryText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
   secondary: {
-    alignSelf: 'stretch', minHeight: 50, alignItems: 'center', justifyContent: 'center', marginTop: 10,
+    minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16,
     borderWidth: BORDER_WIDTH_THICK, borderRadius: RADIUS.md,
   },
   secondaryText: { fontFamily: FONTS.uiBold, fontSize: 13.5, letterSpacing: 0.8 },
