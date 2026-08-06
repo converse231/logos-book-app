@@ -8,6 +8,7 @@ import { useApi } from '@/services/ApiContext';
 import { useTheme } from '@/theme/ThemeContext';
 import { BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { useTourTarget } from '@/components/tour/TourProvider';
 
 // Raised center action on the tab bar (Strava / Duolingo pattern): the core
 // habit — start a reading session — is one tap from anywhere in the app. Floats
@@ -21,6 +22,7 @@ export function SessionFab() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
+  const tour = useTourTarget('record');
 
   const onPress = async () => {
     if (loading) return;
@@ -40,6 +42,8 @@ export function SessionFab() {
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom + 14 }]}>
+      {/* Wrapper exists only so the guided tour can measure where the FAB is. */}
+      <View ref={tour.ref} onLayout={tour.onLayout} collapsable={false}>
       <PressBlock
         onPress={onPress}
         haptic="none"
@@ -53,6 +57,7 @@ export function SessionFab() {
           <Ionicons name="play" size={26} color={t.onAccent} style={styles.glyph} />
         )}
       </PressBlock>
+      </View>
     </View>
   );
 }

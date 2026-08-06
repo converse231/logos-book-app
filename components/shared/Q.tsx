@@ -47,7 +47,9 @@ export type QExpression =
   | 'headphones'
   | 'late-night'
   | 'thumbsup'
-  | 'everyday';
+  | 'everyday'
+  /** Guided-tour opt-in: Q holding an open map. */
+  | 'tour';
 
 // Static requires — Metro resolves image assets only from literal require() calls.
 const SOURCES: Record<QExpression, number> = {
@@ -74,6 +76,7 @@ const SOURCES: Record<QExpression, number> = {
   'late-night': require('@/assets/q-expressions/q-late-night.webp'),
   thumbsup: require('@/assets/q-expressions/q-thumbsup.webp'),
   everyday: require('@/assets/q-expressions/q-everyday.webp'),
+  tour: require('@/assets/q-expressions/q-tour.webp'),
 };
 
 const LABELS: Record<QExpression, string> = {
@@ -100,6 +103,7 @@ const LABELS: Record<QExpression, string> = {
   'late-night': 'Q the fox, reading late by candlelight',
   thumbsup: 'Q the fox, giving a thumbs-up',
   everyday: 'Q the fox, closing a book',
+  tour: 'Q the fox, holding an open map',
 };
 
 interface QProps {

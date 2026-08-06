@@ -32,6 +32,8 @@ import { ReadTodayCard } from '@/components/home/ReadTodayCard';
 import { localDateString } from '@/stores/sessionStore';
 import { drainQueue } from '@/lib/sessionQueue';
 import { takeBreakOverlay, takeStreakCelebration } from '@/lib/streakCelebration';
+import { shouldOfferTour } from '@/lib/tour';
+import { useTour } from '@/components/tour/TourProvider';
 
 /** How long the shelf + lifetime stats stay good for across a tab return. */
 const SHELF_FRESH_MS = 30_000;
@@ -47,6 +49,7 @@ export default function Home() {
   const api = useApi();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
+  const { offer: offerTour } = useTour();
 
   const [data, setData] = useState<HomeData | null>(null);
   const [shelf, setShelf] = useState<UserBook[] | null>(null);
@@ -122,6 +125,16 @@ export default function Home() {
               } as unknown as Href);
             });
           }
+          // The tour offer is the quietest thing that can appear here, so it waits
+          // for everything louder. A reader whose streak just broke, or who just
+          // hit a milestone, gets that moment instead — and still gets offered the
+          // tour on their next visit, since the flag is only set on answer.
+          if (!broken) {
+            shouldOfferTour().then((yes) => {
+              if (alive && yes) offerTour();
+            });
+          }
+
           const finished = s?.find((b) => b.status === 'finished');
           if (finished) {
             api.getReviews(finished.book.id).then((rv) => {
@@ -140,7 +153,7 @@ export default function Home() {
       return () => {
         alive = false;
       };
-    }, [api, nonce, router])
+    }, [api, nonce, router, offerTour])
   );
 
   // Pull-to-refresh: re-run the whole load (which also drains the offline queue).

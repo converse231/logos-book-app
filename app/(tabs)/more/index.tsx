@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
+import { useTour } from '@/components/tour/TourProvider';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
@@ -19,7 +20,9 @@ interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   sub: string;
-  href: Href;
+  href?: Href;
+  /** Rows that DO something rather than navigate somewhere. */
+  action?: 'tour';
   tint?: 'accent' | 'gold';
 }
 
@@ -43,6 +46,7 @@ const GROUPS: { title: string; items: MenuItem[] }[] = [
     title: 'Feedback',
     items: [
       { icon: 'chatbubble-ellipses', label: 'Send feedback', sub: 'Bugs, ideas, or anything on your mind', href: '/(modals)/feedback?kind=feedback' as Href },
+      { icon: 'compass', label: 'Take the tour', sub: 'A ten-second look at how Quire works', action: 'tour' },
     ],
   },
 ];
@@ -51,6 +55,7 @@ const GROUPS: { title: string; items: MenuItem[] }[] = [
 export default function More() {
   const t = useTheme();
   const router = useRouter();
+  const { start: startTour } = useTour();
   const api = useApi();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
@@ -123,7 +128,17 @@ export default function More() {
                     key={item.label}
                     onPress={() => {
                       Haptics.selectionAsync();
-                      router.push(item.href);
+                      if (item.action === 'tour') {
+                        // Two of the three targets (the record button and the
+                        // Library tab) live in the tab bar, and the third is on
+                        // Home — so get there first. The delay lets the tab
+                        // transition settle; startTour re-measures on the way in,
+                        // so it doesn't need the frames to be warm.
+                        router.navigate('/(tabs)/home' as Href);
+                        setTimeout(startTour, 400);
+                        return;
+                      }
+                      if (item.href) router.push(item.href);
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={item.label}
