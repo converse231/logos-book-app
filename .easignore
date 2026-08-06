@@ -1,23 +1,13 @@
-# EAS Build upload ignore list. When present, EAS uses THIS instead of
-# .gitignore to decide what to upload — so it must repeat the real ignores
-# AND exclude the agent/editor folders whose symlinks break the Windows
-# upload (EPERM creating symlinks in EAS's temp clone).
+# What NOT to upload to EAS Build.
+#
+# IMPORTANT: when this file exists it REPLACES .gitignore for the build archive.
+# Anything .gitignore protects has to be restated here, or it starts getting
+# uploaded — .env in particular, which holds DATABASE_URL.
+#
+# Do NOT add google-services.json: the Android build reads it via
+# app.json → android.googleServicesFile.
 
-# dependencies (EAS installs these in the cloud)
-node_modules/
-
-# Expo / build output
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# generated native folders (EAS prebuilds in the cloud)
-/ios
-/android
-.kotlin/
-
-# secrets / local env (build env comes from eas.json instead)
+# ── secrets ──────────────────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
@@ -26,25 +16,35 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
-*.pem
+*-firebase-adminsdk-*.json
+*service-account*.json
+*serviceAccount*.json
+dbrun.mjs
 
-# typescript / metro / misc
-*.tsbuildinfo
+# ── build noise ──────────────────────────────────────────────────────────────
+node_modules/
+.git/
+.expo/
+dist/
+web-build/
+.kotlin/
+expo-env.d.ts
+*.orig.*
 .metro-health-check*
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 .DS_Store
 
-# editor / agent tooling — contain symlinks that fail the Windows EAS upload
-.agents/
-.claude/
-.cursor/
-.vscode/
-.idea/
-.git/
-
-# repo-only dirs not needed by the app build.
-# NOTE: leading slash = root-only, so this does NOT touch services/supabase/.
-/supabase/
-/scripts/
+# ── not part of the app ──────────────────────────────────────────────────────
+# 179MB of source art kept after optimisation — the shipped WebPs live beside
+# them in assets/, and nothing in the app require()s these.
+assets/_originals/
+# Store listing screenshots; not bundled (Metro only bundles require()d assets).
+assets/screenshots/
+# SQL migrations and Deno edge functions — server-side, never in the APK.
+supabase/
+# Privacy policy served from GitHub Pages.
+docs/
+# Standalone HTML decks.
+presentations/
