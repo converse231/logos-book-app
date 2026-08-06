@@ -25,10 +25,7 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_MEDIA_VIDEO",
-        "android.permission.READ_MEDIA_AUDIO",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -44,7 +41,10 @@
         {
           "savePhotosPermission": "Quire saves your reading share cards to your photo library so you can post them.",
           "photosPermission": "Quire saves your reading share cards to your photo library so you can post them.",
-          "isAccessMediaLocationEnabled": false
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": [
+            "photo"
+          ]
         }
       ],
       "expo-localization",
@@ -52,13 +52,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Quire uses the camera to scan a book's barcode so you can add it to your shelf instantly."
+          "cameraPermission": "Quire uses the camera to scan a book's barcode so you can add it to your shelf instantly.",
+          "recordAudioAndroid": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Quire uses your photos so you can set a profile picture."
+          "photosPermission": "Quire uses your photos so you can set a profile picture.",
+          "microphonePermission": false
         }
       ],
       [
