@@ -196,6 +196,35 @@ export default function BookDetail() {
   const writeReview = () =>
     router.push(`/(modals)/review?bookId=${book.id}&title=${encodeURIComponent(book.title)}` as Href);
 
+  // Google Play's UGC policy requires an in-app way to report objectionable
+  // content. Reporting also hides that reader's reviews from you — enforced in RLS,
+  // so it holds on every surface — because a report that visibly does nothing is
+  // what makes people stop reporting.
+  const reportReview = (r: Review) => {
+    const REASONS = ['Hate speech or harassment', 'Sexual or violent content', 'Spam or advertising', 'Spoilers not marked'];
+    Alert.alert(
+      'Report this review?',
+      "Tell us what's wrong with it. We'll review it, and you won't see this reader's reviews again.",
+      [
+        ...REASONS.map((reason) => ({
+          text: reason,
+          onPress: async () => {
+            try {
+              await api.reportReview(r.id, r.userId, reason);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              // Drop it from view immediately; the next fetch won't return it either.
+              setReviews((list) => list.filter((x) => x.userId !== r.userId));
+              Alert.alert('Reported', "Thanks — we'll take a look. You won't see this reader's reviews again.");
+            } catch {
+              Alert.alert('Could not report', 'Something went wrong. Please try again.');
+            }
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' as const },
+      ]
+    );
+  };
+
   const shareReview = (r: Review) => {
     Haptics.selectionAsync();
     router.push({
@@ -580,6 +609,7 @@ export default function BookDetail() {
                 revealed={revealed.has(r.id)}
                 onReveal={() => setRevealed((s) => new Set(s).add(r.id))}
                 onShare={() => shareReview(r)}
+                onReport={() => reportReview(r)}
                 t={t}
               />
             ))}
@@ -731,6 +761,7 @@ function ReviewRow({
   revealed,
   onReveal,
   onShare,
+  onReport,
   t,
 }: {
   review: Review;
@@ -738,6 +769,7 @@ function ReviewRow({
   revealed: boolean;
   onReveal: () => void;
   onShare: () => void;
+  onReport: () => void;
   t: ReturnType<typeof useTheme>;
 }) {
   const hidden = review.containsSpoilers && !revealed;
@@ -752,6 +784,12 @@ function ReviewRow({
         <Pressable onPress={onShare} hitSlop={10} accessibilityRole="button" accessibilityLabel="Share this review">
           <Ionicons name="share-social-outline" size={16} color={t.accent} />
         </Pressable>
+        {/* Reporting your own review would only hide it from yourself. */}
+        {!isMine ? (
+          <Pressable onPress={onReport} hitSlop={10} accessibilityRole="button" accessibilityLabel="Report this review">
+            <Ionicons name="flag-outline" size={16} color={t.textTer} />
+          </Pressable>
+        ) : null}
       </View>
       {review.body ? (
         hidden ? (

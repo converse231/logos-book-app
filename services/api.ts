@@ -116,6 +116,11 @@ export interface QuireApi {
   markInsightShared(insightId: string): Promise<void>;
 
   // ── Reviews ───────────────────────────────────────────────────────────────
+  /** Report a review as objectionable, and stop showing that reader's content.
+   *  Required by Google Play's UGC policy for apps that display other users'
+   *  writing. Reporting also blocks: the reporter must SEE the content go, not
+   *  just be told a form was filed. Idempotent — re-reporting is a no-op. */
+  reportReview(reviewId: string, authorId: string, reason: string): Promise<void>;
   writeReview(bookId: string, rating: number, body?: string, spoiler?: boolean): Promise<Review>;
   getReviews(bookId: string): Promise<Review[]>;
   /** The caller's own reviews (newest first), for the profile compilation. */

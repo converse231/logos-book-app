@@ -213,6 +213,25 @@ export const libraryApi: Partial<QuireApi> = {
   },
 
   // ── Reviews ─────────────────────────────────────────────────────────────────
+  async reportReview(reviewId, authorId, reason) {
+    const uid = await requireUid();
+    // The report is the record you moderate from; the block is what the reporter
+    // actually experiences. Both are upserts so a double-tap can't 409.
+    const { error: repErr } = await supabase
+      .from('review_reports')
+      .upsert({ review_id: reviewId, reporter_id: uid, reason }, { onConflict: 'review_id,reporter_id' });
+    if (repErr) throw repErr;
+
+    // Self-reports would hide your own review from you; the DB check constraint
+    // would reject it anyway, so skip rather than surface a constraint error.
+    if (authorId && authorId !== uid) {
+      const { error: blkErr } = await supabase
+        .from('blocked_users')
+        .upsert({ user_id: uid, blocked_user_id: authorId }, { onConflict: 'user_id,blocked_user_id' });
+      if (blkErr) throw blkErr;
+    }
+  },
+
   async writeReview(bookId: string, rating: number, body?: string, spoiler = false) {
     const uid = await requireUid();
     // reviews.rating is numeric(2,1) — clamp to 0.5 steps in [0.5, 5] so half-stars
