@@ -17,6 +17,8 @@
 import { decode } from 'base64-arraybuffer';
 import type { QuireApi } from '../api';
 import type { LevelName, SubStatus, ThemePref, UserProfile } from '../types';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '@/lib/supabase';
 
 // Local device timezone, captured once at account creation. Streak/at-risk math
@@ -131,6 +133,70 @@ export const authApi: Partial<QuireApi> = {
       { onConflict: 'id' }
     );
     if (insErr) throw insErr;
+    return { userId };
+  },
+
+  // ── Google (B5, brought forward for the Play Store launch) ──────────────────
+  //
+  // Browser OAuth rather than the native Google SDK, on purpose. The native path
+  // needs an Android OAuth client keyed to your signing certificate's SHA-1 — and
+  // once Play App Signing is on, the certificate that ships is Google's, not your
+  // upload key. That mismatch is the classic "worked in preview, broken in
+  // production" Google sign-in bug. This flow only ever uses the WEB client, which
+  // has no fingerprint, so preview and production behave identically.
+  //
+  // PKCE: the redirect carries a short-lived code, not tokens, so another app
+  // claiming the quire:// scheme can't lift a session out of the URL.
+  async signInWithGoogle(birthYear?: number) {
+    let { data: { session } } = await supabase.auth.getSession();
+
+    // Resumable: an earlier attempt may have authenticated but died before the
+    // users row landed. Don't send them back through the browser for that.
+    if (!session) {
+      // createURL (not a hardcoded string) so this also resolves under Expo Go's
+      // exp:// host, where the scheme isn't quire://.
+      const redirectTo = Linking.createURL('auth-callback');
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo, skipBrowserRedirect: true },
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error('Google sign-in could not start. Try again.');
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      // 'cancel' (back button) and 'dismiss' (swipe away) are both deliberate exits.
+      if (result.type !== 'success') throw new Error('GOOGLE_CANCELLED');
+
+      const url = new URL(result.url);
+      const code = url.searchParams.get('code');
+      if (!code) {
+        // Supabase reports provider failures on the redirect rather than throwing.
+        const desc = url.searchParams.get('error_description') ?? url.searchParams.get('error');
+        throw new Error(desc ? decodeURIComponent(desc) : 'Google sign-in did not complete.');
+      }
+      const { data: ex, error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+      if (exErr) throw exErr;
+      session = ex.session;
+    }
+
+    const userId = session?.user.id;
+    if (!userId) throw new Error('Google sign-in returned no user.');
+
+    // Only the onboarding funnel passes birthYear, and only it may create the row —
+    // that ordering is the COPPA guarantee.
+    if (birthYear != null) {
+      const tz = localTimezone();
+      const { error: insErr } = await supabase.from('users').upsert(
+        {
+          id: userId,
+          birth_year: birthYear,
+          timezone_offset_minutes: tz.offsetMinutes,
+          timezone_name: tz.name,
+        },
+        { onConflict: 'id' }
+      );
+      if (insErr) throw insErr;
+    }
     return { userId };
   },
 

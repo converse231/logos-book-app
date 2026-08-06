@@ -77,6 +77,15 @@ export const mockApi: QuireApi = {
     return { userId: _user.id };
   },
 
+  async signInWithGoogle(birthYear?: number) {
+    await delay(600); // the browser round-trip is the slowest part of the real one
+    if (birthYear != null) {
+      const age = new Date().getFullYear() - birthYear;
+      _user = { ..._user, birthYear, isMinor: age < 18, isUnder13: age < 13 };
+    }
+    return { userId: _user.id };
+  },
+
   async signOut() {
     await delay(100);
   },

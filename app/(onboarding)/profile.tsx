@@ -23,6 +23,7 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 import { ThemeToggle } from '@/components/onboarding/ThemeToggle';
 
 const NAME_RE = /^[A-Za-z0-9 _'-]{2,24}$/;
@@ -46,6 +47,7 @@ export default function Profile() {
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googling, setGoogling] = useState(false);
 
   const pickAvatar = async () => {
     Haptics.selectionAsync();
@@ -87,6 +89,42 @@ export default function Profile() {
     try {
       // 1) Create the account (auth user + public.users row from birth_year).
       await api.signUp(email, password, birthYear);
+      await finishOnboarding();
+    } catch (e: any) {
+      setError(e?.message ?? 'Could not create your account. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Google creates the account at the SAME moment email does — the end of the
+  // funnel — so birthYear is already captured and the COPPA gate has run before
+  // any row exists. That ordering is the whole reason this button lives here and
+  // not on the welcome screen.
+  const handleGoogle = async () => {
+    setTouched(true);
+    if (!nameValid || submitting || googling) return;
+    if (birthYear == null) {
+      router.replace('/(onboarding)/age-gate' as Href);
+      return;
+    }
+    setGoogling(true);
+    setError(null);
+    try {
+      await api.signInWithGoogle(birthYear);
+      await finishOnboarding();
+    } catch (e: any) {
+      if (e?.message !== 'GOOGLE_CANCELLED') {
+        setError(e?.message ?? 'Could not sign up with Google. Try again.');
+      }
+    } finally {
+      setGoogling(false);
+    }
+  };
+
+  // Shared tail: identical whichever provider created the account.
+  const finishOnboarding = async () => {
+    {
       // 2) Upload the avatar (if picked) — non-fatal, never block onboarding on it.
       let avatarUrl: string | undefined;
       if (avatar?.base64) {
@@ -105,10 +143,6 @@ export default function Profile() {
       track('onboarding_completed');
       // Cast: typed routes regenerate on first `expo start`; this is a valid route.
       router.replace('/(tabs)/home' as Href);
-    } catch (e: any) {
-      setError(e?.message ?? 'Could not create your account. Please try again.');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -125,12 +159,28 @@ export default function Profile() {
         onBack={() => router.back()}
         scroll
         footer={
-          <PrimaryButton
-            label="Start reading"
-            onPress={handleFinish}
-            loading={submitting}
-            disabled={!valid}
-          />
+          <View style={styles.footerStack}>
+            <PrimaryButton
+              label="Start reading"
+              onPress={handleFinish}
+              loading={submitting}
+              disabled={!valid || googling}
+            />
+
+            <View style={styles.divider}>
+              <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
+              <Text style={[styles.dividerText, { color: t.textTer }]}>OR</Text>
+              <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
+            </View>
+
+            {/* Only the name is required for this path — Google supplies the
+                identity, so the email and password fields above are irrelevant. */}
+            <GoogleButton
+              onPress={handleGoogle}
+              loading={googling}
+              disabled={submitting || !nameValid}
+            />
+          </View>
         }
       >
         <View style={styles.body}>
@@ -244,6 +294,10 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  footerStack: { gap: 12 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dividerLine: { flex: 1, height: 1, opacity: 0.4 },
+  dividerText: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1.4 },
   body: { paddingHorizontal: 24, paddingTop: 20, gap: 28 },
   avatarWrap: { alignItems: 'center', alignSelf: 'center', gap: 8 },
   avatarBox: { width: 96, height: 96 },

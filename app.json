@@ -71,7 +71,8 @@
         }
       ],
       "expo-notifications",
-      "./plugins/withReadingActivity"
+      "./plugins/withReadingActivity",
+      "expo-web-browser"
     ],
     "experiments": {},
     "extra": {

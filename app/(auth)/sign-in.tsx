@@ -18,6 +18,7 @@ import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -35,8 +36,29 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googling, setGoogling] = useState(false);
 
   const valid = EMAIL_RE.test(email.trim()) && password.length >= 6;
+
+  // A Google user who has never onboarded lands with no public.users row; the
+  // boot redirect sends them through the age gate before anything is written, so
+  // no birthYear is passed here.
+  const handleGoogle = async () => {
+    if (submitting || googling) return;
+    setGoogling(true);
+    setError(null);
+    try {
+      await api.signInWithGoogle();
+      router.replace('/' as Href); // boot redirect decides: home, or finish onboarding
+    } catch (e: any) {
+      // Backing out of the browser is a choice, not a failure.
+      if (e?.message !== 'GOOGLE_CANCELLED') {
+        setError(e?.message ?? 'Could not sign in with Google. Try again.');
+      }
+    } finally {
+      setGoogling(false);
+    }
+  };
 
   const handleSignIn = async () => {
     if (!valid || submitting) return;
@@ -124,7 +146,20 @@ export default function SignIn() {
           </View>
 
           <View style={styles.footer}>
-            <PrimaryButton label="Sign in" onPress={handleSignIn} loading={submitting} disabled={!valid} />
+            <PrimaryButton label="Sign in" onPress={handleSignIn} loading={submitting} disabled={!valid || googling} />
+
+            <View style={styles.divider}>
+              <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
+              <Text style={[styles.dividerText, { color: t.textTer }]}>OR</Text>
+              <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
+            </View>
+
+            <GoogleButton
+              label="Sign in with Google"
+              onPress={handleGoogle}
+              loading={googling}
+              disabled={submitting}
+            />
             <Pressable
               onPress={() => router.replace('/(onboarding)/age-gate' as Href)}
               hitSlop={8}
@@ -161,6 +196,9 @@ const styles = StyleSheet.create({
   forgot: { alignSelf: 'flex-end', paddingVertical: 2 },
   forgotText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   footer: { marginTop: 'auto', gap: 16 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
+  dividerLine: { flex: 1, height: 1, opacity: 0.4 },
+  dividerText: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1.4 },
   altLink: { alignItems: 'center', paddingVertical: 4 },
   altText: { fontFamily: FONTS.uiRegular, fontSize: 14 },
 });

@@ -29,6 +29,21 @@ export interface QuireApi {
   // ── Auth ──────────────────────────────────────────────────────────────────
   signIn(email: string, password: string): Promise<{ userId: string }>;
   signUp(email: string, password: string, birthYear: number): Promise<{ userId: string }>;
+  /**
+   * Google OAuth. Resolves with the signed-in user, or throws `GOOGLE_CANCELLED`
+   * if the reader backed out of the browser — callers should treat that as a
+   * no-op, not an error worth showing.
+   *
+   * `birthYear` is what makes this COPPA-safe. Pass it from the onboarding funnel
+   * and the `public.users` row is provisioned in the same call, exactly as signUp
+   * does; omit it on the sign-in screen, where the row already exists. A new user
+   * who arrives via sign-in simply lands with no profile row, and the boot
+   * redirect routes them through the age gate before anything is written.
+   *
+   * Resumable like signUp: if a session already exists it skips the browser
+   * entirely and just provisions, so a half-finished funnel can be completed.
+   */
+  signInWithGoogle(birthYear?: number): Promise<{ userId: string }>;
   signOut(): Promise<void>;
   /** Email a recovery code (works without deep links, unlike a reset link). */
   requestPasswordReset(email: string): Promise<void>;
