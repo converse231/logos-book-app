@@ -54,7 +54,11 @@ export default function SessionReview() {
   const isAudio = active?.format === 'audiobook';
   const maxPage = active?.pageCount ?? null;
 
-  const [endPage, setEndPage] = useState(String(active?.startPage ?? ''));
+  // Starts EMPTY, not seeded with the start page. Pre-filling it meant a reader who
+  // skimmed this screen could tap Save without ever touching it and silently record
+  // a session with 0 pages read — the number looked answered when nobody had
+  // answered it. Blank + autofocus + a gated Save makes the question unmissable.
+  const [endPage, setEndPage] = useState('');
   const [minutes, setMinutes] = useState(String(Math.max(1, Math.round(capturedMs / 60000))));
   const [markFinished, setMarkFinished] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -97,7 +101,30 @@ export default function SessionReview() {
     );
   }
 
-  const save = async () => {
+  // Audiobooks have no page field, so nothing to answer; otherwise the reader has
+  // to have put a number in before Save comes alive.
+  const canSave = isAudio || endPage.trim().length > 0;
+
+  const save = () => {
+    if (!canSave || submitting) return;
+    // 0 pages is legitimate — studying one passage, re-reading, an interrupted
+    // sit-down — so it's allowed, just never by accident.
+    if (!isAudio && derived.pages === 0) {
+      Keyboard.dismiss();
+      Alert.alert(
+        'No pages this time?',
+        `You started and finished on page ${start}. The time still counts toward your streak.`,
+        [
+          { text: 'Change page', style: 'cancel' },
+          { text: 'Save anyway', onPress: submit },
+        ]
+      );
+      return;
+    }
+    submit();
+  };
+
+  const submit = async () => {
     if (submitting) return;
     setSubmitting(true);
     Keyboard.dismiss();
@@ -231,6 +258,8 @@ export default function SessionReview() {
               value={endPage}
               onChange={setEndPage}
               hint={maxPage ? `of ${maxPage}` : undefined}
+              placeholder={String(start)}
+              autoFocus
               accessibilityLabel="End page"
             />
           ) : null}
@@ -244,13 +273,16 @@ export default function SessionReview() {
 
           {/* Derived, read-only. Dashed border + no shadow = not tappable. */}
           <View style={[styles.derived, { borderColor: t.textTer }]}>
+            {/* Em-dashes until the page is answered: a literal 0 reads as a result,
+                and "0 pages / 0 pages-per-hour" is exactly the wrong first
+                impression when the real state is "not told yet". */}
             {!isAudio ? (
-              <Derived value={String(derived.pages)} label={derived.pages === 1 ? 'PAGE' : 'PAGES'} t={t} />
+              <Derived value={canSave ? String(derived.pages) : '—'} label={derived.pages === 1 && canSave ? 'PAGE' : 'PAGES'} t={t} />
             ) : null}
             <Derived value={`${derived.mins}`} label="MINUTES" t={t} />
-            {!isAudio ? <Derived value={String(derived.pph)} label="PAGES/HR" t={t} /> : null}
+            {!isAudio ? <Derived value={canSave ? String(derived.pph) : '—'} label="PAGES/HR" t={t} /> : null}
             {derived.progress != null ? (
-              <Derived value={`${Math.round(derived.progress * 100)}%`} label="OF BOOK" t={t} />
+              <Derived value={canSave ? `${Math.round(derived.progress * 100)}%` : '—'} label="OF BOOK" t={t} />
             ) : null}
           </View>
 
@@ -294,9 +326,14 @@ export default function SessionReview() {
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
           <PressBlock
             onPress={save}
-            disabled={submitting}
-            accessibilityLabel="Save session"
-            style={[styles.saveBtn, { backgroundColor: t.accent, borderColor: INK }, submitting && { opacity: 0.6 }]}
+            disabled={submitting || !canSave}
+            accessibilityLabel={canSave ? 'Save session' : 'Enter the page you finished on to save'}
+            accessibilityState={{ disabled: !canSave }}
+            style={[
+              styles.saveBtn,
+              { backgroundColor: canSave ? t.accent : t.bgTer, borderColor: INK },
+              (submitting || !canSave) && { opacity: 0.6 },
+            ]}
           >
             {submitting ? (
               <ActivityIndicator color={PALETTE.onAccent} />
@@ -324,12 +361,16 @@ function Field({
   value,
   onChange,
   hint,
+  placeholder,
+  autoFocus,
   accessibilityLabel,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   hint?: string;
+  placeholder?: string;
+  autoFocus?: boolean;
   accessibilityLabel: string;
 }) {
   const t = useTheme();
@@ -344,7 +385,10 @@ function Field({
             keyboardType="number-pad"
             returnKeyType="done"
             selectTextOnFocus
+            autoFocus={autoFocus}
             maxLength={5}
+            placeholder={placeholder}
+            placeholderTextColor={t.textTer}
             accessibilityLabel={accessibilityLabel}
             style={[styles.fieldInput, { color: t.text }]}
           />
