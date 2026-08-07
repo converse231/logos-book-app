@@ -11,6 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { PressBlock } from '@/components/shared/PressBlock';
+
+// Shallower than PressBlock's default 4 — these sit INSIDE a bar that already
+// carries a 4px hard shadow, and matching it would read as two stacked cards.
+const SHADOW_OFFSET = 3;
 
 interface SessionControlBarProps {
   isPaused: boolean;
@@ -34,13 +39,13 @@ function formatLock(sec: number): string {
 }
 
 /**
- * One control in the bar.
+ * A FLAT control in the bar — pause, finish, and the locked focus button.
  *
- * These deliberately do NOT use PressBlock. PressBlock's mechanic is pressing a
- * block INTO its own hard shadow — that only reads if there's a shadow to press
- * into, and the bar already carries SHADOW.card. Nesting a second set of hard
- * shadows inside it would be heavy, so the buttons stay flat and express the same
- * hierarchy through scale instead.
+ * RESUME is a real PressBlock (it's the primary action and earns the shadow);
+ * these stay flat so the bar doesn't become a stack of hard shadows inside a bar
+ * that already has one. They express the same hierarchy through scale instead, and
+ * `reserve` keeps their footprint identical to PressBlock's so nothing shifts when
+ * they sit side by side or when the bar swaps between states.
  *
  * primary   squeezes further and springs back past rest on release
  * secondary squeezes less, warms its fill, and returns without overshoot
@@ -51,6 +56,7 @@ function BarButton({
   delayLongPress,
   disabled,
   emphasis = 'secondary',
+  reserve = 0,
   fill,
   style,
   children,
@@ -63,9 +69,12 @@ function BarButton({
   delayLongPress?: number;
   disabled?: boolean;
   emphasis?: 'primary' | 'secondary';
+  /** Reserve the same footprint a PressBlock's hard shadow occupies, so a flat
+   *  button sitting beside one lines up — and so the bar doesn't change height
+   *  between the running and paused states. */
+  reserve?: number;
   /** Resting fill; the pressed tint is derived from it. */
   fill: string;
-  pressedFill?: string;
   style?: any;
   children: React.ReactNode;
   accessibilityLabel?: string;
@@ -85,6 +94,7 @@ function BarButton({
   }));
 
   return (
+    <View style={[styles.grow, { paddingRight: reserve, paddingBottom: reserve }]}>
     <Animated.View style={[styles.btnWrap, anim, style]}>
       <Pressable
         onPressIn={() => {
@@ -109,6 +119,7 @@ function BarButton({
         {children}
       </Pressable>
     </Animated.View>
+    </View>
   );
 }
 
@@ -162,6 +173,7 @@ export function SessionControlBar({
           // Only a Finish you can actually press is the primary action.
           emphasis={canStop ? 'primary' : 'secondary'}
           fill={canStop ? t.accent : t.bgTer}
+          reserve={SHADOW_OFFSET}
           style={[{ borderColor: t.border }, !canStop && styles.locked]}
           accessibilityLabel={canStop ? 'Stop and finish session' : lockedLabel}
           accessibilityHint={focusLocked ? 'Press and hold to end your focus session early and finish' : undefined}
@@ -194,6 +206,7 @@ export function SessionControlBar({
           }}
           // Pausing is an interruption, not the goal — it stays secondary.
           fill={t.bgSec}
+          reserve={SHADOW_OFFSET}
           style={{ borderColor: t.border }}
           accessibilityLabel="Pause session"
         >
@@ -202,26 +215,31 @@ export function SessionControlBar({
         </BarButton>
       ) : (
         <>
-          <BarButton
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onTogglePause();
-            }}
-            // Getting back to reading is what this screen is for.
+          {/* Getting back to reading is what this screen is for, so RESUME is a
+              real block button — it presses into its own shadow like every other
+              primary CTA. offset 3 rather than the default 4 so it doesn't compete
+              with the bar's own 4px shadow it's sitting inside. PressBlock fires
+              the haptic itself. */}
+          <PressBlock
             emphasis="primary"
-            fill={t.accent}
-            style={{ borderColor: t.border }}
+            offset={SHADOW_OFFSET}
+            radius={14}
+            haptic="light"
+            onPress={onTogglePause}
             accessibilityLabel="Resume session"
+            containerStyle={styles.grow}
+            style={[styles.blockFace, { backgroundColor: t.accent, borderColor: t.border }]}
           >
             <Ionicons name="play" size={22} color={t.onAccent} />
             <Text style={[styles.btnText, { color: t.onAccent }]}>RESUME</Text>
-          </BarButton>
+          </PressBlock>
           <BarButton
             onPress={() => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               onStop();
             }}
             fill={t.bgSec}
+            reserve={SHADOW_OFFSET}
             style={{ borderColor: t.border }}
             accessibilityLabel="Stop and finish session"
           >
@@ -246,7 +264,12 @@ const styles = StyleSheet.create({
   },
   // The animated wrapper carries the fill, border and flex; the Pressable inside
   // it carries the row layout so the whole face stays the touch target.
-  btnWrap: { flex: 1, borderRadius: 14, borderWidth: BORDER_WIDTH, overflow: 'hidden' },
+  grow: { flex: 1 },
+  btnWrap: { borderRadius: 14, borderWidth: BORDER_WIDTH, overflow: 'hidden' },
+  blockFace: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    minHeight: 52, borderRadius: 14, borderWidth: BORDER_WIDTH,
+  },
   btnInner: {
     flexDirection: 'row',
     alignItems: 'center',
