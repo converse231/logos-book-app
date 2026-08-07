@@ -86,6 +86,10 @@ export const mockApi: QuireApi = {
     return { userId: _user.id };
   },
 
+  async getAuthEmail() {
+    return null; // the mock funnel is always the email path
+  },
+
   async signOut() {
     await delay(100);
   },

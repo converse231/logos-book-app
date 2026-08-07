@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -15,7 +15,7 @@ import { AppIcon } from '@/components/shared/AppIcon';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { track } from '@/lib/analytics';
 import { useAppStore } from '@/stores/appStore';
@@ -48,6 +48,11 @@ export default function Profile() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [googling, setGoogling] = useState(false);
+  // Non-null when the reader is ALREADY authenticated — i.e. they signed in with
+  // Google (from here or from the sign-in screen) and are now finishing the funnel.
+  // In that state asking for an email and password is nonsense: they don't have
+  // one, and `valid` would never become true.
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
 
   const pickAvatar = async () => {
     Haptics.selectionAsync();
@@ -70,10 +75,19 @@ export default function Profile() {
   };
 
   const trimmed = username.trim();
+  useEffect(() => {
+    let alive = true;
+    api.getAuthEmail().then((e) => alive && setAuthEmail(e)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [api]);
+
   const nameValid = NAME_RE.test(trimmed);
   const emailValid = EMAIL_RE.test(email.trim());
   const passwordValid = password.length >= 6;
-  const valid = nameValid && emailValid && passwordValid;
+  // Already signed in? The name is the only thing left to collect.
+  const valid = authEmail ? nameValid : nameValid && emailValid && passwordValid;
   const showError = touched && trimmed.length > 0 && !nameValid;
 
   const handleFinish = async () => {
@@ -88,7 +102,14 @@ export default function Profile() {
     setError(null);
     try {
       // 1) Create the account (auth user + public.users row from birth_year).
-      await api.signUp(email, password, birthYear);
+      //    An authenticated reader already has the auth user, so this only needs
+      //    to provision the profile row — signInWithGoogle is resumable and skips
+      //    the browser entirely when a session exists.
+      if (authEmail) {
+        await api.signInWithGoogle(birthYear);
+      } else {
+        await api.signUp(email, password, birthYear);
+      }
       await finishOnboarding();
     } catch (e: any) {
       setError(e?.message ?? 'Could not create your account. Please try again.');
@@ -167,19 +188,22 @@ export default function Profile() {
               disabled={!valid || googling}
             />
 
-            <View style={styles.divider}>
-              <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
-              <Text style={[styles.dividerText, { color: t.textTer }]}>OR</Text>
-              <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
-            </View>
-
-            {/* Only the name is required for this path — Google supplies the
-                identity, so the email and password fields above are irrelevant. */}
-            <GoogleButton
-              onPress={handleGoogle}
-              loading={googling}
-              disabled={submitting || !nameValid}
-            />
+            {/* Hidden once authenticated: you can't sign in with Google twice,
+                and being asked to is what made this step feel broken. */}
+            {!authEmail ? (
+              <>
+                <View style={styles.divider}>
+                  <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
+                  <Text style={[styles.dividerText, { color: t.textTer }]}>OR</Text>
+                  <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
+                </View>
+                <GoogleButton
+                  onPress={handleGoogle}
+                  loading={googling}
+                  disabled={submitting || !nameValid}
+                />
+              </>
+            ) : null}
           </View>
         }
       >
@@ -242,6 +266,24 @@ export default function Profile() {
             )}
           </View>
 
+          {authEmail ? (
+            /* Already authenticated via Google — there is no password to set, so
+               confirm WHICH account this is instead of asking for credentials. */
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: t.textSec }]}>ACCOUNT</Text>
+              <View style={[styles.signedIn, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+                <Ionicons name="logo-google" size={17} color={t.text} />
+                <Text style={[styles.signedInText, { color: t.text }]} numberOfLines={1}>
+                  {authEmail}
+                </Text>
+                <Ionicons name="checkmark-circle" size={17} color={t.accent} />
+              </View>
+              <Text style={[styles.helper, { color: t.textTer }]}>
+                You&rsquo;ll sign back in with Google.
+              </Text>
+            </View>
+          ) : (
+            <>
           {/* Email */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: t.textSec }]}>EMAIL</Text>
@@ -274,6 +316,8 @@ export default function Profile() {
               You'll use this to sign back in and keep your streak.
             </Text>
           </View>
+            </>
+          )}
 
           {/* Theme */}
           <View style={styles.field}>
@@ -295,6 +339,11 @@ export default function Profile() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   footerStack: { gap: 12 },
+  signedIn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14,
+    minHeight: 52, borderWidth: BORDER_WIDTH_THICK, borderRadius: RADIUS.md,
+  },
+  signedInText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dividerLine: { flex: 1, height: 1, opacity: 0.4 },
   dividerText: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1.4 },

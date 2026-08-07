@@ -201,6 +201,10 @@ export const authApi: Partial<QuireApi> = {
     return { userId };
   },
 
+  async getAuthEmail() {
+    return currentUserEmail();
+  },
+
   async signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;

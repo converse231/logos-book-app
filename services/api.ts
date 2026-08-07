@@ -45,6 +45,10 @@ export interface QuireApi {
    * entirely and just provisions, so a half-finished funnel can be completed.
    */
   signInWithGoogle(birthYear?: number): Promise<{ userId: string }>;
+  /** The signed-in account's email, or null when signed out. Unlike getProfile
+   *  this needs no public.users row — which is exactly the state a Google user is
+   *  in partway through onboarding. */
+  getAuthEmail(): Promise<string | null>;
   signOut(): Promise<void>;
   /** Email a recovery code (works without deep links, unlike a reset link). */
   requestPasswordReset(email: string): Promise<void>;
