@@ -213,6 +213,7 @@ export default function SessionComplete() {
           style={[styles.actions, { paddingBottom: insets.bottom + 14 }]}
         >
           <PressBlock
+            emphasis="primary"
             onPress={finish}
             haptic="light"
             accessibilityLabel="Finish"

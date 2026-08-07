@@ -117,6 +117,7 @@ export default function StreakRestored() {
 
         <Animated.View entering={reduce ? undefined : FadeIn.delay(860).duration(440)} style={styles.actions}>
           <PressBlock
+            emphasis="primary"
             onPress={close}
             accessibilityLabel={countedToday ? 'Continue' : 'Start reading'}
             style={[styles.cta, { backgroundColor: tier.ray, borderColor: INK }]}

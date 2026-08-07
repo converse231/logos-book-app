@@ -41,7 +41,11 @@ export function ProgressBar({
     if (reduceMotion || !animateOnMount) {
       fillPx.value = target;
     } else {
-      fillPx.value = withSpring(target, { damping: 18, stiffness: 120 });
+      // Critically damped (ratio 1.00). A progress bar that overshoots briefly
+      // displays a value that is WRONG — it runs past the number and settles back.
+      // Fine on a mascot, not on a measurement. damping 18 gave ratio 0.82, which
+      // wobbled for ~450ms; 22 removes the bounce without making it feel abrupt.
+      fillPx.value = withSpring(target, { damping: 22, stiffness: 120 });
     }
   }, [pct, trackWidth, reduceMotion, animateOnMount, fillPx]);
 

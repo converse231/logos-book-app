@@ -154,6 +154,7 @@ export default function StreakUnlocked() {
           style={styles.actions}
         >
           <PressBlock
+            emphasis="primary"
             onPress={share}
             accessibilityLabel="Share this streak"
             style={[styles.cta, { backgroundColor: tier.ray, borderColor: INK }]}

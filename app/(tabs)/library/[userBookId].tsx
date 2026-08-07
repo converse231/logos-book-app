@@ -14,6 +14,7 @@ import { ReadingStatus, Review, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { PressChip } from '@/components/shared/PressChip';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -465,11 +466,11 @@ export default function BookDetail() {
             {STATUSES.map((s) => {
               const active = s.key === status;
               return (
-                <Pressable
+                <PressChip
                   key={s.key}
+                  selected={active}
                   onPress={() => setStatus(s.key)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={s.label}
                   style={[
                     styles.statusPill,
                     { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
@@ -480,7 +481,7 @@ export default function BookDetail() {
                   ) : (
                     <Text style={[styles.statusText, { color: active ? t.accent : t.textSec }]} numberOfLines={1}>{s.label}</Text>
                   )}
-                </Pressable>
+                </PressChip>
               );
             })}
           </View>

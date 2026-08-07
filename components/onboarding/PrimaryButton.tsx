@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
@@ -58,7 +59,10 @@ export function PrimaryButton({
     if (!reduceMotion) pressed.value = withTiming(1, { duration: 70 });
   };
   const onPressOut = () => {
-    if (!reduceMotion) pressed.value = withTiming(0, { duration: 110 });
+    // PrimaryButton IS the primary action, so it always gets the spring-back
+    // release — matching PressBlock's emphasis="primary". Kept in sync by hand
+    // because this component predates PressBlock and re-implements the mechanic.
+    if (!reduceMotion) pressed.value = withSpring(0, { damping: 15, stiffness: 220, mass: 1 });
   };
   const handlePress = () => {
     if (isDisabled) return;

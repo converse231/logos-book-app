@@ -139,6 +139,7 @@ export default function StreakBroken() {
           {canRestore ? (
             <>
               <PressBlock
+            emphasis="primary"
                 onPress={restore}
                 disabled={busy}
                 accessibilityLabel={`Restore your ${days} day streak. ${restoresLeft} restores left.`}

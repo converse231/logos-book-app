@@ -325,6 +325,7 @@ export default function SessionReview() {
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
           <PressBlock
+            emphasis="primary"
             onPress={save}
             disabled={submitting || !canSave}
             accessibilityLabel={canSave ? 'Save session' : 'Enter the page you finished on to save'}

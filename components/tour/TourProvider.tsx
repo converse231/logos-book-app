@@ -208,6 +208,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
                   Three taps and you&rsquo;ll know where everything is.
                 </Text>
                 <PressBlock
+            emphasis="primary"
                   onPress={() => { Haptics.selectionAsync(); start(); }}
                   accessibilityLabel="Show me around"
                   radius={RADIUS.md}

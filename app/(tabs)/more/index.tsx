@@ -6,6 +6,7 @@ import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { useTour } from '@/components/tour/TourProvider';
+import { PressRow } from '@/components/shared/PressRow';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
@@ -124,7 +125,7 @@ export default function More() {
               <Text style={[styles.groupTitle, { color: t.textSec }]}>{group.title}</Text>
               <Card padded={false}>
                 {group.items.map((item, idx) => (
-                  <Pressable
+                  <PressRow
                     key={item.label}
                     onPress={() => {
                       Haptics.selectionAsync();
@@ -140,12 +141,10 @@ export default function More() {
                       }
                       if (item.href) router.push(item.href);
                     }}
-                    accessibilityRole="button"
                     accessibilityLabel={item.label}
-                    style={({ pressed }) => [
+                    style={[
                       styles.row,
                       idx > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border },
-                      pressed && { backgroundColor: t.bgTer },
                     ]}
                   >
                     <View
@@ -163,7 +162,7 @@ export default function More() {
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={t.textTer} />
-                  </Pressable>
+                  </PressRow>
                 ))}
               </Card>
             </View>

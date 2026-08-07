@@ -2,6 +2,7 @@ import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
@@ -24,6 +25,13 @@ interface PressBlockProps {
   /** Corner radius of the shadow block — match the front block's radius so the
    *  offset shadow's corners line up. Defaults to the universal soft radius. */
   radius?: number;
+  /** 'primary' springs back past rest when released — one extra beat of life for
+   *  the screen's main action. Everything else presses in and stops.
+   *
+   *  This is a hierarchy signal, not decoration: if every button overshoots, the
+   *  overshoot stops meaning anything, and a Discard or Cancel that bounces
+   *  playfully is saying the wrong thing. */
+  emphasis?: 'primary' | 'secondary';
   haptic?: 'medium' | 'light' | 'none';
   accessibilityLabel?: string;
   accessibilityState?: { disabled?: boolean; busy?: boolean; selected?: boolean };
@@ -38,6 +46,10 @@ interface PressBlockProps {
 // outer wrapper keeps the whole block inside its own box, so no scroller can cut
 // it, here or anywhere else it's used.
 //
+// Motion carries hierarchy: `emphasis="primary"` springs back past rest on
+// release, everything else presses in and stops. Both travel into the shadow, so
+// they read as one family — the primary just gets one extra beat.
+//
 // The canonical neubrutalist button interaction (same mechanic as PrimaryButton):
 // a solid ink shadow block sits behind the content; on press the content
 // translates INTO the shadow (which fades) for a tactile "stamp". Reduced-motion
@@ -51,6 +63,7 @@ export function PressBlock({
   disabled = false,
   offset = 4,
   radius = RADIUS.md,
+  emphasis = 'secondary',
   haptic = 'medium',
   accessibilityLabel,
   accessibilityState,
@@ -69,7 +82,19 @@ export function PressBlock({
     if (!reduce && !disabled) pressed.value = withTiming(1, { duration: 70 });
   };
   const onPressOut = () => {
-    if (!reduce && !disabled) pressed.value = withTiming(0, { duration: 110 });
+    if (reduce || disabled) return;
+    if (emphasis === 'primary') {
+      // Underdamped on purpose: damping ratio ~0.51, settling over roughly half a
+      // second. What you feel is the RETURN CURVE, not the overshoot — with only
+      // 4px of travel the overshoot is about 0.6px, well under a pixel. A crisp
+      // 110ms snap and a slow springy release differ enormously in feel and barely
+      // at all in distance.
+      //
+      // pressIn stays a timing: going down must feel definite and immediate.
+      pressed.value = withSpring(0, { damping: 15, stiffness: 220, mass: 1 });
+    } else {
+      pressed.value = withTiming(0, { duration: 110 });
+    }
   };
   const handle = () => {
     if (disabled) return;
