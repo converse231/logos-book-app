@@ -97,6 +97,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const { width: winW, height: winH } = useWindowDimensions();
 
   const hostRef = useRef<View>(null);
+  // The host's OWN height, not the window's. Target frames are in host space, so
+  // anchoring the tooltip against window height mixes spaces again — and on
+  // Android under edge-to-edge the host extends beneath the navigation bar, so it
+  // is TALLER than the reported window. That difference pushed the tooltip down
+  // onto the spotlight it was meant to sit clear of.
+  const [hostH, setHostH] = useState(0);
   const frames = useRef<Partial<Record<TourTargetKey, Frame>>>({});
   const [, force] = useState(0);
   const [measureNonce, setMeasureNonce] = useState(0);
@@ -137,14 +143,24 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setMeasureNonce((n) => n + 1); // the next target re-measures before it's lit
   };
 
+  // Fall back to the window only before the first layout pass.
+  const H = hostH || winH;
   // Tooltip goes BELOW a target in the upper half, ABOVE one in the lower half —
   // the rule that keeps it off the thing it's describing.
-  const below = frame ? frame.y + frame.height / 2 < winH / 2 : true;
+  const below = frame ? frame.y + frame.height / 2 < H / 2 : true;
 
   return (
     <TourContext.Provider value={value}>
       {/* Every coordinate the overlay uses is relative to THIS view. */}
-      <View style={styles.root} ref={hostRef} collapsable={false}>
+      <View
+        style={styles.root}
+        ref={hostRef}
+        collapsable={false}
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          if (Math.abs(h - hostH) > 1) setHostH(h);
+        }}
+      >
         {children}
 
         {phase !== 'idle' ? (
@@ -219,8 +235,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
                   frame
                     ? below
                       ? { top: frame.y + frame.height + PAD + GAP }
-                      : { bottom: winH - (frame.y - PAD) + GAP }
-                    : { top: winH / 2 - 90 },
+                      : { bottom: H - (frame.y - PAD) + GAP }
+                    : { top: H / 2 - 90 },
                 ]}
               >
                 <Text style={[styles.tipTitle, { color: t.text }]}>{current.title}</Text>
