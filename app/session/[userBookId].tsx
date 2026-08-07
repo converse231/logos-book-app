@@ -40,7 +40,6 @@ import { ProgressBar } from '@/components/shared/ProgressBar';
 
 const FOCUS_DURATIONS = [10, 15, 25, 45, 60]; // minutes the reader can commit to in focus mode
 const DEFAULT_FOCUS_MIN = 15;
-const CANCEL_WINDOW_SEC = 60; // opening window to drop a mis-started session (never recorded)
 const REVEAL_MS = 4000;
 const TICK_MS = 250;
 // A persisted session older than this is treated as abandoned (e.g. started, then
@@ -77,7 +76,7 @@ export default function SessionTracker() {
   const [focusMode, setFocusMode] = useState(false);
   const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MIN); // committed focus length
   const [paused, setPaused] = useState(false);
-  const [elapsedWhole, setElapsedWhole] = useState(0); // whole seconds, drives the focus-lock + cancel window
+  const [elapsedWhole, setElapsedWhole] = useState(0); // whole seconds, drives the focus lock
   // Correct the starting page (e.g. you read ahead without tracking). null = use
   // the book's stored currentPage. Reset whenever the picker selection changes.
   const [startOverride, setStartOverride] = useState<number | null>(null);
@@ -108,10 +107,11 @@ export default function SessionTracker() {
   }, []);
 
   // Focus mode = a committed block: the session can't be paused and Finish stays
-  // locked until the chosen duration elapses. The whole-second counter must run at
-  // least this long (and at least the cancel window) so the lock can release.
+  // locked until the chosen duration elapses. The whole-second counter runs only
+  // as long as that lock needs it — in a normal session it's 0, so the interval
+  // never starts, which is what we want since nothing reads it there.
   const focusLockSec = focusMode ? focusMinutes * 60 : 0;
-  const wholeCap = Math.max(CANCEL_WINDOW_SEC, focusLockSec);
+  const wholeCap = focusLockSec;
 
   // --- drive the clock while running ---
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function SessionTracker() {
         const snapMinutes = snap.focusMinutes ?? DEFAULT_FOCUS_MIN;
         // Cap using the SNAPSHOT's own duration — state isn't updated yet in this
         // closure, so `wholeCap` above would still be the default.
-        const snapCap = Math.max(CANCEL_WINDOW_SEC, snap.focusMode ? snapMinutes * 60 : 0);
+        const snapCap = snap.focusMode ? snapMinutes * 60 : 0;
         setElapsedWhole(Math.min(snapCap, Math.max(0, Math.floor(ms / 1000))));
         setPaused(snap.paused);
         setFocusMode(snap.focusMode);
@@ -389,26 +389,6 @@ export default function SessionTracker() {
   // Drop a just-started session before it's ever recorded. Finish is the only
   // path that calls completeSession, so cancelling simply leaves the tracker —
   // no session row, no streak/XP touched, nothing to reverse.
-  const cancelSession = () => {
-    Alert.alert(
-      'Cancel session?',
-      "This session won't be saved and your streak, XP, and progress stay exactly as they were.",
-      [
-        { text: 'Keep reading', style: 'cancel' },
-        {
-          text: 'Cancel session',
-          style: 'destructive',
-          onPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            endReadingActivity(); // dismiss the lock-screen / Dynamic Island activity
-            clearActiveSession(); // no session was recorded — drop the recovery snapshot
-            endSession();
-            router.back();
-          },
-        },
-      ]
-    );
-  };
 
 
   const goAddReading = () => router.push('/(modals)/add-book?status=reading' as Href);
@@ -616,7 +596,6 @@ export default function SessionTracker() {
   // paused state (Strava-style), so it's always finishable — canStop is focus-only.
   const canStop = focusMode ? elapsedWhole >= focusLockSec : true;
   const stopUnlocksInSec = focusMode ? Math.max(0, focusLockSec - elapsedWhole) : 0;
-  const canCancel = elapsedWhole < CANCEL_WINDOW_SEC;
 
   return (
     <Animated.View
@@ -662,12 +641,10 @@ export default function SessionTracker() {
           isPaused={paused}
           canStop={canStop}
           stopUnlocksInSec={stopUnlocksInSec}
-          showCancel={canCancel}
           showPause={!focusMode}
           onEndEarly={endFocusEarly}
           onTogglePause={togglePause}
           onStop={beginFinish}
-          onCancel={cancelSession}
         />
       </View>
 
