@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FONTS, INK, PALETTE, RADIUS, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
-import { useTourTarget } from '@/components/tour/TourProvider';
 
 // Duolingo-style illustrated streak banner. The scene + Q's pose are baked into
 // one of 10 hand-drawn variants chosen from the live streak state; the count and
@@ -109,7 +108,6 @@ export function StreakHero({
   readToday,
   onPress,
 }: StreakHeroProps) {
-  const tour = useTourTarget('streak', RADIUS.card);
   const hour = new Date().getHours();
   const variant = pickStreakVariant({ currentStreak, isAtRisk, hasComeback, hasEverRead, almostThere, readToday, hour });
   const spec = VARIANTS[variant];
@@ -131,9 +129,6 @@ export function StreakHero({
 
   return (
     <Pressable
-      ref={tour.ref}
-      onLayout={tour.onLayout}
-      collapsable={false}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={a11y}

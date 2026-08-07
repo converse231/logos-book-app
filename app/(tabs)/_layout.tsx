@@ -14,8 +14,7 @@ import { ANIMATION, FONTS } from '@/theme/tokens';
 import { CONTENT_MAX_WIDTH } from '@/theme/layout';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { SessionFab } from '@/components/navigation/SessionFab';
-import { TourProvider, useTourTarget } from '@/components/tour/TourProvider';
-import type { TourTargetKey } from '@/lib/tour';
+import { TourProvider } from '@/components/tour/TourProvider';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -27,19 +26,13 @@ function TabIcon({
   focused,
   color,
   accentMuted,
-  tourKey,
 }: {
   name: IconName;
   focused: boolean;
   color: string;
   accentMuted: string;
-  /** Set on the one tab the guided tour spotlights. */
-  tourKey?: TourTargetKey;
 }) {
   const reduce = useReducedMotion();
-  // Always called (hooks can't be conditional); only the Library tab passes a key,
-  // and a null key registers nothing.
-  const tour = useTourTarget(tourKey ?? null, 14);
   const p = useSharedValue(focused ? 1 : 0);
 
   useEffect(() => {
@@ -56,7 +49,7 @@ function TabIcon({
   }));
 
   return (
-    <View style={styles.iconWrap} ref={tour.ref} onLayout={tour.onLayout} collapsable={false}>
+    <View style={styles.iconWrap}>
       <Animated.View style={[styles.iconPill, pillStyle, { backgroundColor: accentMuted }]} />
       {/* AppIcon serves hand-drawn art where it exists and falls back to the font
           glyph otherwise, so the other ~90 Ionicons in the app are untouched. */}
@@ -117,7 +110,7 @@ export default function TabsLayout() {
           options={{
             title: 'Library',
             tabBarIcon: ({ focused, color }) => (
-              <TabIcon name="library" focused={focused} color={color} accentMuted={t.accentMuted} tourKey="library" />
+              <TabIcon name="library" focused={focused} color={color} accentMuted={t.accentMuted} />
             ),
           }}
         />

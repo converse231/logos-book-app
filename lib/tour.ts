@@ -1,16 +1,24 @@
 // The guided tour's content and its one bit of persistence.
 //
-// Three steps, all on Home, offered once after onboarding. Kept separate from the
-// overlay component so the copy and the ordering are editable without opening any
-// layout code — same reason lib/sessionCelebration.ts holds the pose ladder.
+// Three cards, offered once after onboarding, then replayable from More.
+//
+// These used to be spotlight coach marks that measured live UI. That approach was
+// abandoned (2026-08-07) after it landed wrong on Android: measureInWindow and
+// absolutely-positioned overlays disagree about whether the status bar counts, and
+// SDK 54 draws edge-to-edge by default, which changes the answer again. Three of
+// our targets also live in two different navigation trees. A fixed layout can't be
+// off by an inset, so these cards render identically on every device.
+//
+// The trade is real and worth naming: nothing points at the live UI any more, so
+// the copy has to say WHERE things are. Hence "the ▶ button at the bottom" rather
+// than "tap this".
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-/** Elements the tour can spotlight. Each one registers its own frame. */
-export type TourTargetKey = 'record' | 'streak' | 'library';
+import type { QExpression } from '@/components/shared/Q';
 
 export interface TourStep {
-  key: TourTargetKey;
+  key: string;
+  expression: QExpression;
   title: string;
   body: string;
 }
@@ -19,21 +27,24 @@ export const TOUR_STEPS: TourStep[] = [
   {
     // First because everything else in the app exists to serve it.
     key: 'record',
-    title: 'Start reading here',
-    body: "Tap this to time a session. It's the only button you really need.",
+    expression: 'pointing',
+    title: 'Start a session',
+    body: 'The ▶ button at the bottom times your reading. It’s the only button you really need.',
   },
   {
     // The one mechanic people ask about. Naming restores here is what stops the
     // first broken streak feeling like a punishment.
     key: 'streak',
-    title: 'Your streak',
-    body: 'Read on any day to keep it going. Miss one and you can spend a restore.',
+    expression: 'confident',
+    title: 'Keep your streak',
+    body: 'Read on any day and your streak grows. Miss one and you can spend a restore — you get five.',
   },
   {
     // Ends on what they have to do next: a reader with no books can't use step one.
     key: 'library',
-    title: 'Your shelf',
-    body: 'Add books here — search, or scan a barcode with the camera.',
+    expression: 'looking-up',
+    title: 'Build your shelf',
+    body: 'Add books from the Library tab — search by title, or scan a barcode with your camera.',
   },
 ];
 
