@@ -1,24 +1,23 @@
 // The guided tour's content and its one bit of persistence.
 //
-// Three cards, offered once after onboarding, then replayable from More.
+// Three steps, offered once after onboarding, then replayable from More.
 //
-// These used to be spotlight coach marks that measured live UI. That approach was
-// abandoned (2026-08-07) after it landed wrong on Android: measureInWindow and
-// absolutely-positioned overlays disagree about whether the status bar counts, and
-// SDK 54 draws edge-to-edge by default, which changes the answer again. Three of
-// our targets also live in two different navigation trees. A fixed layout can't be
-// off by an inset, so these cards render identically on every device.
+// Spotlight coach marks over the LIVE UI — the tour points at the real thing, so
+// what you learn is where it actually is.
 //
-// The trade is real and worth naming: nothing points at the live UI any more, so
-// the copy has to say WHERE things are. Hence "the ▶ button at the bottom" rather
-// than "tap this".
+// An earlier attempt landed a status bar off on Android because it measured with
+// measureInWindow (window space) while the overlay drew in the provider's space.
+// TourProvider now measures with measureLayout against its own root, so both are
+// in one coordinate space by construction and there is no inset to get wrong. See
+// the comment on useTourTarget.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { QExpression } from '@/components/shared/Q';
+
+/** Elements the tour can spotlight. Each registers its own frame. */
+export type TourTargetKey = 'record' | 'streak' | 'library';
 
 export interface TourStep {
-  key: string;
-  expression: QExpression;
+  key: TourTargetKey;
   title: string;
   body: string;
 }
@@ -27,24 +26,21 @@ export const TOUR_STEPS: TourStep[] = [
   {
     // First because everything else in the app exists to serve it.
     key: 'record',
-    expression: 'pointing',
-    title: 'Start a session',
-    body: 'The ▶ button at the bottom times your reading. It’s the only button you really need.',
+    title: 'Start reading here',
+    body: 'Tap this to time a session. It’s the only button you really need.',
   },
   {
     // The one mechanic people ask about. Naming restores here is what stops the
     // first broken streak feeling like a punishment.
     key: 'streak',
-    expression: 'confident',
-    title: 'Keep your streak',
-    body: 'Read on any day and your streak grows. Miss one and you can spend a restore — you get five.',
+    title: 'Your streak',
+    body: 'Read on any day to keep it going. Miss one and you can spend a restore — you get five.',
   },
   {
     // Ends on what they have to do next: a reader with no books can't use step one.
     key: 'library',
-    expression: 'looking-up',
-    title: 'Build your shelf',
-    body: 'Add books from the Library tab — search by title, or scan a barcode with your camera.',
+    title: 'Your shelf',
+    body: 'Add books here — search by title, or scan a barcode with your camera.',
   },
 ];
 
