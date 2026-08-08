@@ -13,10 +13,16 @@ interface PressRowProps {
   onPress: () => void;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Wrapper style — the animated surface. Same split as PressBlock: anything the
+   *  fill has to respect (border radius, flex) belongs here, not on `style`. */
+  containerStyle?: StyleProp<ViewStyle>;
+  /** [resting, pressed] background. Defaults to the card surface warming to the
+   *  inset cream — override for rows that sit on a tinted fill. */
+  tint?: [string, string];
   disabled?: boolean;
   accessibilityLabel?: string;
-  accessibilityRole?: 'button' | 'link' | 'checkbox';
-  accessibilityState?: { disabled?: boolean; selected?: boolean; checked?: boolean };
+  accessibilityRole?: 'button' | 'link' | 'checkbox' | 'radio' | 'switch';
+  accessibilityState?: { disabled?: boolean; selected?: boolean; checked?: boolean; expanded?: boolean };
 }
 
 /**
@@ -34,6 +40,8 @@ export function PressRow({
   onPress,
   children,
   style,
+  containerStyle,
+  tint,
   disabled = false,
   accessibilityLabel,
   accessibilityRole = 'button',
@@ -46,7 +54,7 @@ export function PressRow({
   const animStyle = useAnimatedStyle(() => ({
     // interpolateColor rather than an opacity fade, so the row lights UP instead
     // of dimming down.
-    backgroundColor: interpolateColor(p.value, [0, 1], [t.bgSec, t.bgTer]),
+    backgroundColor: interpolateColor(p.value, [0, 1], tint ?? [t.bgSec, t.bgTer]),
     transform: [{ scale: 1 - p.value * 0.015 }],
   }));
 
@@ -55,7 +63,7 @@ export function PressRow({
     // padding, dividers) goes on the Pressable, which is what actually contains
     // the row's children. Putting layout on the wrapper would leave the flex row
     // on an element with nothing in it.
-    <Animated.View style={animStyle}>
+    <Animated.View style={[containerStyle, animStyle]}>
       <Pressable
         onPressIn={() => {
           if (!reduce && !disabled) p.value = withTiming(1, { duration: 90 });

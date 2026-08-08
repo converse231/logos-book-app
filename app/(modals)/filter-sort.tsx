@@ -1,11 +1,12 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
+import { PressChip } from '@/components/shared/PressChip';
+import { PressRow } from '@/components/shared/PressRow';
 import {
   FORMAT_LABELS,
   FormatFilter,
@@ -41,19 +42,21 @@ export default function FilterSort() {
           {SORTS.map((key) => {
             const selected = key === sort;
             return (
-              <Pressable
+              // A tinted squeeze rather than a sliding thumb: these are rows in a
+              // list, and they get the same feedback every other list row in the
+              // app gets.
+              <PressRow
                 key={key}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setSort(key);
-                }}
+                onPress={() => setSort(key)}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
+                accessibilityLabel={SORT_LABELS[key]}
+                tint={['transparent', t.bgTer]}
                 style={[styles.sortRow, { borderTopColor: t.border }]}
               >
                 <Text style={[styles.sortText, { color: selected ? t.text : t.textSec }]}>{SORT_LABELS[key]}</Text>
                 {selected ? <Ionicons name="checkmark" size={20} color={t.accent} /> : null}
-              </Pressable>
+              </PressRow>
             );
           })}
         </View>
@@ -63,32 +66,31 @@ export default function FilterSort() {
           {FORMATS.map((key) => {
             const selected = key === formatFilter;
             return (
-              <Pressable
+              <PressChip
                 key={key}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setFormatFilter(key);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
+                selected={selected}
+                onPress={() => setFormatFilter(key)}
+                accessibilityLabel={FORMAT_LABELS[key]}
                 style={[
                   styles.chip,
                   { borderColor: selected ? t.accent : t.border, backgroundColor: selected ? t.accentMuted : 'transparent' },
                 ]}
               >
                 <Text style={[styles.chipText, { color: selected ? t.accent : t.textSec }]}>{FORMAT_LABELS[key]}</Text>
-              </Pressable>
+              </PressChip>
             );
           })}
         </View>
 
-        <Pressable
-          onPress={() => {
-            Haptics.selectionAsync();
-            setFavoritesOnly(!favoritesOnly);
-          }}
+        {/* The knob stays a hard jump — a switch reads as instant state, and the
+            row's own tint already confirms the tap. */}
+        <PressRow
+          onPress={() => setFavoritesOnly(!favoritesOnly)}
           accessibilityRole="switch"
+          accessibilityLabel="Favorites only"
           accessibilityState={{ checked: favoritesOnly }}
+          tint={['transparent', t.bgTer]}
+          containerStyle={styles.favWrap}
           style={[styles.favRow, { borderColor: t.border }]}
         >
           <View style={styles.favLeft}>
@@ -98,21 +100,19 @@ export default function FilterSort() {
           <View style={[styles.switch, { backgroundColor: favoritesOnly ? t.accent : t.bgTer }]}>
             <View style={[styles.knob, { backgroundColor: t.text, alignSelf: favoritesOnly ? 'flex-end' : 'flex-start' }]} />
           </View>
-        </Pressable>
+        </PressRow>
 
         <View style={styles.footer}>
           {active ? (
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                reset();
-              }}
-              accessibilityRole="button"
+            <PressRow
+              onPress={reset}
               accessibilityLabel="Reset filters"
+              tint={['transparent', t.bgTer]}
+              containerStyle={styles.roundedWrap}
               style={[styles.resetBtn, { borderColor: t.border }]}
             >
               <Text style={[styles.resetText, { color: t.text }]}>Reset</Text>
-            </Pressable>
+            </PressRow>
           ) : null}
           <View style={styles.doneBtn}>
             <PrimaryButton label="Show results" onPress={() => router.back()} />
@@ -145,8 +145,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 16,
-    marginTop: 4,
   },
+  // The pressed fill lives on the wrapper, so the wrapper is what has to be round
+  // — and carry the outer spacing, or the tint would bleed into the margin.
+  roundedWrap: { borderRadius: 14, overflow: 'hidden' },
+  favWrap: { borderRadius: 14, overflow: 'hidden', marginTop: 4 },
   favLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   favText: { fontFamily: FONTS.uiMedium, fontSize: 15 },
   switch: { width: 46, height: 28, borderRadius: 14, padding: 3, justifyContent: 'center' },

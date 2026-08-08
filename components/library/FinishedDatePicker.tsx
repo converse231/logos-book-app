@@ -3,6 +3,8 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { PressChip } from '@/components/shared/PressChip';
+import { PressRow } from '@/components/shared/PressRow';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -45,15 +47,15 @@ export function FinishedDatePicker({
             {years.map((y) => {
               const active = y === year;
               return (
-                <Pressable
+                <PressChip
                   key={y}
+                  selected={active}
                   onPress={() => setYear(y)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={String(y)}
                   style={[styles.yearChip, { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : t.bgSec }]}
                 >
                   <Text style={[styles.yearText, { color: active ? t.accent : t.text }]}>{y}</Text>
-                </Pressable>
+                </PressChip>
               );
             })}
           </View>
@@ -64,12 +66,15 @@ export function FinishedDatePicker({
               const active = i === month;
               const disabled = isFuture(i, year);
               return (
-                <Pressable
+                <PressChip
                   key={m}
-                  onPress={() => !disabled && setMonth(i)}
+                  selected={active}
                   disabled={disabled}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active, disabled }}
+                  onPress={() => setMonth(i)}
+                  accessibilityLabel={m}
+                  // The percentage width has to sit on the wrapper — it's the grid's
+                  // flex child now, and '22%' of a content-sized wrapper is nothing.
+                  containerStyle={styles.monthCell}
                   style={[
                     styles.monthChip,
                     { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : t.bgSec },
@@ -77,15 +82,21 @@ export function FinishedDatePicker({
                   ]}
                 >
                   <Text style={[styles.monthText, { color: active ? t.accent : t.text }]}>{m}</Text>
-                </Pressable>
+                </PressChip>
               );
             })}
           </View>
 
           <View style={styles.actions}>
-            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Cancel" style={[styles.cancelBtn, { borderColor: t.border }]}>
+            <PressRow
+              onPress={onClose}
+              accessibilityLabel="Cancel"
+              tint={['transparent', t.bgTer]}
+              containerStyle={styles.cancelWrap}
+              style={[styles.cancelBtn, { borderColor: t.border }]}
+            >
               <Text style={[styles.cancelText, { color: t.text }]}>CANCEL</Text>
-            </Pressable>
+            </PressRow>
             <PressBlock onPress={confirm} accessibilityLabel="Confirm finish date" containerStyle={styles.confirmWrap} style={[styles.confirmBtn, { backgroundColor: t.accent }]}>
               <Text style={styles.confirmText}>MARK FINISHED</Text>
             </PressBlock>
@@ -105,10 +116,13 @@ const styles = StyleSheet.create({
   yearChip: { paddingHorizontal: 12, height: 38, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   yearText: { fontFamily: FONTS.monoBold, fontSize: 14 },
   monthGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  monthChip: { width: '22%', flexGrow: 1, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  monthCell: { width: '22%', flexGrow: 1 },
+  monthChip: { height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   monthText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-  cancelBtn: { flex: 1, height: 52, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  // flex on the wrapper (it's the row's child); the face keeps the border.
+  cancelWrap: { flex: 1, borderRadius: 14, overflow: 'hidden' },
+  cancelBtn: { height: 52, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   cancelText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
   confirmWrap: { flex: 1 },
   confirmBtn: { minHeight: 52, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19', alignItems: 'center', justifyContent: 'center' },

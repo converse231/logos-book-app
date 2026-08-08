@@ -15,6 +15,11 @@ interface PressChipProps {
   /** Drives the pop. Changing false → true springs the chip up and back. */
   selected: boolean;
   style?: StyleProp<ViewStyle>;
+  /** Wrapper style. Sizing that the parent's layout depends on (a flex basis, a
+   *  percentage width) has to live here — the wrapper is the flex child, not the
+   *  Pressable inside it. */
+  containerStyle?: StyleProp<ViewStyle>;
+  disabled?: boolean;
   accessibilityLabel?: string;
 }
 
@@ -30,7 +35,15 @@ interface PressChipProps {
  * overshoots briefly shows a wrong number; a chip that overshoots just feels
  * picked.
  */
-export function PressChip({ onPress, children, selected, style, accessibilityLabel }: PressChipProps) {
+export function PressChip({
+  onPress,
+  children,
+  selected,
+  style,
+  containerStyle,
+  disabled = false,
+  accessibilityLabel,
+}: PressChipProps) {
   const reduce = useReducedMotion();
   const press = useSharedValue(0);
   const pop = useSharedValue(1);
@@ -49,20 +62,22 @@ export function PressChip({ onPress, children, selected, style, accessibilityLab
   }));
 
   return (
-    <Animated.View style={animStyle}>
+    <Animated.View style={[containerStyle, animStyle]}>
       <Pressable
         onPressIn={() => {
-          if (!reduce) press.value = withTiming(1, { duration: 70 });
+          if (!reduce && !disabled) press.value = withTiming(1, { duration: 70 });
         }}
         onPressOut={() => {
-          if (!reduce) press.value = withTiming(0, { duration: 120 });
+          if (!reduce && !disabled) press.value = withTiming(0, { duration: 120 });
         }}
         onPress={() => {
+          if (disabled) return;
           Haptics.selectionAsync();
           onPress();
         }}
+        disabled={disabled}
         accessibilityRole="button"
-        accessibilityState={{ selected }}
+        accessibilityState={{ selected, disabled }}
         accessibilityLabel={accessibilityLabel}
         style={style}
       >

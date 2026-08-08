@@ -27,6 +27,7 @@ import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { PressChip } from '@/components/shared/PressChip';
 import { Q } from '@/components/shared/Q';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -164,21 +165,18 @@ export default function Library() {
         {STATUS_TABS.map((tab) => {
           const active = tab.key === statusTab;
           return (
-            <Pressable
+            <PressChip
               key={tab.key}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setStatusTab(tab.key);
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
+              selected={active}
+              onPress={() => setStatusTab(tab.key)}
+              accessibilityLabel={tab.label}
               style={[
                 styles.tab,
                 { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
               ]}
             >
               <Text style={[styles.tabText, { color: active ? t.accent : t.textSec }]}>{tab.label}</Text>
-            </Pressable>
+            </PressChip>
           );
         })}
       </ScrollView>

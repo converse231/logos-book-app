@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
+import { extremeRatingPrompt } from '@/lib/ratingPrompt';
 import { useApi } from '@/services/ApiContext';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { StarRating } from '@/components/library/StarRating';
@@ -18,6 +20,7 @@ export default function Review() {
   const t = useTheme();
   const router = useRouter();
   const api = useApi();
+  const reduce = useReducedMotion();
 
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState('');
@@ -50,6 +53,8 @@ export default function Review() {
 
   const close = () => router.back();
 
+  const prompt = extremeRatingPrompt(rating);
+
   const post = async () => {
     if (rating < 0.5 || posting || !bookId) return;
     setPosting(true);
@@ -77,11 +82,28 @@ export default function Review() {
             </Text>
           </View>
 
+          {/* The extremes get asked why. It slides in rather than pops: the stars
+              already celebrated, and a second flourish here would be two rewards
+              for one action — and would make the ask feel like a demand. */}
+          {prompt ? (
+            <Animated.View
+              key={prompt.title}
+              entering={reduce ? undefined : FadeInDown.duration(260)}
+              style={[styles.prompt, { backgroundColor: t.accentMuted }]}
+            >
+              <Ionicons name="chatbubble-ellipses" size={17} color={t.accent} />
+              <View style={styles.promptCopy}>
+                <Text style={[styles.promptTitle, { color: t.accent }]}>{prompt.title}</Text>
+                <Text style={[styles.promptBody, { color: t.textSec }]}>{prompt.body}</Text>
+              </View>
+            </Animated.View>
+          ) : null}
+
           <View style={[styles.inputWrap, { backgroundColor: t.bgTer, borderColor: t.border }]}>
             <TextInput
               value={body}
               onChangeText={(v) => v.length <= MAX && setBody(v)}
-              placeholder="Share your thoughts (optional)"
+              placeholder={prompt?.placeholder ?? 'Share your thoughts (optional)'}
               placeholderTextColor={t.textTer}
               style={[styles.input, { color: t.text }]}
               multiline
@@ -138,6 +160,10 @@ const styles = StyleSheet.create({
   book: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   ratingBlock: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   ratingHint: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
+  prompt: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 13, borderRadius: 14 },
+  promptCopy: { flex: 1, gap: 2 },
+  promptTitle: { fontFamily: FONTS.uiBold, fontSize: 14 },
+  promptBody: { fontFamily: FONTS.uiRegular, fontSize: 13, lineHeight: 18 },
   inputWrap: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 14, minHeight: 104 },
   input: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, minHeight: 76, padding: 0 },
   counter: { fontFamily: FONTS.uiRegular, fontSize: 11, textAlign: 'right', marginTop: -8, fontVariant: ['tabular-nums'] },

@@ -1,8 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
@@ -15,6 +23,7 @@ import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { PressChip } from '@/components/shared/PressChip';
+import { PressRow } from '@/components/shared/PressRow';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -22,6 +31,7 @@ import { StarRating } from '@/components/library/StarRating';
 import { plainText } from '@/lib/bookSearch';
 import { getBookProgress } from '@/components/library/bookProgress';
 import { FinishedDatePicker } from '@/components/library/FinishedDatePicker';
+import { extremeRatingPrompt } from '@/lib/ratingPrompt';
 
 // A curated set of tinted genre pill colours (bg + fg). Rotates by index so
 // consecutive genres always get different hues without needing a genre→colour map.
@@ -247,6 +257,9 @@ export default function BookDetail() {
   const selfId = userId ?? 'mock-user-1';
   const myReview = reviews.find((r) => r.userId === selfId);
   const myRating = myReview?.rating ?? 0;
+  // Only asked once, and only while there are no words yet — once they've written
+  // something the ask is answered and the author banner takes the slot instead.
+  const ratingPrompt = myReview?.body ? null : extremeRatingPrompt(myRating);
 
   // Quick star-only rating, separate from a written review. Preserves any words
   // the reader already posted (and the spoiler flag) so a star-tap never wipes them.
@@ -293,6 +306,7 @@ export default function BookDetail() {
             icon={favorite ? 'heart' : 'heart-outline'}
             label={favorite ? 'Remove from favorites' : 'Add to favorites'}
             color={favorite ? t.danger : t.text}
+            active={favorite}
             onPress={async () => {
               Haptics.selectionAsync();
               const next = !favorite;
@@ -442,21 +456,44 @@ export default function BookDetail() {
           </View>
         </Reveal>
 
+        {/* A 1★ or 5★ is a strong opinion, and the seconds right after giving it are
+            the only ones where someone wants to explain it. Slides in rather than
+            pops — the stars already celebrated. */}
+        {ratingPrompt ? (
+          <Animated.View key={ratingPrompt.title} entering={reduce ? undefined : FadeInDown.duration(280)}>
+            <PressRow
+              onPress={writeReview}
+              accessibilityLabel={ratingPrompt.title}
+              tint={[t.accentMuted, t.bgTer]}
+              containerStyle={styles.bannerWrap}
+              style={styles.promptRow}
+            >
+              <Ionicons name="chatbubble-ellipses" size={18} color={t.accent} />
+              <View style={styles.promptCopy}>
+                <Text style={[styles.promptTitle, { color: t.accent }]}>{ratingPrompt.title}</Text>
+                <Text style={[styles.promptBody, { color: t.textSec }]}>{ratingPrompt.body}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={t.accent} />
+            </PressRow>
+          </Animated.View>
+        ) : null}
+
         {/* Loved it — surface more by the same author on a high rating. */}
-        {myRating >= 4.5 && book.authors[0] ? (
+        {myRating >= 4.5 && book.authors[0] && !ratingPrompt ? (
           <Reveal i={3} reduce={reduce}>
-            <Pressable
+            <PressRow
               onPress={() => router.push(`/author?name=${encodeURIComponent(book.authors[0])}` as Href)}
-              accessibilityRole="button"
               accessibilityLabel={`See more books by ${book.authors[0]}`}
-              style={[styles.authorBanner, { backgroundColor: t.accentMuted }]}
+              tint={[t.accentMuted, t.bgTer]}
+              containerStyle={styles.bannerWrap}
+              style={styles.authorBanner}
             >
               <AppIcon name="sparkles" tint="accent" size={18} />
               <Text style={[styles.authorBannerText, { color: t.accent }]} numberOfLines={1}>
                 Loved it? More by {book.authors[0]}
               </Text>
               <Ionicons name="chevron-forward" size={16} color={t.accent} />
-            </Pressable>
+            </PressRow>
           </Reveal>
         ) : null}
 
@@ -692,23 +729,54 @@ function RoundBtn({
   onPress,
   t,
   color,
+  active = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
   t: ReturnType<typeof useTheme>;
   color?: string;
+  /** Toggles (the heart) pop when they switch ON — a state change, not a tap. */
+  active?: boolean;
 }) {
+  const reduce = useReducedMotion();
+  const p = useSharedValue(0);
+  const pop = useSharedValue(1);
+
+  // Skips the first run: a book that was already a favourite shouldn't have its
+  // heart bounce every time the screen opens.
+  const mounted = useRef(false);
+  useEffect(() => {
+    const first = !mounted.current;
+    mounted.current = true;
+    if (first || reduce || !active) return;
+    pop.value = withSpring(1.22, { damping: 9, stiffness: 340, mass: 0.5 }, () => {
+      pop.value = withSpring(1, { damping: 14, stiffness: 340, mass: 0.5 });
+    });
+  }, [active, reduce, pop]);
+
+  // 10%, not the 3% a full-width row gets: on a 42dp target a subtle dent is no
+  // dent at all.
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: pop.value * (1 - p.value * 0.1) }] }));
+
   return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={12}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
-    >
-      <Ionicons name={icon} size={icon === 'chevron-back' ? 22 : 20} color={color ?? t.text} />
-    </Pressable>
+    <Animated.View style={anim}>
+      <Pressable
+        onPressIn={() => {
+          if (!reduce) p.value = withTiming(1, { duration: 70 });
+        }}
+        onPressOut={() => {
+          if (!reduce) p.value = withSpring(0, { damping: 14, stiffness: 300, mass: 0.6 });
+        }}
+        onPress={onPress}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
+      >
+        <Ionicons name={icon} size={icon === 'chevron-back' ? 22 : 20} color={color ?? t.text} />
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -888,8 +956,16 @@ const styles = StyleSheet.create({
   reviewLink: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 38, borderRadius: 14, borderWidth: BORDER_WIDTH },
   reviewLinkText: { fontFamily: FONTS.uiBold, fontSize: 13 },
 
-  authorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 14, borderRadius: 14 },
+  // The rounded fill lives on the wrapper (it's what animates); the row inside
+  // only carries layout.
+  bannerWrap: { borderRadius: 14, overflow: 'hidden' },
+  authorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 14 },
   authorBannerText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 13.5 },
+
+  promptRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
+  promptCopy: { flex: 1, gap: 2 },
+  promptTitle: { fontFamily: FONTS.uiBold, fontSize: 14 },
+  promptBody: { fontFamily: FONTS.uiRegular, fontSize: 12.5, lineHeight: 17 },
 
   statusRow: { flexDirection: 'row', gap: 8 },
   statusPill: { flex: 1, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
