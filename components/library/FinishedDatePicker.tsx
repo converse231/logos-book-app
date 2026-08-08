@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, INK, PALETTE, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { PressChip } from '@/components/shared/PressChip';
 import { PressRow } from '@/components/shared/PressRow';
@@ -97,8 +97,19 @@ export function FinishedDatePicker({
             >
               <Text style={[styles.cancelText, { color: t.text }]}>CANCEL</Text>
             </PressRow>
-            <PressBlock onPress={confirm} accessibilityLabel="Confirm finish date" containerStyle={styles.confirmWrap} style={[styles.confirmBtn, { backgroundColor: t.accent }]}>
-              <Text style={styles.confirmText}>MARK FINISHED</Text>
+            <PressBlock
+              onPress={confirm}
+              emphasis="primary"
+              accessibilityLabel="Confirm finish date"
+              containerStyle={styles.confirmWrap}
+              style={[styles.confirmBtn, { backgroundColor: t.accent }]}
+            >
+              {/* Shrinks rather than wraps. At a large system font size this label
+                  used to break onto two lines, which grew the coral face past the
+                  52dp Cancel next to it — that's what made the pair look crooked. */}
+              <Text style={styles.confirmText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                MARK FINISHED
+              </Text>
             </PressBlock>
           </View>
         </Pressable>
@@ -119,12 +130,20 @@ const styles = StyleSheet.create({
   monthCell: { width: '22%', flexGrow: 1 },
   monthChip: { height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   monthText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
+  // flex-start, not center: the confirm block reserves 4px below itself for its
+  // hard shadow, so centering the two made the faces sit at different heights.
+  // Aligned at the top with equal 52dp faces, they read as a matched pair.
+  actions: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 12 },
   // flex on the wrapper (it's the row's child); the face keeps the border.
   cancelWrap: { flex: 1, borderRadius: 14, overflow: 'hidden' },
   cancelBtn: { height: 52, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   cancelText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
   confirmWrap: { flex: 1 },
-  confirmBtn: { minHeight: 52, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19', alignItems: 'center', justifyContent: 'center' },
-  confirmText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1, color: '#FFFFFF' },
+  confirmBtn: {
+    height: 52, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8,
+  },
+  // Ink on coral, not white — the house signature. This button was the one place
+  // still using white, which read as a different button family.
+  confirmText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1, color: PALETTE.onAccent },
 });

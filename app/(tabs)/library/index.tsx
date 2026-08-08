@@ -157,9 +157,14 @@ export default function Library() {
         </View>
       </View>
 
+      {/* The chips scale 6% when selected, and a horizontal ScrollView clips
+          everything outside its frame — so the row reserves the overshoot as
+          padding and pulls it back out with a matching negative margin. Layout is
+          unchanged; the chips just have room to grow into. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.tabsScroll}
         contentContainerStyle={styles.tabs}
       >
         {STATUS_TABS.map((tab) => {
@@ -430,7 +435,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   addBtnText: { fontFamily: FONTS.uiBold, fontSize: 14, ...NO_FONT_PAD },
-  tabs: { gap: 8, paddingRight: 18 },
+  tabsScroll: { marginVertical: -6, marginLeft: -5 },
+  tabs: { gap: 8, paddingRight: 18, paddingLeft: 5, paddingVertical: 6 },
   tab: { paddingHorizontal: 16, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   tabText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
 

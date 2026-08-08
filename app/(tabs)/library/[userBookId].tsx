@@ -200,7 +200,9 @@ export default function BookDetail() {
   const length = lengthLabel(ub);
   const ratingCount = reviews.length;
   const ratingAvg = ratingCount > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / ratingCount : 0;
-  const meta = [length, book.genres[0]].filter(Boolean) as string[];
+  // Genre deliberately NOT repeated here — it already has its own chip below, and
+  // the same word twice in three lines is the kind of thing that reads as clutter.
+  const meta = [length].filter(Boolean) as string[];
   const blurb = plainText(book.description);
 
   const startSession = () => router.push(`/session/${ub.id}` as Href);
@@ -341,12 +343,23 @@ export default function BookDetail() {
               onPress={startSession}
             />
           ) : (
-            <View style={[styles.finishedRow, { backgroundColor: t.accentMuted }]}>
+            // One row, not two. This used to be a static "Finished today" banner
+            // with a separate editable "Finished Aug 2026" row further down the
+            // page — the same fact stated twice, one of them actionable. Now the
+            // banner IS the control.
+            <PressRow
+              onPress={() => setDatePickerOpen(true)}
+              accessibilityLabel={`Finished ${ub.finishedAt ? monthYearLabel(ub.finishedAt) : ''}. Edit finish date`}
+              tint={[t.accentMuted, t.bgTer]}
+              containerStyle={styles.bannerWrap}
+              style={styles.finishedRow}
+            >
               <Ionicons name="checkmark-circle" size={20} color={t.accent} />
               <Text style={[styles.finishedText, { color: t.accent }]}>
-                Finished{ub.finishedAt ? ` ${relativeDate(ub.finishedAt)}` : ''}
+                Finished{ub.finishedAt ? ` ${monthYearLabel(ub.finishedAt)}` : ''}
               </Text>
-            </View>
+              <Ionicons name="pencil" size={14} color={t.accent} />
+            </PressRow>
           )}
         </Reveal>
 
@@ -427,32 +440,32 @@ export default function BookDetail() {
           </ScrollView>
         </Reveal>
 
-        {/* Your rating — quick, words-optional. A written review is a separate step. */}
+        {/* Your rating — quick, words-optional. A written review is a separate step.
+            No card around it any more: a bordered box with the stars crammed left
+            and a small link right left a dead gutter down the middle. Centred and
+            full-width, the stars are the widest thing on the row and the button
+            below actually reads as the next step. */}
         <Reveal i={3} reduce={reduce}>
-          <View style={[styles.rateCard, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-            <View style={styles.rateLeft}>
-              <Text style={[styles.rateLabel, { color: t.textSec }]}>YOUR RATING</Text>
-              <StarRating value={myRating} onChange={rateBook} allowHalf size={30} />
-              <Text style={[styles.rateHint, { color: myRating > 0 ? t.text : t.textTer }]}>
-                {savingRating
-                  ? 'Saving…'
-                  : myRating > 0
-                  ? `${formatStars(myRating)} · ${RATING_WORDS[Math.ceil(myRating)]}`
-                  : 'Tap a star to rate'}
-              </Text>
-            </View>
-            <Pressable
+          <View style={styles.rateBlock}>
+            <Text style={[styles.sectionLabel, { color: t.textSec }]}>YOUR RATING</Text>
+            <StarRating value={myRating} onChange={rateBook} allowHalf size={34} />
+            <Text style={[styles.rateHint, { color: myRating > 0 ? t.text : t.textTer }]}>
+              {savingRating
+                ? 'Saving…'
+                : myRating > 0
+                ? `${formatStars(myRating)} · ${RATING_WORDS[Math.ceil(myRating)]}`
+                : 'Tap a star to rate'}
+            </Text>
+            <PressBlock
               onPress={writeReview}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel={myReview?.body ? 'Edit your written review' : 'Add a written review'}
-              style={[styles.reviewLink, { borderColor: t.border }]}
+              emphasis="primary"
+              accessibilityLabel={myReview?.body ? 'Edit your written review' : 'Write a review'}
+              containerStyle={styles.reviewBtnWrap}
+              style={[styles.reviewBtn, { backgroundColor: t.accent }]}
             >
-              <Ionicons name="create-outline" size={16} color={t.accent} />
-              <Text style={[styles.reviewLinkText, { color: t.accent }]}>
-                {myReview?.body ? 'Edit review' : 'Add review'}
-              </Text>
-            </Pressable>
+              <Ionicons name="create" size={18} color={PALETTE.onAccent} />
+              <Text style={styles.reviewBtnText}>{myReview?.body ? 'EDIT REVIEW' : 'WRITE A REVIEW'}</Text>
+            </PressBlock>
           </View>
         </Reveal>
 
@@ -497,8 +510,11 @@ export default function BookDetail() {
           </Reveal>
         ) : null}
 
-        {/* Shelf status */}
+        {/* Shelf status. Five pills across a phone gave every one of them about
+            60dp and clipped "Finished" — so they wrap to a three-column grid, with
+            maxWidth stopping the second row's two from stretching to double width. */}
         <Reveal i={4} reduce={reduce}>
+          <Text style={[styles.sectionLabel, styles.shelfLabel, { color: t.textSec }]}>SHELF</Text>
           <View style={styles.statusRow}>
             {STATUSES.map((s) => {
               const active = s.key === status;
@@ -508,6 +524,7 @@ export default function BookDetail() {
                   selected={active}
                   onPress={() => setStatus(s.key)}
                   accessibilityLabel={s.label}
+                  containerStyle={styles.statusCell}
                   style={[
                     styles.statusPill,
                     { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
@@ -523,22 +540,6 @@ export default function BookDetail() {
             })}
           </View>
         </Reveal>
-
-        {/* Finished date — editable, so backfilled reads can be re-dated. */}
-        {status === 'finished' && ub.finishedAt ? (
-          <Pressable
-            onPress={() => setDatePickerOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Edit finish date"
-            style={[styles.finishDateRow, { borderColor: t.border, backgroundColor: t.bgSec }]}
-          >
-            <Ionicons name="checkmark-circle" size={18} color={t.accent} />
-            <Text style={[styles.finishDateText, { color: t.text }]}>
-              Finished {monthYearLabel(ub.finishedAt)}
-            </Text>
-            <Ionicons name="pencil" size={15} color={t.textSec} />
-          </Pressable>
-        ) : null}
 
         {/* Progress */}
         {(status === 'reading' || status === 'dnf') && prog.max > 0 ? (
@@ -930,7 +931,7 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK, backgroundColor: PALETTE.accent,
   },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 16, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
-  finishedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 14 },
+  finishedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, paddingHorizontal: 16 },
   finishedText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   identity: { alignItems: 'center', gap: 5, paddingHorizontal: 8 },
@@ -949,12 +950,17 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 14 },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
 
-  rateCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 14, borderWidth: BORDER_WIDTH },
-  rateLeft: { gap: 7 },
-  rateLabel: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1 },
+  sectionLabel: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1 },
+  rateBlock: { alignItems: 'center', gap: 9 },
   rateHint: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
-  reviewLink: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 38, borderRadius: 14, borderWidth: BORDER_WIDTH },
-  reviewLinkText: { fontFamily: FONTS.uiBold, fontSize: 13 },
+  // alignSelf/margins belong on the wrapper — on the face they'd shear the block
+  // off its own hard shadow.
+  reviewBtnWrap: { alignSelf: 'stretch', marginTop: 3 },
+  reviewBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, minHeight: 50,
+    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+  },
+  reviewBtnText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
 
   // The rounded fill lives on the wrapper (it's what animates); the row inside
   // only carries layout.
@@ -967,12 +973,13 @@ const styles = StyleSheet.create({
   promptTitle: { fontFamily: FONTS.uiBold, fontSize: 14 },
   promptBody: { fontFamily: FONTS.uiRegular, fontSize: 12.5, lineHeight: 17 },
 
-  statusRow: { flexDirection: 'row', gap: 8 },
-  statusPill: { flex: 1, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  shelfLabel: { marginBottom: 8 },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // basis 31% fits three per row; maxWidth keeps the last row's two from growing
+  // to fill the whole width and breaking the grid.
+  statusCell: { flexBasis: '31%', flexGrow: 1, maxWidth: '32%' },
+  statusPill: { height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   statusText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
-
-  finishDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, paddingHorizontal: 14, borderRadius: 14, borderWidth: BORDER_WIDTH },
-  finishDateText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14 },
 
   progressBlock: { gap: 8 },
   progressText: { fontFamily: FONTS.uiMedium, fontSize: 12, fontVariant: ['tabular-nums'] },

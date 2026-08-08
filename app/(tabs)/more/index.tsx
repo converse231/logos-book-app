@@ -123,7 +123,12 @@ export default function More() {
           <Reveal i={gi + 1} reduce={reduce} key={group.title}>
             <View style={styles.group}>
               <Text style={[styles.groupTitle, { color: t.textSec }]}>{group.title}</Text>
-              <Card padded={false}>
+              {/* overflow:hidden is load-bearing. RN doesn't clip children to a
+                  parent's border radius, and each row now paints its own opaque
+                  fill (that's what animates on press) — so without this the square
+                  row corners sit on top of the card's rounded ink border and the
+                  first and last rows visibly poke out of it. */}
+              <Card padded={false} style={styles.rowCard}>
                 {group.items.map((item, idx) => (
                   <PressRow
                     key={item.label}
@@ -207,6 +212,7 @@ const styles = StyleSheet.create({
   handle: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   badgeWrap: { flexDirection: 'row', marginTop: 4 },
   group: { gap: 10 },
+  rowCard: { overflow: 'hidden' },
   groupTitle: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 0.6, marginLeft: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   iconChip: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
