@@ -235,7 +235,7 @@ export default function Profile() {
         ) : (
           <Reveal i={3} reduce={reduce}>
             <Pressable onPress={() => router.push('/(modals)/goal-edit' as Href)} accessibilityRole="button" accessibilityLabel="Set a reading goal" style={({ pressed }) => [styles.emptyGoal, { borderColor: t.border, backgroundColor: t.bgSec }, pressed && { opacity: 0.7 }]}>
-              <Ionicons name="flag-outline" size={22} color={t.accent} />
+              <AppIcon name="flag" tint="gold" size={22} color={t.accent} />
               <Text style={[styles.emptyGoalText, { color: t.text }]}>Set a reading goal for {new Date().getFullYear()}</Text>
               <Ionicons name="chevron-forward" size={18} color={t.textTer} />
             </Pressable>
@@ -390,7 +390,7 @@ function BigStat({ value, label, t }: { value: string; label: string; t: ReturnT
 function InfoCard({ icon, label, value, sub, t }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; sub: string; t: ReturnType<typeof useTheme> }) {
   return (
     <View style={[styles.infoCard, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-      <Ionicons name={icon} size={18} color={t.accent} />
+      <AppIcon name={icon} tint="accent" size={18} color={t.accent} />
       <Text style={[styles.infoLabel, { color: t.textTer }]}>{label}</Text>
       <Text style={[styles.infoValue, { color: t.text }]} numberOfLines={2}>{value}</Text>
       <Text style={[styles.infoSub, { color: t.textSec }]} numberOfLines={1}>{sub}</Text>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
@@ -123,7 +124,9 @@ export default function GoalEdit() {
 function ProjRow({ icon, label, value, t }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; t: ReturnType<typeof useTheme> }) {
   return (
     <View style={styles.projRow}>
-      <Ionicons name={icon} size={16} color={t.accent} />
+      {/* AppIcon falls back to the font glyph when the art for this tint does
+          not exist, so each row upgrades on its own as files land. */}
+      <AppIcon name={icon} tint="accent" size={16} color={t.accent} />
       <Text style={[styles.projLabel, { color: t.textSec }]}>{label}</Text>
       <Text style={[styles.projValue, { color: t.text }]}>{value}</Text>
     </View>

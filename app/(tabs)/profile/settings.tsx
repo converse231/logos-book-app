@@ -1,10 +1,21 @@
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleProp, StyleSheet, Switch,
+  Text, TextInput, View, ViewStyle,
+} from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  FadeInUp,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { AppIcon } from '@/components/shared/AppIcon';
+import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -201,26 +212,7 @@ export default function Settings() {
         <Reveal i={0} reduce={reduce}>
           <SectionTitle label="Appearance" t={t} />
           <Card padded={false}>
-            <View style={styles.themePicker}>
-              {THEME_OPTIONS.map((opt) => {
-                const active = themePref === opt.key;
-                return (
-                  <Pressable
-                    key={opt.key}
-                    onPress={() => { Haptics.selectionAsync(); setThemePref(opt.key); }}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    style={[
-                      styles.themeOption,
-                      { borderColor: active ? t.accent : 'transparent', backgroundColor: active ? t.accentMuted : 'transparent' },
-                    ]}
-                  >
-                    <Ionicons name={opt.icon} size={22} color={active ? t.accent : t.textSec} />
-                    <Text style={[styles.themeLabel, { color: active ? t.accent : t.textSec }]}>{opt.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <ThemeSegment value={themePref} onChange={setThemePref} t={t} />
           </Card>
         </Reveal>
 
@@ -273,6 +265,9 @@ export default function Settings() {
                 ) : null}
                 <NotifRow
                   icon="flame-outline"
+                  // Ember, not coral: the streak owns that hue everywhere else in
+                  // the app, and this row is about the streak.
+                  tint="ember"
                   title="Streak at-risk alerts"
                   sub="When your streak is about to end tonight"
                   value={notif.atRiskAlerts}
@@ -397,7 +392,9 @@ export default function Settings() {
               accessibilityLabel="Edit reading goal"
               style={({ pressed }) => [styles.menuRow, { borderBottomWidth: 0 }, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="flag-outline" size={20} color={t.accent} />
+              {/* The gold flag was drawn for the reading goal — gold owns goals and
+                  XP in this palette, so it belongs here more than the coral did. */}
+              <AppIcon name="flag" tint="gold" size={20} color={t.accent} />
               <Text style={[styles.menuLabel, { color: t.text }]}>Edit reading goal</Text>
               <Ionicons name="chevron-forward" size={18} color={t.textTer} />
             </Pressable>
@@ -409,7 +406,7 @@ export default function Settings() {
           <Card padded={false}>
             {profile?.email ? (
               <View style={[styles.menuRow, { borderBottomColor: t.border }]}>
-                <Ionicons name="mail-outline" size={20} color={t.textSec} />
+                <AppIcon name="mail" tint="muted" size={20} color={t.textSec} />
                 <Text style={[styles.menuLabel, { color: t.text }]} numberOfLines={1}>{profile.email}</Text>
               </View>
             ) : null}
@@ -422,7 +419,7 @@ export default function Settings() {
                 accessibilityLabel="Reported reviews"
                 style={({ pressed }) => [styles.menuRow, { borderBottomColor: t.border }, pressed && { opacity: 0.7 }]}
               >
-                <Ionicons name="flag-outline" size={20} color={t.textSec} />
+                <AppIcon name="flag-outline" tint="muted" size={20} color={t.textSec} />
                 <Text style={[styles.menuLabel, { color: t.text }]}>Reported reviews</Text>
                 <Ionicons name="chevron-forward" size={18} color={t.textTer} />
               </Pressable>
@@ -434,7 +431,7 @@ export default function Settings() {
               accessibilityLabel="Export my data"
               style={({ pressed }) => [styles.menuRow, { borderBottomColor: t.border }, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="download-outline" size={20} color={t.textSec} />
+              <AppIcon name="download" tint="muted" size={20} color={t.textSec} />
               <Text style={[styles.menuLabel, { color: t.text }]}>
                 {busy === 'export' ? 'Preparing export…' : 'Export my data'}
               </Text>
@@ -446,7 +443,7 @@ export default function Settings() {
               accessibilityLabel="Sign out"
               style={({ pressed }) => [styles.menuRow, { borderBottomColor: t.border }, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="log-out-outline" size={20} color={t.text} />
+              <AppIcon name="log-out" tint="ink" size={20} color={t.text} />
               <Text style={[styles.menuLabel, { color: t.text }]}>Sign out</Text>
             </Pressable>
             <Pressable
@@ -482,8 +479,113 @@ function SectionTitle({ label, t }: { label: string; t: ReturnType<typeof useThe
   return <Text style={[styles.sectionTitle, { color: t.textSec }]}>{label.toUpperCase()}</Text>;
 }
 
+/**
+ * Dark / Light / System, with the selection SLIDING between cells.
+ *
+ * One shared value drives everything: the coral pill's position and all three
+ * cells' colours. That's what keeps them in sync — the label warms up as the pill
+ * arrives under it rather than snapping the instant you tap.
+ *
+ * 170ms ease-out, no overshoot. You can see which direction the selection
+ * travelled, which a crossfade never tells you, but the pill doesn't bounce —
+ * this is a setting, not a reward.
+ *
+ * Each icon is drawn TWICE, muted under accent, and cross-faded. A font glyph
+ * could have had its colour interpolated instead, but painted art can't be
+ * tinted at runtime — so when hand-drawn moon/sun/phone icons land, this needs
+ * no rework.
+ */
+function ThemeSegment({
+  value,
+  onChange,
+  t,
+}: {
+  value: ThemePref;
+  onChange: (v: ThemePref) => void;
+  t: ReturnType<typeof useTheme>;
+}) {
+  const reduce = useReducedMotion();
+  const [width, setWidth] = useState(0);
+  const index = Math.max(0, THEME_OPTIONS.findIndex((o) => o.key === value));
+  const pos = useSharedValue(index);
+
+  useEffect(() => {
+    pos.value = reduce ? index : withTiming(index, { duration: 170, easing: Easing.out(Easing.cubic) });
+  }, [index, reduce, pos]);
+
+  const cell = width / THEME_OPTIONS.length;
+  const thumbStyle = useAnimatedStyle(() => ({
+    width: cell,
+    transform: [{ translateX: pos.value * cell }],
+  }));
+
+  return (
+    // The padding sits on an OUTER view so the row itself is the thumb's
+    // containing block — a padded parent makes an absolute child's origin
+    // ambiguous, and this pill has to land on an exact third.
+    <View style={styles.themePickerPad}>
+      <View style={styles.themePicker} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {width > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.themeThumb, { backgroundColor: t.accentMuted, borderColor: t.accent }, thumbStyle]}
+        />
+      ) : null}
+      {THEME_OPTIONS.map((opt, i) => (
+        <Pressable
+          key={opt.key}
+          onPress={() => {
+            Haptics.selectionAsync();
+            onChange(opt.key);
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: i === index }}
+          accessibilityLabel={opt.label}
+          style={styles.themeOption}
+        >
+          <View style={styles.themeIcon}>
+            <Ionicons name={opt.icon} size={22} color={t.textSec} />
+            <Fade pos={pos} i={i} style={[StyleSheet.absoluteFill, styles.center]}>
+              <Ionicons name={opt.icon} size={22} color={t.accent} />
+            </Fade>
+          </View>
+          <View>
+            <Text style={[styles.themeLabel, { color: t.textSec }]}>{opt.label}</Text>
+            <Fade pos={pos} i={i} style={StyleSheet.absoluteFill}>
+              <Text style={[styles.themeLabel, { color: t.accent }]}>{opt.label}</Text>
+            </Fade>
+          </View>
+        </Pressable>
+      ))}
+      </View>
+    </View>
+  );
+}
+
+/** Fully visible when the pill is under cell `i`, gone by the time it reaches the
+ *  next one — so the two colours cross over exactly as the pill passes. */
+function Fade({
+  pos,
+  i,
+  style,
+  children,
+}: {
+  pos: SharedValue<number>;
+  i: number;
+  style?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+}) {
+  const anim = useAnimatedStyle(() => ({ opacity: Math.max(0, 1 - Math.abs(pos.value - i)) }));
+  return (
+    <Animated.View pointerEvents="none" style={[style, anim]}>
+      {children}
+    </Animated.View>
+  );
+}
+
 function NotifRow({
   icon,
+  tint,
   title,
   sub,
   value,
@@ -492,6 +594,9 @@ function NotifRow({
   last = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
+  /** Which painted variant to ask for. AppIcon falls back to the font glyph when
+   *  that art doesn't exist, so a row upgrades the moment its file lands. */
+  tint?: IconTint;
   title: string;
   sub: string;
   value: boolean;
@@ -501,7 +606,7 @@ function NotifRow({
 }) {
   return (
     <View style={[styles.notifRow, { borderBottomColor: t.border }, last && { borderBottomWidth: 0 }]}>
-      <Ionicons name={icon} size={20} color={t.accent} />
+      <AppIcon name={icon} tint={tint ?? 'accent'} size={20} color={t.accent} />
       <View style={styles.notifText}>
         <Text style={[styles.notifTitle, { color: t.text }]}>{title}</Text>
         <Text style={[styles.notifSub, { color: t.textSec }]}>{sub}</Text>
@@ -532,8 +637,14 @@ const styles = StyleSheet.create({
   title: { fontFamily: FONTS.uiBold, fontSize: 18 },
   sectionTitle: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginTop: 14, marginBottom: 10, marginLeft: 4 },
 
-  themePicker: { flexDirection: 'row', padding: 6, gap: 4 },
-  themeOption: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, borderRadius: 14, borderWidth: 1 },
+  themePickerPad: { padding: 6 },
+  // No `gap` here: the pill is positioned in thirds of the row's width, so a gap
+  // between cells would put it slightly off-centre on the outer two.
+  themePicker: { flexDirection: 'row' },
+  themeThumb: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 14, borderWidth: 1 },
+  themeOption: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14 },
+  themeIcon: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
+  center: { alignItems: 'center', justifyContent: 'center' },
   themeLabel: { fontFamily: FONTS.uiSemiBold, fontSize: 12 },
 
   notifRow: {
