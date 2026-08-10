@@ -443,7 +443,7 @@ export default function Settings() {
               accessibilityLabel="Sign out"
               style={({ pressed }) => [styles.menuRow, { borderBottomColor: t.border }, pressed && { opacity: 0.7 }]}
             >
-              <AppIcon name="log-out" tint={t.mode === 'dark' ? undefined : 'ink'} size={20} color={t.text} />
+              <AppIcon name="log-out" tint="muted" size={20} color={t.text} />
               <Text style={[styles.menuLabel, { color: t.text }]}>Sign out</Text>
             </Pressable>
             <Pressable
@@ -513,9 +513,6 @@ function ThemeSegment({
     pos.value = reduce ? index : withTiming(index, { duration: 170, easing: Easing.out(Easing.cubic) });
   }, [index, reduce, pos]);
 
-  // Ink art only reads on the light substrate; undefined means "use the font".
-  const inkArt: IconTint | undefined = t.mode === 'dark' ? undefined : 'ink';
-
   const cell = width / THEME_OPTIONS.length;
   const thumbStyle = useAnimatedStyle(() => ({
     width: cell,
@@ -547,12 +544,12 @@ function ThemeSegment({
           style={styles.themeOption}
         >
           <View style={styles.themeIcon}>
-            {/* The art is drawn in ink, which would disappear on the dark
-                substrate — so dark mode falls back to the tinted font glyph.
-                One drawing, not two: unlike the label, the icon doesn't change
-                colour with selection. The coral pill behind it is what says
-                which one is on. */}
-            <AppIcon name={opt.icon} tint={inkArt} size={22} color={t.textSec} />
+            {/* One drawing, not two: unlike the label, the icon doesn't change
+                colour with selection — the coral pill behind it is what says
+                which one is on. Coral art with its own ink outline reads on the
+                pill AND on the bare card, which is what let the dark-mode font
+                fallback go away. */}
+            <AppIcon name={opt.icon} tint="accent" size={22} color={t.textSec} />
           </View>
           <View>
             <Text style={[styles.themeLabel, { color: t.textSec }]}>{opt.label}</Text>
