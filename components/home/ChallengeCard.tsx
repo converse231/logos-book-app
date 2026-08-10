@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 import { ProgressBar } from '@/components/shared/ProgressBar';
@@ -20,13 +21,15 @@ export interface ChallengeCardProps {
 // ember streak · lilac milestone.
 export function ChallengeCard({ tone, icon, kicker, title, footer, progress, onPress }: ChallengeCardProps) {
   const t = useTheme();
+  // `art` is just the tone under the name the icon registry uses — the card's hue
+  // and its icon's hue are the same decision, so they can't drift apart.
   const TONE = {
-    coral: { color: t.accent, soft: t.accentMuted },
-    gold: { color: t.gold, soft: 'rgba(243,194,60,0.16)' },
-    ember: { color: t.ember, soft: 'rgba(242,145,63,0.16)' },
-    lilac: { color: t.level, soft: 'rgba(154,123,214,0.18)' },
+    coral: { color: t.accent, soft: t.accentMuted, art: 'accent' },
+    gold: { color: t.gold, soft: 'rgba(243,194,60,0.16)', art: 'gold' },
+    ember: { color: t.ember, soft: 'rgba(242,145,63,0.16)', art: 'ember' },
+    lilac: { color: t.level, soft: 'rgba(154,123,214,0.18)', art: 'lilac' },
   } as const;
-  const { color, soft } = TONE[tone];
+  const { color, soft, art } = TONE[tone];
 
   return (
     <Pressable
@@ -41,7 +44,7 @@ export function ChallengeCard({ tone, icon, kicker, title, footer, progress, onP
     >
       <View style={styles.top}>
         <View style={[styles.iconChip, { backgroundColor: soft, borderColor: t.border }]}>
-          <Ionicons name={icon} size={18} color={color} />
+          <AppIcon name={icon} tint={art} size={18} color={color} />
         </View>
         <Text style={[styles.kicker, { color }]}>{kicker.toUpperCase()}</Text>
       </View>

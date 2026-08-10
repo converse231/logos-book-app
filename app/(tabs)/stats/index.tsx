@@ -202,6 +202,7 @@ export default function Stats() {
               progress={closest.progressValue / closest.unlockThreshold}
               icon={closest.iconName as keyof typeof Ionicons.glyphMap}
               color={t.gold}
+              tint="gold"
             />
           </Reveal>
         ) : null}

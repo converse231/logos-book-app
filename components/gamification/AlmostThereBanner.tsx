@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
 import { ProgressBar } from '@/components/shared/ProgressBar';
@@ -11,12 +12,15 @@ interface AlmostThereBannerProps {
   /** Reward hue — defaults to lilac (the milestone/almost-there colour). Pass
    *  gold for achievement progress, ember for streak progress, etc. */
   color?: string;
+  /** Which painted variant to serve. Must match `color`, or the art and the
+   *  progress bar end up different hues. */
+  tint?: IconTint;
   onPress?: () => void;
 }
 
 // "You're almost there" nudge (blueprint component). A near-complete progress bar
 // — loss-aversion pull toward the next unlock. Tone-coloured so it isn't coral.
-export function AlmostThereBanner({ label, progress, icon = 'ribbon', color, onPress }: AlmostThereBannerProps) {
+export function AlmostThereBanner({ label, progress, icon = 'ribbon', color, tint = 'lilac', onPress }: AlmostThereBannerProps) {
   const t = useTheme();
   const c = color ?? t.level;
   const Wrapper: typeof Pressable | typeof View = onPress ? Pressable : View;
@@ -30,7 +34,7 @@ export function AlmostThereBanner({ label, progress, icon = 'ribbon', color, onP
     >
       <View style={styles.head}>
         <View style={[styles.iconChip, { backgroundColor: t.bgTer, borderColor: t.border }]}>
-          <Ionicons name={icon} size={16} color={c} />
+          <AppIcon name={icon} tint={tint} size={16} color={c} />
         </View>
         <Text style={[styles.label, { color: t.text }]} numberOfLines={2}>
           {label}
