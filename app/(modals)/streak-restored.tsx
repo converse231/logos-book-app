@@ -106,7 +106,7 @@ export default function StreakRestored() {
             <View style={styles.flameBox}>
               <Image
                 source={tier.source}
-                style={{ width: art.width, height: art.height, marginLeft: art.dx, marginTop: art.dy }}
+                style={{ width: art.width, height: art.height, transform: [{ translateX: art.dx }, { translateY: art.dy }] }}
                 contentFit="contain"
                 transition={0}
                 accessibilityIgnoresInvertColors
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   body: { ...CENTER_COLUMN, flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 28 },
 
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
-  flameBox: { width: 250, height: 250, maxWidth: '100%', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  flameBox: { width: 250, height: 250, maxWidth: '100%', alignItems: 'center', justifyContent: 'center' },
   copy: { alignItems: 'center', gap: 2 },
   kicker: { fontFamily: FONTS.monoBold, fontSize: 12, letterSpacing: 3, textAlign: 'center' },
   count: {

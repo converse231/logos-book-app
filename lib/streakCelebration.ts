@@ -85,6 +85,12 @@ export function flameForDay(day: number): FlameTier {
  * Geometry that makes every flame render at the same visual size despite the
  * inconsistent crops: how big to draw the whole image, and how far to nudge it so
  * the artwork's centre lands in the middle of the box.
+ *
+ * `dx`/`dy` must be applied as a TRANSFORM, never as a margin. Flexbox centres a
+ * child's MARGIN box, so `marginTop: dy` on a centred child moves it by dy/2, not
+ * dy — which left every flame sitting half its correction too high and sheared the
+ * tip off against the container. A transform runs after layout and moves the exact
+ * distance.
  */
 export function flameLayout(tier: FlameTier, size: number) {
   const { w, h, x, y, bw, bh } = tier.art;

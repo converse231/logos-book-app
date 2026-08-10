@@ -137,10 +137,10 @@ export default function StreakUnlocked() {
         <View style={styles.hero} pointerEvents="none">
           <StreakRays size={raySize} color={tier.ray} />
           <Animated.View style={flameStyle}>
-            <View style={{ width: flameSize, height: flameSize, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <View style={{ width: flameSize, height: flameSize, alignItems: 'center', justifyContent: 'center' }}>
               <Image
                 source={tier.source}
-                style={{ width: art.width, height: art.height, marginLeft: art.dx, marginTop: art.dy }}
+                style={{ width: art.width, height: art.height, transform: [{ translateX: art.dx }, { translateY: art.dy }] }}
                 contentFit="contain"
                 transition={0}
                 accessibilityIgnoresInvertColors
