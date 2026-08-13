@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -424,6 +425,17 @@ export default function SessionTracker() {
           </Pressable>
         </View>
 
+        {/* Scrolls only when it has to. The carousel is a fixed 258dp and the title
+            can wrap to two lines, so on a short viewport — an Android phone with a
+            nav bar has ~48dp less than the equivalent iPhone — the centred block
+            outgrew its flex space and spilled into the footer, which is why the
+            start-page chip sat flush against the Focus mode card. flexGrow + centre
+            keeps it exactly as designed when there's room. */}
+        <ScrollView
+          style={styles.readyScroll}
+          contentContainerStyle={styles.readyScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         <Body {...(reduce ? {} : { entering: FadeIn.duration(ANIMATION.durationNormal) })} style={styles.readyBody}>
           <Text style={[styles.pickLabel, { color: t.textSec }]}>
             {readingBooks.length > 1 ? 'WHAT ARE YOU READING?' : 'TONIGHT’S READ'}
@@ -475,6 +487,7 @@ export default function SessionTracker() {
             )}
           </View>
         </Body>
+        </ScrollView>
 
         <View style={[styles.readyFooter, { paddingBottom: insets.bottom + 20 }]}>
           {selectedBook ? (
@@ -685,7 +698,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  readyBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 22 },
+  readyScroll: { flex: 1 },
+  // flexGrow so a short screen scrolls instead of overlapping; justifyContent so a
+  // tall one still centres. paddingBottom is the minimum air above the footer.
+  readyScrollContent: { flexGrow: 1, justifyContent: 'center', paddingBottom: 18 },
+  readyBody: { alignItems: 'center', justifyContent: 'center', gap: 22 },
   pickLabel: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 1.6 },
   readyText: { ...CENTER_COLUMN, alignItems: 'center', gap: 6, paddingHorizontal: 32, minHeight: 92 },
   readyTitle: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 34, textAlign: 'center' },
