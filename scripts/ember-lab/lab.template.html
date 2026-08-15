@@ -1,0 +1,832 @@
+<title>Quire Ember Lab</title>
+
+<style>
+  @font-face { font-family: 'Fraunces'; src: url(__F_FRAUNCES__) format('truetype'); font-weight: 700; font-display: block; }
+  @font-face { font-family: 'Schibsted'; src: url(__F_SCHIB_400__) format('truetype'); font-weight: 400; font-display: block; }
+  @font-face { font-family: 'Schibsted'; src: url(__F_SCHIB_700__) format('truetype'); font-weight: 700; font-display: block; }
+  @font-face { font-family: 'JBMono'; src: url(__F_MONO_500__) format('truetype'); font-weight: 500; font-display: block; }
+  @font-face { font-family: 'JBMono'; src: url(__F_MONO_700__) format('truetype'); font-weight: 700; font-display: block; }
+
+  /* Paper & Ink — mirrored from theme/tokens.ts. Light is the primary theme. */
+  :root {
+    --paper:   #F6EEDF;
+    --cream:   #FCF8ED;
+    --inset:   #F0E6D3;
+    --ink:     #241E19;
+    --ink-soft:#6B5B4C;
+    --rule:    #241E19;
+    --coral:   #F0764F;
+    --ember:   #F2913F;
+    --gold:    #C8892C;
+    --lilac:   #9A7BD6;
+    --steel:   #4C86C8;
+    --night:   #14101A;
+    --shadow:  #241E19;
+    --chip-bg: #FCF8ED;
+    --ok:      #2F7A46;
+    --bad:     #B4271B;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #1B1712;
+      --cream:   #241F19;
+      --inset:   #2E2820;
+      --ink:     #F2E9DA;
+      --ink-soft:#A99783;
+      --rule:    #4A3F33;
+      --coral:   #F6875D;
+      --ember:   #F5A45C;
+      --gold:    #E7B45C;
+      --lilac:   #B69AEA;
+      --steel:   #7FB0E8;
+      --night:   #0E0B13;
+      --shadow:  #0C0906;
+      --chip-bg: #2E2820;
+      --ok:      #6FC08A;
+      --bad:     #E8705F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #1B1712;
+    --cream:   #241F19;
+    --inset:   #2E2820;
+    --ink:     #F2E9DA;
+    --ink-soft:#A99783;
+    --rule:    #4A3F33;
+    --coral:   #F6875D;
+    --ember:   #F5A45C;
+    --gold:    #E7B45C;
+    --lilac:   #B69AEA;
+    --steel:   #7FB0E8;
+    --night:   #0E0B13;
+    --shadow:  #0C0906;
+    --chip-bg: #2E2820;
+    --ok:      #6FC08A;
+    --bad:     #E8705F;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Schibsted', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Faint dot-journal grid — the app's own ScreenBackground texture. */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: radial-gradient(currentColor 1.2px, transparent 1.3px);
+    background-size: 46px 46px;
+    opacity: .07;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 22px 96px; }
+
+  /* ---- masthead ---- */
+  .mast { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 26px; }
+  h1 {
+    font-family: 'Fraunces', Georgia, serif; font-weight: 700;
+    font-size: clamp(34px, 5.2vw, 52px); line-height: 1.02; margin: 0;
+    letter-spacing: -.02em; text-wrap: balance;
+  }
+  .sub { color: var(--ink-soft); max-width: 46ch; margin: 8px 0 0; }
+  .kicker {
+    font-family: 'JBMono', monospace; font-weight: 500; font-size: 11px;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--coral);
+    margin: 0 0 6px;
+  }
+
+  /* ---- stage ---- */
+  .stage-shell { margin-bottom: 30px; }
+  .stage {
+    position: relative; width: 100%; aspect-ratio: 1942 / 809;
+    border: 3px solid var(--ink); border-radius: 20px; overflow: hidden;
+    background: var(--night); box-shadow: 4px 4px 0 var(--shadow);
+  }
+  .stage img.scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .scrim { position: absolute; inset: 0; background: linear-gradient(to right, transparent, rgba(12,9,7,.18) 50%, rgba(12,9,7,.5)); }
+  .readout-text {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: flex-end; justify-content: center; padding: 0 5.3%;
+    text-align: right; color: #FBF6EC; pointer-events: none;
+  }
+  .rt-count {
+    font-family: 'JBMono', monospace; font-weight: 700; font-variant-numeric: tabular-nums;
+    font-size: clamp(30px, 6.6vw, 78px); line-height: 1;
+    text-shadow: 0 1px 10px rgba(0,0,0,.55);
+  }
+  .rt-label {
+    font-family: 'JBMono', monospace; font-weight: 500; letter-spacing: .18em;
+    font-size: clamp(8px, 1.5vw, 18px); margin-top: 4px; text-shadow: 0 1px 8px rgba(0,0,0,.55);
+  }
+  .rt-msg {
+    font-family: 'Schibsted', sans-serif; font-weight: 700;
+    font-size: clamp(10px, 1.9vw, 23px); margin-top: 9px; text-shadow: 0 1px 8px rgba(0,0,0,.55);
+  }
+
+  /* containment guides */
+  .guides { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .18s; }
+  .guides.on { opacity: 1; }
+  .guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed rgba(255,255,255,.55); }
+  .guide.hard { border-left: 1px solid #FF4D3D; }
+  .guide span {
+    position: absolute; top: 6px; left: 5px; font-family: 'JBMono', monospace;
+    font-size: 9px; letter-spacing: .1em; color: #fff; background: rgba(0,0,0,.55);
+    padding: 1px 5px; border-radius: 4px; white-space: nowrap;
+  }
+  .guide.hard span { background: #FF4D3D; }
+  .band { position: absolute; top: 0; bottom: 0; background: rgba(255,77,61,.1); }
+
+  /* ---- tier rail: positions are the real intensity values, not even steps ---- */
+  .rail-block { margin: 26px 0 6px; padding: 0 46px; }
+  @media (max-width: 620px) { .rail-block { padding: 0 34px; } }
+  .rail {
+    position: relative; height: 74px;
+    border-bottom: 2px solid var(--rule);
+  }
+  .tick { position: absolute; bottom: 0; transform: translateX(-50%); text-align: center; }
+  .tick i {
+    display: block; width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid var(--ink); margin: 0 auto 6px;
+  }
+  .tick b {
+    display: block; font-family: 'Schibsted', sans-serif; font-weight: 700;
+    font-size: 12px; letter-spacing: .01em; white-space: nowrap;
+  }
+  .tick em {
+    display: block; font-family: 'JBMono', monospace; font-style: normal;
+    font-size: 10px; color: var(--ink-soft); letter-spacing: .04em;
+  }
+  .tick button {
+    position: absolute; inset: -8px -14px 0; border: 0; background: none;
+    cursor: pointer; border-radius: 8px;
+  }
+  .tick button:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+  .marker {
+    position: absolute; bottom: -7px; width: 2px; height: 74px; background: var(--coral);
+    transform: translateX(-1px);
+  }
+  .marker::after {
+    content: ''; position: absolute; bottom: -6px; left: -5px;
+    width: 12px; height: 12px; border-radius: 50%; background: var(--coral);
+    border: 2px solid var(--ink);
+  }
+
+  input[type=range] { width: 100%; accent-color: var(--coral); margin: 18px 0 0; }
+  input[type=range]:focus-visible { outline: 2px solid var(--coral); outline-offset: 4px; }
+
+  /* ---- panels ---- */
+  .cols { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; margin-top: 34px; }
+  @media (max-width: 820px) { .cols { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--cream); border: 2px solid var(--ink); border-radius: 18px;
+    padding: 18px 18px 20px; box-shadow: 4px 4px 0 var(--shadow);
+  }
+  .panel h2 {
+    font-family: 'JBMono', monospace; font-weight: 700; font-size: 11px;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .row + .row { margin-top: 12px; }
+
+  button.btn {
+    font-family: 'Schibsted', sans-serif; font-weight: 700; font-size: 13px;
+    padding: 9px 14px; border-radius: 12px; cursor: pointer;
+    border: 2px solid var(--ink); background: var(--chip-bg); color: var(--ink);
+    box-shadow: 3px 3px 0 var(--shadow); transition: transform .08s, box-shadow .08s;
+  }
+  button.btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--shadow); }
+  button.btn:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; }
+  button.btn.primary { background: var(--coral); color: #241E19; }
+  button.btn.on { background: var(--gold); color: #241E19; }
+  button.btn[aria-pressed="true"] { background: var(--gold); color: #241E19; }
+
+  .scenes { display: flex; gap: 8px; flex-wrap: wrap; }
+  .scenes button {
+    padding: 0; width: 74px; aspect-ratio: 1942/809; border-radius: 10px; overflow: hidden;
+    border: 2px solid var(--rule); background: var(--night); cursor: pointer;
+    box-shadow: none; opacity: .55; transition: opacity .15s, border-color .15s;
+  }
+  .scenes button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .scenes button[aria-pressed="true"] { opacity: 1; border-color: var(--coral); }
+  .scenes button:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+
+  /* ---- telemetry ---- */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--rule); border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; }
+  .stat { background: var(--cream); padding: 10px 12px; }
+  .stat dt { font-family: 'JBMono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .stat dd {
+    margin: 2px 0 0; font-family: 'JBMono', monospace; font-weight: 700; font-size: 19px;
+    font-variant-numeric: tabular-nums;
+  }
+  .swatches { display: flex; gap: 0; margin-top: 14px; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; }
+  .sw { flex: 1; height: 46px; position: relative; }
+  .sw span {
+    position: absolute; left: 0; right: 0; bottom: 4px; text-align: center;
+    font-family: 'JBMono', monospace; font-size: 9px; letter-spacing: .1em;
+    text-transform: uppercase; color: rgba(0,0,0,.7);
+    text-shadow: 0 0 6px rgba(255,255,255,.9);
+  }
+
+  /* ---- acceptance ---- */
+  .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .checks li {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+    padding: 11px 13px; border: 2px solid var(--rule); border-radius: 12px; background: var(--inset);
+  }
+  .checks p { margin: 0; font-size: 13.5px; }
+  .checks small { display: block; color: var(--ink-soft); font-size: 12px; }
+  .pill {
+    font-family: 'JBMono', monospace; font-weight: 700; font-size: 11px; letter-spacing: .08em;
+    padding: 4px 9px; border-radius: 999px; border: 2px solid var(--ink); white-space: nowrap;
+  }
+  .pill.pass { background: var(--ok); color: #08130C; }
+  .pill.fail { background: var(--bad); color: #fff; }
+  .measure { font-family: 'JBMono', monospace; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .ramp { height: 10px; border-radius: 999px; border: 2px solid var(--ink); background: linear-gradient(to right, transparent, var(--ember)); }
+
+  .note { color: var(--ink-soft); font-size: 13px; margin: 34px 0 0; max-width: 68ch; }
+  .note code {
+    font-family: 'JBMono', monospace; font-size: 12px; background: var(--inset);
+    border: 1px solid var(--rule); border-radius: 5px; padding: 1px 5px;
+  }
+  hr.rule { border: 0; border-top: 2px solid var(--rule); margin: 34px 0; }
+
+  @media (prefers-reduced-motion: reduce) { button.btn { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <p class="kicker">Streak hero · ember layer</p>
+      <h1>Quire Ember Lab</h1>
+      <p class="sub">The particle field that rides the right side of the streak banner. Drag the intensity dial and watch the fire climb the blackbody ramp — orange, gold, white, blue, then violet past the end of physics.</p>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="flare">Flare</button>
+      <button class="btn" id="gust">Gust</button>
+      <button class="btn" id="sweep">Auto-sweep 0 → 1</button>
+    </div>
+  </header>
+
+  <section class="stage-shell">
+    <div class="stage" id="stage">
+      <img class="scene" id="scene" alt="Streak banner artwork: a fox at a campfire under a night sky" src="__IMG_NIGHT__">
+      <canvas id="cv"></canvas>
+      <div class="scrim"></div>
+      <div class="readout-text">
+        <div class="rt-count" id="rtCount">3</div>
+        <div class="rt-label">DAY STREAK</div>
+        <div class="rt-msg" id="rtMsg">You're set for today</div>
+      </div>
+      <div class="guides" id="guides">
+        <div class="band" style="left:0; width:55%"></div>
+        <div class="guide hard" style="left:55%"><span style="top:6px">0.55 · hard floor</span></div>
+        <div class="guide" style="left:58%"><span style="top:26px">0.58 · falloff 0</span></div>
+        <div class="guide" style="left:62%"><span style="top:46px">0.62 · spawn min</span></div>
+        <div class="guide" style="left:72%"><span style="top:66px">0.72 · falloff 1</span></div>
+        <div class="guide" style="left:95%"><span style="top:6px; left:auto; right:5px">0.95 · spawn max</span></div>
+      </div>
+    </div>
+
+    <div class="rail-block">
+      <div class="rail" id="rail">
+        <div class="marker" id="marker" style="left:30%"></div>
+      </div>
+      <input type="range" id="dial" min="0" max="1" step="0.001" value="0.30" aria-label="Ember intensity">
+    </div>
+  </section>
+
+  <div class="cols">
+    <div class="panel">
+      <h2>Controls</h2>
+      <div class="row">
+        <button class="btn" id="hue" aria-pressed="true">Hue shift</button>
+        <button class="btn" id="guideBtn" aria-pressed="false">Containment guides</button>
+        <button class="btn" id="reduce" aria-pressed="false">Reduced motion</button>
+        <button class="btn" id="lowend" aria-pressed="false">Low-end cap (120)</button>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <div class="scenes" id="scenes"></div>
+      </div>
+      <hr class="rule" style="margin:20px 0">
+      <h2>Acceptance</h2>
+      <ul class="checks">
+        <li>
+          <span class="measure" id="minx">—</span>
+          <p>No particle left of 55% width
+            <small>Live minimum x across every visible ember, this frame.</small>
+          </p>
+          <span class="pill pass" id="minxPill">PASS</span>
+        </li>
+        <li>
+          <span class="ramp" style="width:56px"></span>
+          <p>Falloff is gradual, never a hard edge
+            <small>Opacity ramps 0 → 1 across 0.58 → 0.72. Turn the guides on to see the band.</small>
+          </p>
+          <span class="pill" style="background:var(--inset)">14% W</span>
+        </li>
+        <li>
+          <span class="measure">0→1</span>
+          <p>Continuous across the whole dial
+            <small>Auto-sweep runs the full range over 14 seconds. Watch for a switch point.</small>
+          </p>
+          <span class="pill" style="background:var(--inset)">SWEEP</span>
+        </li>
+        <li>
+          <span class="measure" id="legTier">·</span>
+          <p>Streak number stays readable at the top tiers
+            <small>Jump to Cold fire and Violet — the count sits inside the ember zone.</small>
+          </p>
+          <span class="pill" style="background:var(--inset)">EYEBALL</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h2>Telemetry</h2>
+      <dl class="stats">
+        <div class="stat"><dt>Intensity</dt><dd id="tIntensity">0.30</dd></div>
+        <div class="stat"><dt>Tier</dt><dd id="tTier" style="font-size:15px">Spark</dd></div>
+        <div class="stat"><dt>Alive</dt><dd id="tAlive">0</dd></div>
+        <div class="stat"><dt>Spawn / sec</dt><dd id="tRate">0</dd></div>
+        <div class="stat"><dt>Frame</dt><dd id="tFps">— fps</dd></div>
+        <div class="stat"><dt>Cap</dt><dd id="tCap">220</dd></div>
+      </dl>
+      <div class="swatches" id="sw">
+        <div class="sw" id="swCore"><span>core</span></div>
+        <div class="sw" id="swMid"><span>mid</span></div>
+        <div class="sw" id="swTail"><span>tail</span></div>
+        <div class="sw" id="swGlow"><span>glow</span></div>
+      </div>
+      <p class="note" style="margin-top:16px">
+        Palette interpolates continuously between six stops. The named tiers are
+        anchors on that ramp, not switches — a 63-day streak sits between Blaze
+        and Cold fire and looks like it.
+      </p>
+    </div>
+  </div>
+
+  <p class="note">
+    This page is the reference implementation: canvas 2D, additive blending, 220-particle
+    ceiling, motion trails on sparks, ambient glow anchored to the right. The React&nbsp;Native
+    build in <code>components/home/EmberField.tsx</code> runs the same math on the Reanimated UI
+    thread with a 72-sprite pool, and skips the glow wash and spark trails — see the
+    <code>ponytail:</code> notes at the bottom of that file for why.
+  </p>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const TAU = Math.PI * 2;
+  const SPAWN_LO = 0.62, SPAWN_HI = 0.95;
+  const FALL_ZERO = 0.58, FALL_FULL = 0.72;
+  const HARD_FLOOR = 0.55;
+  const REF_W = 380;
+  const SPARK_MIN_I = 0.38;
+  const TWEEN_MS = 1400;
+
+  // [at, core, mid, tail, glow] — blackbody: red → orange → gold → white → blue,
+  // then violet past the physical end of the ramp.
+  const STOPS = [
+    { at: 0.00, core: [255,196,140], mid: [228,108,58],  tail: [142,44,28],   glow: [255,92,42]  },
+    { at: 0.30, core: [255,228,168], mid: [255,150,62],  tail: [214,68,34],   glow: [255,112,46] },
+    { at: 0.55, core: [255,247,210], mid: [255,192,84],  tail: [234,120,40],  glow: [255,162,62] },
+    { at: 0.74, core: [255,255,248], mid: [214,232,255], tail: [132,178,236], glow: [176,206,255]},
+    { at: 0.90, core: [236,251,255], mid: [118,198,255], tail: [52,116,224],  glow: [76,158,255] },
+    { at: 1.00, core: [246,226,255], mid: [188,128,255], tail: [116,56,208],  glow: [158,88,255] },
+  ];
+  const FIXED = STOPS[1]; // the plain-orange lock when hueShift is off
+
+  const TIERS = [
+    { key: 'embers',   name: 'Embers',    i: 0.18, note: 'at risk' },
+    { key: 'spark',    name: 'Spark',     i: 0.30, note: 'days 1–3' },
+    { key: 'glow',     name: 'Glow',      i: 0.48, note: 'days 4–7' },
+    { key: 'blaze',    name: 'Blaze',     i: 0.68, note: 'weeks 2–4' },
+    { key: 'coldfire', name: 'Cold fire', i: 0.87, note: '90+ days' },
+    { key: 'violet',   name: 'Violet',    i: 1.00, note: '365 days' },
+  ];
+
+  const SCENES = [
+    { src: '__IMG_NIGHT__',  count: 3,   msg: "You're set for today", tier: 0.30, label: 'Night' },
+    { src: '__IMG_ATRISK__', count: 12,  msg: 'Save your streak!',    tier: 0.18, label: 'At risk' },
+    { src: '__IMG_MONTH__',  count: 41,  msg: 'Unstoppable!',         tier: 0.72, label: 'Month' },
+    { src: '__IMG_LEGEND__', count: 365, msg: 'Legendary!',           tier: 1.00, label: 'Legend' },
+  ];
+
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+  const mixRGB = (a, b, t) => [lerp(a[0],b[0],t)|0, lerp(a[1],b[1],t)|0, lerp(a[2],b[2],t)|0];
+  const css = c => 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+
+  function palette(I, hueShift) {
+    if (!hueShift) return FIXED;
+    let i = 0;
+    while (i < STOPS.length - 2 && I > STOPS[i + 1].at) i++;
+    const lo = STOPS[i], hi = STOPS[i + 1];
+    const f = clamp01((I - lo.at) / (hi.at - lo.at));
+    return {
+      core: mixRGB(lo.core, hi.core, f),
+      mid:  mixRGB(lo.mid,  hi.mid,  f),
+      tail: mixRGB(lo.tail, hi.tail, f),
+      glow: mixRGB(lo.glow, hi.glow, f),
+    };
+  }
+
+  // ---------- state ----------
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const stage = document.getElementById('stage');
+
+  let W = 0, H = 0, dpr = 1;
+  let particles = [];
+  let cap = 220;
+  let hueShift = true;
+  let forceReduce = false;
+  let visible = true;
+
+  let intensity = 0.30;      // the live, tweened value
+  let tweenFrom = 0.30, tweenTo = 0.30, tweenStart = -1e9;
+  let spawnAcc = 0;
+  let clock = 0;
+  let flareUntil = -1e9;
+  let gustDir = 0, gustStart = -1e9, gustStrength = 0, nextGustAt = 1500;
+  let sweepStart = -1e9;
+  let fps = 0;
+  let minX = 1;
+  let tweenDur = TWEEN_MS;
+
+  const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const reduced = () => forceReduce || prefersReduce.matches;
+
+  function setIntensity(v, durationMs) {
+    tweenFrom = intensity;
+    tweenTo = clamp01(v);
+    tweenStart = clock;
+    tweenDur = durationMs == null ? TWEEN_MS : durationMs;
+  }
+
+  function tickTween() {
+    const d = clock - tweenStart;
+    if (d >= tweenDur) { intensity = tweenTo; return; }
+    const t = clamp01(d / tweenDur);
+    const e = 1 - Math.pow(1 - t, 3);           // ease-out cubic
+    intensity = tweenFrom + (tweenTo - tweenFrom) * e;
+  }
+
+  // ---------- sizing ----------
+  function resize() {
+    const r = stage.getBoundingClientRect();
+    W = r.width; H = r.height;
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.max(1, Math.round(W * dpr));
+    cv.height = Math.max(1, Math.round(H * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (reduced()) staticFrame();
+  }
+  new ResizeObserver(resize).observe(stage);
+
+  // ---------- particles ----------
+  function spawn(I, boost) {
+    if (particles.length >= cap) return null;
+    const r = Math.random;
+    const depth = 0.45 + r() * 0.90;
+    const half = 0.09 + 0.075 * I;               // spread widens with intensity...
+    let x = 0.785 + (r() - 0.5) * 2 * half;
+    x = Math.min(SPAWN_HI, Math.max(SPAWN_LO, x)); // ...but never leaves the right side
+    const p = {
+      x,
+      y: 0.90 + (r() - 0.5) * 0.03,
+      vx: (r() - 0.5) * 0.02 * depth,
+      vy: -(0.10 + r() * 0.10) * (0.6 + 1.3 * I) * depth * (1 + boost * 0.9),
+      depth,
+      size: (0.75 + r() * 1.55) * (0.85 + 1.15 * I) * depth * (W / REF_W),
+      life: (2200 + r() * 1400) * (0.8 + 0.7 * I),
+      age: 0,
+      phase: r() * TAU,
+      sway: 0.08 + r() * 0.34,
+      hot: r() < 0.15 + 0.35 * I,
+      spark: false,
+      px: 0, py: 0,
+    };
+    p.px = p.x; p.py = p.y;
+    particles.push(p);
+    return p;
+  }
+
+  function spawnSpark(I, boost) {
+    const p = spawn(I, boost);
+    if (!p) return;
+    p.spark = true;
+    p.hot = true;
+    p.vy *= 2.7 + Math.random() * 1.1;
+    p.vx *= 2.2;
+    p.life = 900 + Math.random() * 500;
+    p.size *= 0.85;
+    p.sway = 0;
+  }
+
+  function step(dt, I) {
+    const dtf = dt / 16.667;
+    const dts = dt / 1000;
+
+    // wind: slow ambient sway + scheduled gusts, in px per 60fps frame
+    let wind = Math.sin(clock / 2600) * 0.35 + Math.sin(clock / 1700 + 1.3) * 0.22;
+    nextGustAt -= dt;
+    if (nextGustAt <= 0) {
+      gustStart = clock;
+      gustDir = Math.random() < 0.5 ? -1 : 1;
+      gustStrength = 0.7 + Math.random() * 1.3;
+      nextGustAt = (4200 - 2600 * I) * (0.6 + Math.random() * 0.9);
+    }
+    const gd = clock - gustStart;
+    if (gd >= 0 && gd < 900) wind += Math.sin((gd / 900) * Math.PI) * gustDir * gustStrength * 2.2;
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.px = p.x; p.py = p.y;
+      p.age += dt;
+      if (p.age >= p.life || p.y < -0.15) { particles.splice(i, 1); continue; }
+
+      p.vy *= Math.pow(0.9993, dtf);             // gentle upward deceleration
+      if (p.spark) p.vy += 0.62 * dts;           // ...sparks fall back
+      p.y += p.vy * dts;
+      p.x += p.vx * dts;
+      p.phase += 0.11 * dtf;
+      p.x += (Math.sin(p.phase) * p.sway * dtf) / W;
+      p.x += (wind * p.depth * dtf) / W;
+    }
+  }
+
+  function alphaOf(p, I) {
+    const t = p.age / p.life;
+    const fade = t < 0.1 ? t / 0.1 : 1 - Math.pow((t - 0.1) / 0.9, 1.6);
+    const flicker = 0.68 + Math.sin(p.age / 58 + p.phase) * 0.32;
+    const falloff = clamp01((p.x - FALL_ZERO) / (FALL_FULL - FALL_ZERO));
+    return clamp01(fade) * flicker * falloff * (0.5 + p.depth * 0.55) * (0.72 + 0.28 * I) * (p.spark ? 1.3 : 1);
+  }
+
+  function colorOf(p, pal) {
+    if (p.hot) return pal.core;
+    const t = p.age / p.life;
+    return t < 0.45 ? mixRGB(pal.core, pal.mid, t / 0.45)
+                    : mixRGB(pal.mid, pal.tail, (t - 0.45) / 0.55);
+  }
+
+  function draw(I) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    // Hard guarantee: nothing renders left of 55%, whatever the maths does.
+    ctx.beginPath();
+    ctx.rect(HARD_FLOOR * W, 0, W - HARD_FLOOR * W, H);
+    ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+
+    const pal = palette(I, hueShift);
+
+    // Ambient glow, anchored to the same right-side region and no wider.
+    const gx = 0.82 * W, gy = 0.84 * H, gr = 0.24 * W;
+    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+    const ga = 0.09 + 0.19 * I;
+    g.addColorStop(0, 'rgba(' + pal.glow[0] + ',' + pal.glow[1] + ',' + pal.glow[2] + ',' + ga.toFixed(3) + ')');
+    g.addColorStop(0.55, 'rgba(' + pal.glow[0] + ',' + pal.glow[1] + ',' + pal.glow[2] + ',' + (ga * 0.3).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(' + pal.glow[0] + ',' + pal.glow[1] + ',' + pal.glow[2] + ',0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    minX = 1;
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      const a = alphaOf(p, I);
+      if (a <= 0.008) continue;
+      if (p.x < minX) minX = p.x;
+      const c = colorOf(p, pal);
+      const cx = p.x * W, cy = p.y * H;
+
+      if (p.spark) {                              // short motion trail
+        ctx.strokeStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a * 0.5).toFixed(3) + ')';
+        ctx.lineWidth = Math.max(0.6, p.size * 1.2);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(p.px * W, p.py * H);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+      }
+
+      const r = Math.max(0.8, p.size * 3.8);
+      const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      rg.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a.toFixed(3) + ')');
+      rg.addColorStop(0.32, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a * 0.42).toFixed(3) + ')');
+      rg.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, TAU);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ---------- loop ----------
+  let last = -1;
+  let raf = 0;
+
+  function frame(now) {
+    raf = requestAnimationFrame(frame);
+    if (last < 0) last = now;
+    const dt = Math.min(50, now - last);          // one dropped frame must not teleport anything
+    last = now;
+    if (dt <= 0) return;
+    fps = fps ? fps * 0.9 + (1000 / dt) * 0.1 : 1000 / dt;
+    clock += dt;
+
+    if (clock - sweepStart < 14000) {
+      const t = (clock - sweepStart) / 14000;
+      intensity = clamp01(t);
+      tweenTo = intensity; tweenStart = -1e9;
+      dial.value = intensity.toFixed(3);
+    } else {
+      tickTween();
+    }
+
+    const I = intensity;
+    const boosting = clock < flareUntil;
+    const eff = clamp01(I + (boosting ? ((flareUntil - clock) / 1400) * 0.45 : 0));
+
+    const rate = 1.5 + 52 * Math.pow(eff, 1.3);
+    spawnAcc += (rate * dt) / 1000;
+    while (spawnAcc >= 1) { spawnAcc -= 1; spawn(eff, boosting ? 0.5 : 0); }
+
+    if (eff > SPARK_MIN_I && Math.random() < (eff - SPARK_MIN_I) * 0.9 * (dt / 1000) * 6) {
+      spawnSpark(eff, boosting ? 1 : 0);
+    }
+
+    step(dt, eff);
+    draw(eff);
+    paintHud(I, rate);
+    return;
+  }
+
+  function start() {
+    if (raf || reduced() || !visible) return;
+    last = -1;
+    raf = requestAnimationFrame(frame);
+  }
+  function stop() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+  }
+
+  /** Reduced motion: one static frame, scattered at the right density — never nothing. */
+  function staticFrame() {
+    stop();
+    particles = [];
+    const I = intensity;
+    const n = Math.min(cap, Math.round((1.5 + 52 * Math.pow(I, 1.3)) * 2.6));
+    for (let i = 0; i < n; i++) {
+      const p = spawn(I, 0);
+      if (!p) break;
+      p.age = Math.random() * p.life;
+      // Place it where it would have drifted to by that age.
+      const s = p.age / 1000;
+      p.y += (p.vy * (1 - Math.exp(-0.042 * s))) / 0.042;
+      p.x += (Math.sin(p.phase + s * 2) * p.sway * 6) / W;
+      p.px = p.x; p.py = p.y;
+    }
+    draw(I);
+    paintHud(I, 1.5 + 52 * Math.pow(I, 1.3));
+  }
+
+  function refresh() {
+    if (reduced()) staticFrame(); else start();
+  }
+
+  // ---------- HUD ----------
+  const el = id => document.getElementById(id);
+  const dial = el('dial');
+  const marker = el('marker');
+
+  function tierFor(I) {
+    let best = TIERS[0];
+    for (const t of TIERS) if (Math.abs(t.i - I) < Math.abs(best.i - I)) best = t;
+    return Math.abs(best.i - I) < 0.035 ? best.name : 'between';
+  }
+
+  function paintHud(I, rate) {
+    el('tIntensity').textContent = I.toFixed(2);
+    el('tTier').textContent = tierFor(I);
+    el('tAlive').textContent = particles.length;
+    el('tRate').textContent = rate.toFixed(1);
+    el('tFps').textContent = reduced() ? 'static' : Math.round(fps) + ' fps';
+    el('tCap').textContent = cap;
+    marker.style.left = (I * 100).toFixed(2) + '%';
+    if (dial.value !== String(I)) dial.value = I;
+
+    const pal = palette(I, hueShift);
+    el('swCore').style.background = css(pal.core);
+    el('swMid').style.background = css(pal.mid);
+    el('swTail').style.background = css(pal.tail);
+    el('swGlow').style.background = css(pal.glow);
+
+    const m = particles.length ? minX : 1;
+    el('minx').textContent = m >= 1 ? '—' : m.toFixed(3);
+    const pill = el('minxPill');
+    const pass = m >= HARD_FLOOR;
+    pill.textContent = pass ? 'PASS' : 'FAIL';
+    pill.className = 'pill ' + (pass ? 'pass' : 'fail');
+    el('legTier').textContent = I >= 0.85 ? 'now' : '·';
+  }
+
+  // ---------- tier rail ----------
+  const rail = el('rail');
+  for (const t of TIERS) {
+    const d = document.createElement('div');
+    d.className = 'tick';
+    d.style.left = (t.i * 100) + '%';
+    d.innerHTML = '<b>' + t.name + '</b><em>' + t.note + ' · ' + t.i.toFixed(2) + '</em><i></i>';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Set intensity to ' + t.name + ', ' + t.i);
+    b.addEventListener('click', () => { sweepStart = -1e9; setIntensity(t.i); refresh(); });
+    d.appendChild(b);
+    rail.appendChild(d);
+  }
+
+  // ---------- scenes ----------
+  const scenesEl = el('scenes');
+  SCENES.forEach((s, idx) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(idx === 0));
+    b.setAttribute('aria-label', s.label + ' scene');
+    b.innerHTML = '<img alt="" src="' + s.src + '">';
+    b.addEventListener('click', () => {
+      [...scenesEl.children].forEach(c => c.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      el('scene').src = s.src;
+      el('rtCount').textContent = s.count;
+      el('rtMsg').textContent = s.msg;
+      sweepStart = -1e9;
+      setIntensity(s.tier);
+      refresh();
+    });
+    scenesEl.appendChild(b);
+  });
+
+  // ---------- controls ----------
+  dial.addEventListener('input', () => {
+    sweepStart = -1e9;
+    intensity = parseFloat(dial.value);
+    tweenTo = intensity; tweenStart = -1e9;
+    refresh();
+  });
+
+  el('flare').addEventListener('click', () => { flareUntil = clock + 1400; refresh(); });
+  el('gust').addEventListener('click', () => {
+    gustStart = clock; gustDir = Math.random() < 0.5 ? -1 : 1; gustStrength = 1.8;
+    refresh();
+  });
+  el('sweep').addEventListener('click', () => {
+    forceReduce = false; el('reduce').setAttribute('aria-pressed', 'false');
+    sweepStart = clock; refresh();
+  });
+
+  function toggle(id, fn) {
+    const b = el(id);
+    b.addEventListener('click', () => {
+      const next = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', String(next));
+      fn(next);
+    });
+  }
+  toggle('hue', v => { hueShift = v; refresh(); });
+  toggle('guideBtn', v => el('guides').classList.toggle('on', v));
+  toggle('reduce', v => { forceReduce = v; refresh(); });
+  toggle('lowend', v => { cap = v ? 120 : 220; if (particles.length > cap) particles.length = cap; refresh(); });
+
+  // ---------- visibility: never animate a banner nobody is looking at ----------
+  new IntersectionObserver(entries => {
+    visible = entries[0].isIntersecting;
+    if (visible) refresh(); else stop();
+  }, { threshold: 0.05 }).observe(stage);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop(); else refresh();
+  });
+  prefersReduce.addEventListener('change', refresh);
+
+  resize();
+  refresh();
+})();
+</script>

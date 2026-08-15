@@ -61,3 +61,6 @@ dbrun.mjs
 
 # Supabase CLI scratch state (project ref, pooler URL, tool versions)
 /supabase/.temp
+
+# Built ember lab (1.5MB of inlined fonts + art; rebuild with node scripts/ember-lab/build.js)
+/scripts/ember-lab/ember-lab.html

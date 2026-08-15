@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FONTS, INK, PALETTE, RADIUS, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 import { useTourTarget } from '@/components/tour/TourProvider';
+import { EmberField, streakIntensity, type EmberFieldHandle } from '@/components/home/EmberField';
 
 // Duolingo-style illustrated streak banner. The scene + Q's pose are baked into
 // one of 10 hand-drawn variants chosen from the live streak state; the count and
@@ -129,6 +131,16 @@ export function StreakHero({
     ? `${currentStreak} day${currentStreak === 1 ? '' : 's'} streak. ${spec.msg}`
     : spec.msg;
 
+  // Embers only ride the dark night scenes — over a bright daytime sky a warm
+  // glow layer just reads as haze. Flip `dark` to `true` below to run it on all
+  // 20 variants.
+  const emberRef = useRef<EmberFieldHandle>(null);
+  const prevStreak = useRef(currentStreak);
+  useEffect(() => {
+    if (currentStreak > prevStreak.current) emberRef.current?.flare();
+    prevStreak.current = currentStreak;
+  }, [currentStreak]);
+
   return (
     <Pressable
       ref={tour.ref}
@@ -140,6 +152,9 @@ export function StreakHero({
       style={styles.card}
     >
       <Image source={spec.img} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
+      {dark ? (
+        <EmberField ref={emberRef} intensity={streakIntensity(currentStreak, isAtRisk)} />
+      ) : null}
       <LinearGradient
         colors={scrim}
         start={{ x: 0, y: 0 }}
