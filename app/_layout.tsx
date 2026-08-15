@@ -5,6 +5,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LogBox, StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import { RootErrorBoundary } from '@/components/shared/RootErrorBoundary';
+
+// Expo Router renders its own error screen in development but NOTHING in a
+// release build — an uncaught render error anywhere in the tree just takes the
+// app down. Exporting ErrorBoundary from the root layout is the framework's
+// hook for catching it. Named `ErrorBoundary` because Expo Router looks that
+// name up by convention.
+export { RootErrorBoundary as ErrorBoundary };
 
 // Expo Go (SDK 53+) dropped remote push, so expo-notifications' auto token
 // registration logs a red console error on import. Push is properly guarded and

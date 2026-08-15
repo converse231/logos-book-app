@@ -62,3 +62,12 @@ yarn-error.*
 /docs/
 # Standalone HTML decks.
 /presentations/
+
+# ── generated native projects ────────────────────────────────────────────────
+# These only exist if someone ran `expo prebuild` locally. If they reach EAS,
+# the build treats the project as BARE and uses the checked-in native code
+# instead of regenerating it — which means every later app.json change (icons,
+# permissions, plugins) silently stops applying. Always let EAS prebuild.
+# LEADING SLASHES MATTER — see the note at the top of this file.
+/android/
+/ios/
