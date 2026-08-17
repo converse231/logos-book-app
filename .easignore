@@ -56,6 +56,8 @@ yarn-error.*
 /assets/_originals/
 # Store listing screenshots; not bundled (Metro only bundles require()d assets).
 /assets/screenshots/
+# Play Console upload set — listing art, never referenced by the app.
+/assets/play-store/
 # SQL migrations and Deno edge functions — server-side, never in the APK.
 /supabase/
 # Privacy policy served from GitHub Pages.
