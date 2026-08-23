@@ -700,6 +700,7 @@ export const MOCK_HOME_DATA: HomeData = {
     levelName: MOCK_USER.levelName,
     level: MOCK_USER.level,
     totalXp: MOCK_USER.totalXp,
+    fireflies: 64,
   },
   streak: MOCK_STREAK,
   activeBook: MOCK_USER_BOOK,

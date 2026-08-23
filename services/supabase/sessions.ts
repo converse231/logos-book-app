@@ -172,7 +172,7 @@ export const sessionApi: Partial<QuireApi> = {
     const uid = await requireUid();
     const year = new Date().getFullYear();
     const [uRes, sRes, abRes, cbRes, gRes, rsRes] = await Promise.all([
-      supabase.from('users').select('id, display_name, avatar_url, level, level_name, total_xp').eq('id', uid).single(),
+      supabase.from('users').select('id, display_name, avatar_url, level, level_name, total_xp, fireflies').eq('id', uid).single(),
       supabase.from('streaks').select('*').eq('user_id', uid).maybeSingle(),
       supabase.from('user_books').select(USER_BOOK_SELECT).eq('user_id', uid).eq('status', 'reading').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('comeback_challenges').select('*').eq('user_id', uid).is('completed_at', null).is('expired_at', null).maybeSingle(),
@@ -208,6 +208,7 @@ export const sessionApi: Partial<QuireApi> = {
         levelName: u.level_name,
         level: u.level,
         totalXp,
+        fireflies: Number(u.fireflies ?? 0),
       } as HomeData['user'],
       streak,
       activeBook: abRes.data ? mapUserBook(abRes.data) : null,

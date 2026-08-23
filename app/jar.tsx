@@ -12,6 +12,7 @@ import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { FireflyJar, POUCH_COST } from '@/components/jar/FireflyJar';
+import { markFirefliesSeen } from '@/lib/jarSeen';
 
 // The firefly jar — your reading currency, made physical.
 //
@@ -34,7 +35,13 @@ export default function JarScreen() {
     useCallback(() => {
       let alive = true;
       api.getProfile()
-        .then((p) => alive && setBalance(p.fireflies ?? 0))
+        .then((p) => {
+          if (!alive) return;
+          const n = p.fireflies ?? 0;
+          setBalance(n);
+          // Opening the jar IS seeing it — clears the header badge next focus.
+          markFirefliesSeen(n);
+        })
         .catch(() => alive && setBalance(0));
       return () => {
         alive = false;

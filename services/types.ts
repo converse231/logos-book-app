@@ -317,7 +317,7 @@ export interface CompleteSessionResult {
 // ── Screen-level view models ──────────────────────────────────────────────────
 
 export interface HomeData {
-  user: Pick<UserProfile, 'id' | 'displayName' | 'avatarUrl' | 'levelName' | 'level' | 'totalXp'>;
+  user: Pick<UserProfile, 'id' | 'displayName' | 'avatarUrl' | 'levelName' | 'level' | 'totalXp' | 'fireflies'>;
   streak: StreakState;
   activeBook: UserBook | null;
   comeback: ComebackChallenge | null;

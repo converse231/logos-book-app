@@ -21,6 +21,8 @@ import { BookCover } from '@/components/shared/BookCover';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { LevelNameBadge } from '@/components/shared/LevelNameBadge';
 import { Q } from '@/components/shared/Q';
+import { JarButton } from '@/components/jar/JarButton';
+import { getSeenFireflies } from '@/lib/jarSeen';
 import { StreakHero } from '@/components/home/StreakHero';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -58,6 +60,8 @@ export default function Home() {
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // Re-read on every focus so returning from the jar clears the badge.
+  const [seenFireflies, setSeenFireflies] = useState(Number.MAX_SAFE_INTEGER);
   // Home is the most-returned-to screen in the app, and it was refiring its whole
   // payload on every single focus. getHomeData still runs every time — it carries the
   // streak, the at-risk flag and the milestone the celebration keys off, and must
@@ -70,6 +74,9 @@ export default function Home() {
     useCallback(() => {
       let alive = true;
       setError(false);
+      // What the jar was last opened at — the difference against the live
+      // balance is what makes the header jar shake.
+      getSeenFireflies().then((n) => alive && setSeenFireflies(n));
       // Flush any sessions captured offline; if some synced, reload so the
       // streak / XP / stats reflect them. (No-op + terminates when the queue is empty.)
       drainQueue(api).then((synced) => {
@@ -318,7 +325,11 @@ export default function Home() {
                 {data.user.displayName ?? 'Reader'}
               </Text>
             </View>
-            {isNight ? <Q expression="sleepy" size={42} decorative style={styles.headerQ} /> : null}
+            <JarButton
+              balance={data.user.fireflies ?? 0}
+              unseen={Math.max(0, (data.user.fireflies ?? 0) - seenFireflies)}
+              onPress={() => router.push('/jar' as Href)}
+            />
             <Pressable
               onPress={() => router.push('/(tabs)/profile/settings' as Href)}
               hitSlop={10}
@@ -341,7 +352,6 @@ export default function Home() {
             almostThere={!!data.almostThere}
             readToday={readToday}
             onPress={() => router.push('/(tabs)/stats' as Href)}
-            onViewJar={() => router.push('/jar' as Href)}
           />
         </Reveal>
 
@@ -698,7 +708,6 @@ const styles = StyleSheet.create({
   greeting: { fontFamily: FONTS.uiSemiBold, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase' },
   name: { fontFamily: FONTS.serif, fontSize: 33, lineHeight: 37 },
   iconBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  headerQ: { marginHorizontal: -2 },
   atRisk: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   atRiskText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14, lineHeight: 19 },
 
