@@ -34,6 +34,7 @@ const GROUPS: { title: string; items: MenuItem[] }[] = [
       { icon: 'bar-chart', label: 'Stats', sub: 'Heatmap, pace, lifetime totals', href: '/(tabs)/stats' as Href },
       { icon: 'flag', label: 'Reading goal', sub: 'Set your target for the year', href: '/(modals)/goal-edit' as Href, tint: 'gold' },
       { icon: 'bookmarks', label: 'To be read', sub: 'Books you own, not started yet', href: '/(tabs)/library/tbr' as Href },
+      { icon: 'sparkles', label: 'Your jar', sub: 'Fireflies you have collected', href: '/jar' as Href, tint: 'gold' },
     ],
   },
   {
