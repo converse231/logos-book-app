@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
-import { useApi } from '@/services/ApiContext';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import { MIN_GENRES, TOTAL_STEPS, useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { GenreChip } from '@/components/onboarding/GenreChip';
@@ -16,37 +15,25 @@ const GENRES = [
   'Business', 'Science', 'Young Adult', 'Classics',
 ];
 
-const MIN_GENRES = 2;
-
 // RULE 2: mirror the user's picks back in the subtitle so the selection feels
 // seen ("You're into Fantasy & Sci-Fi…"). Requires ≥2 genres before continuing.
+//
+// Buffers to the store only — there is no account yet, and the whole funnel is
+// flushed in one transaction at the account step.
 export default function Genres() {
   const t = useTheme();
   const router = useRouter();
-  const api = useApi();
   const { genres, toggleGenre } = useOnboardingStore();
-  const [submitting, setSubmitting] = useState(false);
 
   const subtitle = useMemo(() => mirrorBack(genres), [genres]);
   const canContinue = genres.length >= MIN_GENRES;
 
-  const handleContinue = async () => {
-    setSubmitting(true);
-    try {
-      await api.setGenrePrefs(genres);
-      router.push('/(onboarding)/goal');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <OnboardingScaffold
       step={2}
-      totalSteps={5}
+      totalSteps={TOTAL_STEPS}
       title="What do you love to read?"
       subtitle={subtitle}
-      onBack={() => router.back()}
       scroll
       footer={
         <>
@@ -55,8 +42,7 @@ export default function Genres() {
           </Text>
           <PrimaryButton
             label="Continue"
-            onPress={handleContinue}
-            loading={submitting}
+            onPress={() => router.push('/(onboarding)/goal' as Href)}
             disabled={!canContinue}
           />
         </>

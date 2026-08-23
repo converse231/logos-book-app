@@ -1,12 +1,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // B2 — real auth + onboarding write-through (email-first).
 //
-// Flow (signup-last, decided 2026-06-08): the funnel is anonymous. age-gate
-// computes the COPPA flags client-side (no account yet); welcome/genres/goal
-// buffer into the onboarding store. The account is created at the profile step:
-// signUp() makes the auth user + the public.users row, then the screen flushes
-// updateProfile / setGenrePrefs / setReadingGoal / completeOnboarding — all now
-// authenticated writes (RLS: auth.uid() = id).
+// Flow (signup-last, decided 2026-06-08): the funnel is anonymous. welcome
+// leads, then age-gate computes the COPPA flags client-side (no account yet);
+// genres/goal/profile buffer into the persisted onboarding store. The account is
+// created on the final `account` step: signUp() (or signInWithGoogle) makes the
+// AUTH user only, then ONE call to completeOnboarding() writes public.users +
+// reading_goals in a single transaction via the complete_onboarding RPC.
+//
+// Neither signUp nor signInWithGoogle touches public.users any more. That RPC is
+// the only door, which is what lets the COPPA age check live server-side instead
+// of depending on which caller remembered to pass a birth year.
 //
 // REQUIRES "Confirm email" OFF in Supabase → Auth → Providers → Email, so
 // signUp returns an active session immediately (otherwise auth.uid() is null and
@@ -87,53 +91,52 @@ export const authApi: Partial<QuireApi> = {
     return { userId };
   },
 
-  async signUp(email, password, birthYear) {
+  // Creates the AUTH user only. Provisioning public.users is completeOnboarding's
+  // job — one door, so the COPPA check can't be routed around.
+  async signUp(email, password) {
     const cleanEmail = email.trim();
     // RESUMABLE onboarding: a prior attempt may have created the account (and an
-    // active session) but failed while flushing profile/prefs. Reuse that session
-    // instead of re-running signUp — which would error "User already registered"
-    // and trap the user on the profile screen forever.
+    // active session) but failed before the funnel was flushed. Reuse that
+    // session instead of re-running signUp — which would error "User already
+    // registered" and trap the user on the account screen forever.
+    //
+    // ONLY resume a session that belongs to THIS email. An abandoned Google
+    // attempt also leaves a session behind, and adopting it here silently threw
+    // away the credentials the user just typed and provisioned the account onto
+    // the wrong (Google) identity — the "signed up with email, ended up in
+    // someone else's account" bug.
     let { data: { session } } = await supabase.auth.getSession();
-    let userId = session?.user.id ?? null;
-
-    if (!userId) {
-      const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
-      if (error) {
-        // The email may already exist (a prior partial attempt, or a reinstall).
-        // Try to sign in with the same credentials to recover and continue.
-        const { data: si } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
-        if (!si.session) throw error; // can't recover → surface the original signUp error
-        session = si.session;
-        userId = si.user?.id ?? null;
-      } else {
-        userId = data.user?.id ?? null;
-        if (!data.session) {
-          // Confirmation is ON — no active session, so the users insert below would
-          // be rejected by RLS. Fail loud with the fix.
-          throw new Error(
-            'Sign-up created the auth user but no session was returned. Turn OFF ' +
-              '"Confirm email" in Supabase → Auth → Providers → Email for the email-first phase.'
-          );
-        }
-        session = data.session;
-      }
+    const resumable =
+      session?.user.email?.toLowerCase() === cleanEmail.toLowerCase() ? session.user.id : null;
+    if (resumable) return { userId: resumable };
+    if (session) {
+      // A foreign leftover session (cancelled Google run). Clear it so the
+      // signUp below starts from a clean slate rather than racing it.
+      await supabase.auth.signOut();
     }
-    if (!userId) throw new Error('Sign-up returned no user.');
 
-    // UPSERT the public.users row (idempotent — a prior attempt may have inserted
-    // it). On first insert: trg_set_age_flags fills is_minor/is_under_13 from
-    // birth_year; trg_provision_user seeds streaks + notification_settings. RLS: auth.uid() === id.
-    const tz = localTimezone();
-    const { error: insErr } = await supabase.from('users').upsert(
-      {
-        id: userId,
-        birth_year: birthYear,
-        timezone_offset_minutes: tz.offsetMinutes,
-        timezone_name: tz.name,
-      },
-      { onConflict: 'id' }
-    );
-    if (insErr) throw insErr;
+    const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
+    if (error) {
+      // The address may already have an account (a prior partial attempt, or a
+      // reinstall). Try the same credentials as a sign-in to recover in place.
+      const { data: si } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+      if (si.session?.user.id) return { userId: si.session.user.id };
+      // Taken, and this password doesn't open it. A distinct code so the screen
+      // can offer "sign in instead" rather than repeating a raw auth error —
+      // this is the dead end an orphaned half-signup used to leave behind.
+      if (/already|registered|exists/i.test(error.message)) throw new Error('EMAIL_IN_USE');
+      throw error;
+    }
+    if (!data.session) {
+      // Confirmation is ON — no active session, so completeOnboarding's insert
+      // would be rejected by RLS. Fail loud with the fix.
+      throw new Error(
+        'Sign-up created the auth user but no session was returned. Turn OFF ' +
+          '"Confirm email" in Supabase → Auth → Providers → Email for the email-first phase.'
+      );
+    }
+    const userId = data.user?.id;
+    if (!userId) throw new Error('Sign-up returned no user.');
     return { userId };
   },
 
@@ -148,18 +151,26 @@ export const authApi: Partial<QuireApi> = {
   //
   // PKCE: the redirect carries a short-lived code, not tokens, so another app
   // claiming the quire:// scheme can't lift a session out of the URL.
-  async signInWithGoogle(birthYear?: number) {
+  async signInWithGoogle() {
     let { data: { session } } = await supabase.auth.getSession();
 
     // Resumable: an earlier attempt may have authenticated but died before the
-    // users row landed. Don't send them back through the browser for that.
+    // funnel was flushed. Don't send them back through the browser for that.
     if (!session) {
       // createURL (not a hardcoded string) so this also resolves under Expo Go's
       // exp:// host, where the scheme isn't quire://.
       const redirectTo = Linking.createURL('auth-callback');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo, skipBrowserRedirect: true },
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+          // Always show the account chooser. Without this Google silently reuses
+          // whichever account the device browser is already signed into, so a
+          // reader who picked the wrong one had no way to change it — retrying
+          // just re-authenticated the same account.
+          queryParams: { prompt: 'select_account' },
+        },
       });
       if (error) throw error;
       if (!data?.url) throw new Error('Google sign-in could not start. Try again.');
@@ -182,27 +193,23 @@ export const authApi: Partial<QuireApi> = {
 
     const userId = session?.user.id;
     if (!userId) throw new Error('Google sign-in returned no user.');
-
-    // Only the onboarding funnel passes birthYear, and only it may create the row —
-    // that ordering is the COPPA guarantee.
-    if (birthYear != null) {
-      const tz = localTimezone();
-      const { error: insErr } = await supabase.from('users').upsert(
-        {
-          id: userId,
-          birth_year: birthYear,
-          timezone_offset_minutes: tz.offsetMinutes,
-          timezone_name: tz.name,
-        },
-        { onConflict: 'id' }
-      );
-      if (insErr) throw insErr;
-    }
+    // No users row is written here — completeOnboarding owns provisioning, so a
+    // Google user who never finishes the funnel stays profile-less and the boot
+    // redirect keeps routing them through the age gate. That IS the COPPA
+    // guarantee now, and it no longer depends on which caller passed what.
     return { userId };
   },
 
   async getAuthEmail() {
     return currentUserEmail();
+  },
+
+  async hasProfile() {
+    const uid = await currentUserId();
+    if (!uid) return false;
+    const { data, error } = await supabase.from('users').select('id').eq('id', uid).maybeSingle();
+    if (error) throw error; // caller decides — a network blip is not "no profile"
+    return !!data;
   },
 
   async signOut() {
@@ -233,31 +240,10 @@ export const authApi: Partial<QuireApi> = {
   // ── Onboarding ──────────────────────────────────────────────────────────────
   async updateBirthYear(birthYear) {
     // Age-gate runs before any account exists — the COPPA decision is pure age
-    // math, no round-trip. birth_year is persisted later by signUp().
+    // math, no round-trip. birth_year is persisted later by completeOnboarding,
+    // which re-checks the age server-side; this is the UX half only.
     const age = new Date().getFullYear() - birthYear;
     return { isMinor: age < 18, isUnder13: age < 13 };
-  },
-
-  async setGenrePrefs(genres) {
-    const uid = await currentUserId();
-    if (!uid) return; // mid-funnel, pre-account — buffered in the onboarding store
-    const { error } = await supabase.from('users').update({ genre_prefs: genres }).eq('id', uid);
-    if (error) throw error;
-  },
-
-  async setReadingGoal(year, goalBooks) {
-    const uid = await currentUserId();
-    if (!uid) {
-      // Pre-account echo so the goal-projection screen has a value to render.
-      return { id: 'pending', userId: 'pending', year, goalBooks, goalPages: null };
-    }
-    const { data, error } = await supabase
-      .from('reading_goals')
-      .upsert({ user_id: uid, year, goal_books: goalBooks }, { onConflict: 'user_id,year' })
-      .select()
-      .single();
-    if (error) throw error;
-    return { id: data.id, userId: data.user_id, year: data.year, goalBooks: data.goal_books, goalPages: data.goal_pages ?? null };
   },
 
   async updateProfile(dataIn) {
@@ -288,14 +274,32 @@ export const authApi: Partial<QuireApi> = {
     return `${data.publicUrl}?v=${Date.now()}`; // bust CDN cache (same path on re-upload)
   },
 
-  async completeOnboarding() {
+  // One transaction for the whole funnel (20260822000000_complete_onboarding).
+  // Identity + genres + goal + the completion stamp land together or not at all,
+  // so a failure here can never leave a "completed" account with nothing in it.
+  async completeOnboarding(data) {
     const uid = await currentUserId();
     if (!uid) throw new Error('completeOnboarding requires an account.');
-    const { error } = await supabase
-      .from('users')
-      .update({ onboarding_completed_at: new Date().toISOString() })
-      .eq('id', uid);
-    if (error) throw error;
+    const tz = localTimezone();
+    const { data: row, error } = await supabase.rpc('complete_onboarding', {
+      p_birth_year: data.birthYear,
+      p_display_name: data.displayName,
+      p_genres: data.genres,
+      p_goal_books: data.goalBooks,
+      p_theme: data.theme ?? 'system',
+      p_avatar_url: data.avatarUrl ?? null,
+      p_tz_offset_min: tz.offsetMinutes,
+      p_tz_name: tz.name,
+    });
+    if (error) {
+      // The RPC's own guards come back as raw postgres messages; translate the
+      // ones a reader can act on.
+      if (/AGE_INELIGIBLE/.test(error.message)) {
+        throw new Error('Quire is for readers 13 and up.');
+      }
+      throw error;
+    }
+    return rowToProfile(row as Record<string, any>, await currentUserEmail());
   },
 
   // ── User ──────────────────────────────────────────────────────────────────

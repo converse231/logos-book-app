@@ -44,7 +44,9 @@ export function WelcomeStatCard() {
       <View style={styles.header}>
         <View style={styles.overlineRow}>
           <AppIcon name="sparkles" tint="accent" size={13} />
-          <Text style={[styles.overline, { color: t.accent }]}>ONE YEAR FROM NOW</Text>
+          <Text style={[styles.overline, { color: t.accent }]} numberOfLines={1}>
+            ONE YEAR FROM NOW
+          </Text>
         </View>
         <View style={[styles.pill, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
           <Text style={[styles.pillText, { color: t.accent }]}>LV 7 · BIBLIOPHILE</Text>
@@ -98,10 +100,16 @@ function Stat({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 22, gap: 18, ...SHADOW.card },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  overlineRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  overline: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
+  card: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 18, gap: 14, ...SHADOW.card },
+  // Both labels are fixed-width mono and neither can shrink, so on a narrow
+  // screen space-between let the pill ride over "…NOW". wrap + gap drops the
+  // pill to its own line instead of overlapping.
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexWrap: 'wrap', gap: 8,
+  },
+  overlineRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1 },
+  overline: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1, flexShrink: 1 },
   pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, borderWidth: 1 },
   pillText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 0.6 },
   flameRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },

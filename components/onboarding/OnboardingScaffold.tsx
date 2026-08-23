@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
@@ -12,13 +13,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
 import { CENTER_COLUMN_FILL } from '@/theme/layout';
+import { ONBOARDING_STEPS } from '@/stores/onboardingStore';
 import { ProgressDots } from './ProgressDots';
 
 interface OnboardingScaffoldProps {
-  step: number; // 0-indexed
+  step: number; // 0-indexed, indexes ONBOARDING_STEPS
   totalSteps: number;
   title: string;
   subtitle?: string;
+  /** Defaults to "pop, or fall back to the previous step". Only pass this to
+   *  override; step 0 gets no back button either way. */
   onBack?: () => void;
   children?: React.ReactNode;
   footer: React.ReactNode;
@@ -42,16 +46,37 @@ export function OnboardingScaffold({
   scroll = false,
 }: OnboardingScaffoldProps) {
   const t = useTheme();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
 
-  const opacity = useSharedValue(reduceMotion ? 1 : 0);
-  const translateY = useSharedValue(reduceMotion ? 0 : 16);
+  // The boot redirect can drop a reader straight onto a mid-funnel step to
+  // resume, which leaves nothing to pop — so back has to know the step order,
+  // not just the navigation history.
+  const handleBack =
+    onBack ??
+    (step > 0
+      ? () => {
+          if (router.canGoBack()) router.back();
+          else router.replace(ONBOARDING_STEPS[step - 1] as Href);
+        }
+      : undefined);
+
+  // Only the FIRST screen brings its own entrance. Every other step arrives on a
+  // card push, and running a 280ms fade-and-rise of the content at the same time
+  // as the card slides in was two competing motions — the single biggest reason
+  // the funnel felt mushy rather than deliberate. Step 0 has no push behind it
+  // (it's the stack's initial route, reached from the splash), so it still needs
+  // one of its own.
+  const animateIn = step === 0 && !reduceMotion;
+  const opacity = useSharedValue(animateIn ? 0 : 1);
+  const translateY = useSharedValue(animateIn ? 16 : 0);
 
   useEffect(() => {
+    if (!animateIn) return;
     opacity.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) });
     translateY.value = withTiming(0, { duration: 280, easing: Easing.out(Easing.cubic) });
-  }, [opacity, translateY]);
+  }, [animateIn, opacity, translateY]);
 
   const contentStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -80,9 +105,9 @@ export function OnboardingScaffold({
       <View style={styles.column}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        {onBack ? (
+        {handleBack ? (
           <Pressable
-            onPress={onBack}
+            onPress={handleBack}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Go back"
@@ -137,7 +162,9 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 24 },
   heading: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, gap: 10 },
   titleUi: { fontFamily: FONTS.uiBold, fontSize: 28, lineHeight: 32, letterSpacing: -0.3, textTransform: 'uppercase' },
-  titleDisplay: { fontFamily: FONTS.serifBold, fontSize: 44, lineHeight: 46, letterSpacing: 0 },
+  // 44/46 pushed the welcome hero to three tall lines and squeezed everything
+  // below it off a small phone; 38/42 still reads as the display moment.
+  titleDisplay: { fontFamily: FONTS.serifBold, fontSize: 38, lineHeight: 42, letterSpacing: 0 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 16, lineHeight: 23 },
   footer: { paddingHorizontal: 24, paddingTop: 8, gap: 12 },
 });

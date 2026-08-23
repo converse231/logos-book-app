@@ -70,24 +70,23 @@ export const mockApi: QuireApi = {
     return { userId: _user.id };
   },
 
-  async signUp(_email, _password, birthYear) {
+  async signUp(_email, _password) {
     await delay();
-    const age = new Date().getFullYear() - birthYear;
-    _user = { ..._user, birthYear, isMinor: age < 18, isUnder13: age < 13 };
     return { userId: _user.id };
   },
 
-  async signInWithGoogle(birthYear?: number) {
+  async signInWithGoogle() {
     await delay(600); // the browser round-trip is the slowest part of the real one
-    if (birthYear != null) {
-      const age = new Date().getFullYear() - birthYear;
-      _user = { ..._user, birthYear, isMinor: age < 18, isUnder13: age < 13 };
-    }
     return { userId: _user.id };
   },
 
   async getAuthEmail() {
     return null; // the mock funnel is always the email path
+  },
+
+  async hasProfile() {
+    await delay(100);
+    return _user.onboardingCompletedAt != null;
   },
 
   async signOut() {
@@ -110,15 +109,6 @@ export const mockApi: QuireApi = {
     return { isMinor: _user.isMinor, isUnder13: _user.isUnder13 };
   },
 
-  async setGenrePrefs(_genres) {
-    await delay(200);
-  },
-
-  async setReadingGoal(year, goalBooks) {
-    await delay();
-    return { ...MOCK_READING_GOAL, year, goalBooks };
-  },
-
   async updateProfile(data) {
     await delay();
     _user = {
@@ -137,9 +127,22 @@ export const mockApi: QuireApi = {
     return `data:image/jpeg;base64,${base64}`; // in-memory preview for the mock
   },
 
-  async completeOnboarding() {
-    await delay(200);
-    _user = { ..._user, onboardingCompletedAt: new Date().toISOString() };
+  async completeOnboarding(data) {
+    await delay(300);
+    const age = new Date().getFullYear() - data.birthYear;
+    if (age < 13) throw new Error('Quire is for readers 13 and up.');
+    _user = {
+      ..._user,
+      birthYear: data.birthYear,
+      isMinor: age < 18,
+      isUnder13: false,
+      displayName: data.displayName,
+      genrePrefs: data.genres,
+      theme: (data.theme as ThemePref) ?? _user.theme,
+      avatarUrl: data.avatarUrl ?? _user.avatarUrl,
+      onboardingCompletedAt: new Date().toISOString(),
+    };
+    return { ..._user };
   },
 
   // ── User ────────────────────────────────────────────────────────────────

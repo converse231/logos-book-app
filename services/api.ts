@@ -29,22 +29,27 @@ import {
 export interface QuireApi {
   // ── Auth ──────────────────────────────────────────────────────────────────
   signIn(email: string, password: string): Promise<{ userId: string }>;
-  signUp(email: string, password: string, birthYear: number): Promise<{ userId: string }>;
+  /**
+   * Creates the auth user only. The `public.users` row is NOT written here —
+   * `completeOnboarding` is the single door for that (COPPA is enforced inside
+   * it, server-side). Throws `EMAIL_IN_USE` when the address already has an
+   * account and the supplied password doesn't open it.
+   */
+  signUp(email: string, password: string): Promise<{ userId: string }>;
   /**
    * Google OAuth. Resolves with the signed-in user, or throws `GOOGLE_CANCELLED`
    * if the reader backed out of the browser — callers should treat that as a
    * no-op, not an error worth showing.
    *
-   * `birthYear` is what makes this COPPA-safe. Pass it from the onboarding funnel
-   * and the `public.users` row is provisioned in the same call, exactly as signUp
-   * does; omit it on the sign-in screen, where the row already exists. A new user
-   * who arrives via sign-in simply lands with no profile row, and the boot
-   * redirect routes them through the age gate before anything is written.
-   *
-   * Resumable like signUp: if a session already exists it skips the browser
-   * entirely and just provisions, so a half-finished funnel can be completed.
+   * Authenticates only — it never writes `public.users`. A Google user who has
+   * not finished the funnel simply has no profile row, which is exactly the
+   * state the boot redirect uses to route them back into onboarding. COPPA is
+   * enforced in `completeOnboarding`, the only thing that can create a row.
    */
-  signInWithGoogle(birthYear?: number): Promise<{ userId: string }>;
+  signInWithGoogle(): Promise<{ userId: string }>;
+  /** True when a `public.users` row exists for the current session — i.e. the
+   *  reader has actually been provisioned, not just authenticated. */
+  hasProfile(): Promise<boolean>;
   /** The signed-in account's email, or null when signed out. Unlike getProfile
    *  this needs no public.users row — which is exactly the state a Google user is
    *  in partway through onboarding. */
@@ -57,12 +62,27 @@ export interface QuireApi {
 
   // ── Onboarding ────────────────────────────────────────────────────────────
   updateBirthYear(birthYear: number): Promise<{ isMinor: boolean; isUnder13: boolean }>;
-  setGenrePrefs(genres: string[]): Promise<void>;
-  setReadingGoal(year: number, goalBooks: number): Promise<ReadingGoal>;
   updateProfile(data: { username?: string; displayName?: string; bio?: string | null; theme?: ThemePref; avatarUrl?: string | null }): Promise<UserProfile>;
   /** Upload a profile picture (base64 JPEG) to storage; returns its public URL. */
   uploadAvatar(base64: string): Promise<string>;
-  completeOnboarding(): Promise<void>;
+  /**
+   * Finishes the funnel in ONE transaction: creates/updates `public.users`
+   * (identity + genres + timezone + the completion stamp) and the year's
+   * reading goal together, or not at all. Replaces the old four-call flush,
+   * which could half-succeed and strand a reader on an empty account.
+   *
+   * Enforces the COPPA age check server-side — under-13 is rejected here
+   * regardless of what the client sends. Idempotent: safe to retry, and it
+   * never moves the original completion timestamp.
+   */
+  completeOnboarding(data: {
+    birthYear: number;
+    displayName: string;
+    genres: string[];
+    goalBooks: number;
+    theme?: ThemePref;
+    avatarUrl?: string | null;
+  }): Promise<UserProfile>;
 
   // ── User ──────────────────────────────────────────────────────────────────
   getProfile(): Promise<UserProfile>;

@@ -40,12 +40,12 @@ export default function SignIn() {
 
   const valid = EMAIL_RE.test(email.trim()) && password.length >= 6;
 
-  // Sign-in never creates a profile — no birthYear is passed, so no public.users
-  // row is written. A Google account that has never onboarded therefore lands
-  // authenticated but profile-less, and the boot redirect (app/index.tsx, which
-  // routes on onboarding_completed_at) drops them into the age gate. They complete
-  // the whole funnel; the profile step recognises the existing session and asks
-  // for a name rather than an email and password.
+  // Sign-in never creates a profile — signInWithGoogle only authenticates, and
+  // `complete_onboarding` is the sole thing that can write public.users. A Google
+  // account that has never onboarded therefore lands authenticated but
+  // profile-less, and the boot redirect (app/index.tsx) drops it back into the
+  // funnel at the first unanswered step. The account step recognises the existing
+  // session and asks for nothing but confirmation.
   //
   // So this button is safe for new users, not just returning ones — it can't skip
   // the age gate, which is what keeps COPPA intact.
@@ -167,7 +167,7 @@ export default function SignIn() {
               disabled={submitting}
             />
             <Pressable
-              onPress={() => router.replace('/(onboarding)/age-gate' as Href)}
+              onPress={() => router.replace('/(onboarding)/welcome' as Href)}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Create a new account"

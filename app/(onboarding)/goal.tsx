@@ -1,10 +1,8 @@
-import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
-import { useApi } from '@/services/ApiContext';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import { TOTAL_STEPS, useOnboardingStore } from '@/stores/onboardingStore';
 import { useReadingProjection } from '@/hooks/useReadingProjection';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
@@ -19,32 +17,25 @@ const PRESETS = [12, 24, 52];
 export default function Goal() {
   const t = useTheme();
   const router = useRouter();
-  const api = useApi();
   const { goalBooks, setGoalBooks } = useOnboardingStore();
-  const [submitting, setSubmitting] = useState(false);
 
   const projection = useReadingProjection(goalBooks);
-  const presetActive = useMemo(() => PRESETS.includes(goalBooks), [goalBooks]);
 
-  const handleContinue = async () => {
-    setSubmitting(true);
-    try {
-      await api.setReadingGoal(new Date().getFullYear(), goalBooks);
-      router.push('/(onboarding)/profile');
-    } finally {
-      setSubmitting(false);
-    }
+  // Re-setting the same number marks the goal as confirmed, so resume can tell
+  // an accepted default from a screen the reader never reached.
+  const handleContinue = () => {
+    setGoalBooks(goalBooks);
+    router.push('/(onboarding)/profile' as Href);
   };
 
   return (
     <OnboardingScaffold
       step={3}
-      totalSteps={5}
+      totalSteps={TOTAL_STEPS}
       title="Set your reading goal"
       subtitle="How many books do you want to finish this year? You can change this anytime."
-      onBack={() => router.back()}
       scroll
-      footer={<PrimaryButton label="Continue" onPress={handleContinue} loading={submitting} />}
+      footer={<PrimaryButton label="Continue" onPress={handleContinue} />}
     >
       <View style={styles.body}>
         <Stepper value={goalBooks} onChange={setGoalBooks} min={1} max={365} unit="books / year" />

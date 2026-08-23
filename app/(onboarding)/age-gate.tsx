@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import { TOTAL_STEPS, useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { WheelPicker } from '@/components/onboarding/WheelPicker';
@@ -42,7 +42,7 @@ export default function AgeGate() {
         return;
       }
       setBirthYear(birthYear, isMinor);
-      router.push('/(onboarding)/welcome');
+      router.push('/(onboarding)/genres' as Href);
     } finally {
       setSubmitting(false);
     }
@@ -54,8 +54,8 @@ export default function AgeGate() {
 
   return (
     <OnboardingScaffold
-      step={0}
-      totalSteps={5}
+      step={1}
+      totalSteps={TOTAL_STEPS}
       title="When were you born?"
       subtitle="Quire is for readers 13 and up. We only use this to keep things age-appropriate."
       footer={
