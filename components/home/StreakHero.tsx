@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FONTS, INK, PALETTE, RADIUS, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
 import { useTourTarget } from '@/components/tour/TourProvider';
@@ -100,6 +101,8 @@ interface StreakHeroProps {
   almostThere: boolean;
   readToday: boolean;
   onPress?: () => void;
+  /** Shows a 'View jar' pill in the banner when provided. */
+  onViewJar?: () => void;
 }
 
 export function StreakHero({
@@ -110,6 +113,7 @@ export function StreakHero({
   almostThere,
   readToday,
   onPress,
+  onViewJar,
 }: StreakHeroProps) {
   const tour = useTourTarget('streak', RADIUS.card);
   const hour = new Date().getHours();
@@ -163,8 +167,10 @@ export function StreakHero({
         pointerEvents="none"
       />
 
-      <View style={styles.overlay} pointerEvents="none">
-        <View style={styles.textCol}>
+      {/* box-none, not none: the copy stays untouchable so the whole card is one
+          tap target, but the jar pill below it has to be able to receive one. */}
+      <View style={styles.overlay} pointerEvents="box-none">
+        <View style={styles.textCol} pointerEvents="box-none">
           {showNumber ? (
             <>
               <Text style={[styles.count, { color: textColor, textShadowColor: shadowColor }]}>
@@ -178,6 +184,23 @@ export function StreakHero({
           ) : (
             <Text style={[styles.msgLead, { color: textColor, textShadowColor: shadowColor }]}>{spec.msg}</Text>
           )}
+          {onViewJar ? (
+            <Pressable
+              onPress={onViewJar}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="View your firefly jar"
+              style={({ pressed }) => [
+                styles.jarPill,
+                { backgroundColor: dark ? 'rgba(12,8,24,0.44)' : 'rgba(255,252,244,0.72)',
+                  borderColor: dark ? 'rgba(255,238,200,0.5)' : 'rgba(36,30,25,0.28)' },
+                pressed && { opacity: 0.72 },
+              ]}
+            >
+              <Ionicons name="sparkles" size={12} color={textColor} />
+              <Text style={[styles.jarPillText, { color: textColor }]}>VIEW JAR</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Pressable>
@@ -202,6 +225,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   textCol: { alignItems: 'flex-end', maxWidth: '60%' },
+  jarPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 7,
+    paddingHorizontal: 10, height: 26, borderRadius: 999, borderWidth: 1,
+  },
+  jarPillText: { fontFamily: FONTS.uiBold, fontSize: 10, letterSpacing: 1 },
   count: {
     fontFamily: FONTS.monoBold,
     fontSize: 52,

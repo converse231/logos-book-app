@@ -341,6 +341,7 @@ export default function Home() {
             almostThere={!!data.almostThere}
             readToday={readToday}
             onPress={() => router.push('/(tabs)/stats' as Href)}
+            onViewJar={() => router.push('/jar' as Href)}
           />
         </Reveal>
 

@@ -11,7 +11,6 @@ import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { Skeleton } from '@/components/shared/Skeleton';
-import { Q } from '@/components/shared/Q';
 import { FireflyJar, POUCH_COST } from '@/components/jar/FireflyJar';
 
 // The firefly jar — your reading currency, made physical.
@@ -124,20 +123,6 @@ export default function JarScreen() {
           </View>
         </Animated.View>
 
-        {balance === 0 ? (
-          <Animated.View entering={reduce ? undefined : FadeIn.delay(320).duration(420)} style={styles.empty}>
-            <Q expression="looking-up" size={120} decorative />
-            <Text style={[styles.emptyText, { color: t.textSec }]}>
-              Nothing in here yet. Finish a reading session and the first one turns up.
-            </Text>
-          </Animated.View>
-        ) : (
-          <Animated.View entering={reduce ? undefined : FadeIn.delay(320).duration(420)}>
-            <Text style={[styles.note, { color: t.textTer }]}>
-              A longer session, or more pages, puts more in.
-            </Text>
-          </Animated.View>
-        )}
       </ScrollView>
     </ScreenBackground>
   );
@@ -158,9 +143,6 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'], ...NO_FONT_PAD,
   },
   unit: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 3 },
-  progWrap: { alignSelf: 'stretch', maxWidth: 320, gap: 7, alignItems: 'center' },
+  progWrap: { alignSelf: 'center', width: '100%', maxWidth: 300, gap: 7, alignItems: 'center' },
   progText: { fontFamily: FONTS.mono, fontSize: 11.5, letterSpacing: 0.3, textAlign: 'center' },
-  empty: { alignItems: 'center', gap: 8, marginTop: 8 },
-  emptyText: { fontFamily: FONTS.uiRegular, fontSize: 14, textAlign: 'center', maxWidth: 280, lineHeight: 20 },
-  note: { fontFamily: FONTS.uiRegular, fontSize: 13, textAlign: 'center', maxWidth: 280, marginTop: 4 },
 });
