@@ -60,6 +60,9 @@ function rowToProfile(r: Record<string, any>, email: string | null = null): User
     totalXp: Number(r.total_xp ?? 0),
     level: r.level,
     levelName: r.level_name as LevelName,
+    // `?? 0` rather than `?? undefined`: the column has a NOT NULL default, so a
+    // null here means the row predates the migration, and zero is the truth.
+    fireflies: Number(r.fireflies ?? 0),
     subscriptionStatus: r.subscription_status as SubStatus,
     onboardingCompletedAt: r.onboarding_completed_at ?? null,
     isAdmin: r.is_admin ?? false,

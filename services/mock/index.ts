@@ -48,6 +48,12 @@ const LEVEL_LADDER: LevelName[] = [
 const nextLevelName = (cur: LevelName): LevelName =>
   LEVEL_LADDER[Math.min(LEVEL_LADDER.indexOf(cur) + 1, LEVEL_LADDER.length - 1)];
 
+/** Same arithmetic as complete_session's v_fire, kept in step deliberately:
+ *  3 base, +1 per 10 pages, +1 per 10 minutes, capped at 25. */
+function mockFireflies(pages: number | null, durationSeconds: number): number {
+  return Math.min(25, 3 + Math.floor((pages ?? 0) / 10) + Math.floor(durationSeconds / 600));
+}
+
 let _user: UserProfile = { ...MOCK_USER };
 
 let _notifSettings: NotificationSettings = {
@@ -327,6 +333,10 @@ export const mockApi: QuireApi = {
       isPersonalBest: false,
       streak: { current: streakCurrent, incremented: true, restoredViaGrace: false },
       xpGained: leveledUp ? 340 : 72,
+      // Mirrors the server formula exactly (3 base, +1/10 pages, +1/10 min,
+      // capped at 25) so mock mode paces the same as live.
+      firefliesEarned: mockFireflies(pagesRead, durationSeconds),
+      firefliesTotal: (_user.fireflies ?? 0) + mockFireflies(pagesRead, durationSeconds),
       level: leveledUp ? _user.level + 1 : _user.level,
       levelName: leveledUp ? nextLevelName(_user.levelName) : _user.levelName,
       leveledUp,

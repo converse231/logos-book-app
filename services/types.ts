@@ -63,6 +63,9 @@ export interface UserProfile {
   totalXp: number;
   level: number;
   levelName: LevelName;
+  /** Firefly balance — the reading currency. Optional so a build running
+   *  against a pre-migration server reads undefined rather than throwing. */
+  fireflies?: number;
   subscriptionStatus: SubStatus;
   onboardingCompletedAt: string | null;
   /** Moderator. Gates the review-report queue in Settings. */
@@ -288,6 +291,12 @@ export interface CompleteSessionResult {
     restoredViaGrace: boolean;
   };
   xpGained: number;
+  /** Fireflies this session earned, and the balance after banking them.
+   *  Optional on purpose: a client running against a server that predates the
+   *  fireflies migration gets undefined rather than throwing, so a stale build
+   *  degrades to "no fireflies shown" instead of a broken session-complete. */
+  firefliesEarned?: number;
+  firefliesTotal?: number;
   // Post-XP level standing (server-authoritative; derived client-side on live
   // without a schema change). `leveledUp` is true when this session pushed the
   // reader across a level boundary — the trigger for the level-up celebration.
