@@ -12,10 +12,14 @@ const BODY_AR = 200 / 101;
 const WING_AR = 200 / 152;
 /** Pale abdomen centroid, as a fraction of the body sprite. */
 const LANTERN = { x: 0.237, y: 0.476 };
-/** Where the wings hinge — on top of the thorax, which measured at x 0.615. */
-const WING_HINGE = { x: 0.575, y: 0.30 };
-/** The point on the wing sprite that sits at the hinge (its narrow root). */
-const WING_ROOT = { x: 0.12, y: 0.86 };
+/** Where the wings hinge. Measured: the body's top edge over the thorax runs
+ *  y 0.15-0.17, so the root tucks just inside it rather than floating above. */
+const WING_HINGE = { x: 0.60, y: 0.19 };
+/** The wing's narrow root, measured at x 0.000 y 0.933 — the bottom-LEFT corner,
+ *  with the blade sweeping up-right. On a right-facing body that fans the wing
+ *  forward over the head, so it's drawn mirrored (see Wing) and this anchor is
+ *  in post-mirror coordinates: root bottom-RIGHT, blade sweeping back. */
+const WING_ROOT = { x: 0.98, y: 0.93 };
 
 export interface FlySpec {
   /** Sprite WIDTH — the body is nearly 2:1, so width is the honest dimension. */
@@ -175,26 +179,34 @@ export function Firefly({
 
   // Rotation, not scaleY: in side profile a wing hinges up and down, and
   // squashing it vertically reads as the wing shrinking rather than beating.
+  //
+  // Opacity tracks |sin| of the same phase, which is the part that actually
+  // sells a wingbeat. A wing stops at the top and bottom of the stroke and is
+  // fastest through the middle, so the eye catches it at the extremes and
+  // smears it in between — a constant-opacity wing just looks like a flap of
+  // cellophane waving.
   const wingNear = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ rotate: '-14deg' }], opacity: 0.34 };
+    if (reduce) return { transform: [{ rotate: '-6deg' }], opacity: 0.42 };
+    const s = Math.sin(clock.value * spec.beat);
     return {
-      transform: [{ rotate: `${-14 + Math.sin(clock.value * spec.beat) * 26}deg` }],
-      opacity: 0.34,
+      transform: [{ rotate: `${-4 + s * 28}deg` }],
+      opacity: 0.2 + Math.abs(s) * 0.32,
     };
   }, [reduce]);
 
   const wingFar = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ rotate: '-20deg' }], opacity: 0.18 };
+    if (reduce) return { transform: [{ rotate: '-12deg' }], opacity: 0.22 };
+    const s = Math.sin(clock.value * spec.beat + spec.beatLag);
     return {
-      transform: [{ rotate: `${-20 + Math.sin(clock.value * spec.beat + spec.beatLag) * 24}deg` }],
-      opacity: 0.18,
+      transform: [{ rotate: `${-11 + s * 24}deg` }],
+      opacity: 0.12 + Math.abs(s) * 0.2,
     };
   }, [reduce]);
 
   const glowR = W * 1.5;
-  const wingW = W * 0.62;
+  const wingW = W * 0.66;
   const wingH = wingW / WING_AR;
   const hingeX = WING_HINGE.x * W;
   const hingeY = WING_HINGE.y * H;
@@ -217,7 +229,7 @@ export function Firefly({
           <Image source={GLOW} style={styles.fill} contentFit="contain" transition={0} />
         </Animated.View>
 
-        <Wing x={hingeX} y={hingeY - 2} w={wingW} h={wingH} style={wingFar} />
+        <Wing x={hingeX} y={hingeY - H * 0.09} w={wingW} h={wingH} style={wingFar} />
 
         <Animated.View style={[styles.fill, bodyStyle]}>
           <Image source={BODY} style={styles.fill} contentFit="contain" transition={0} />
@@ -236,6 +248,9 @@ export function Firefly({
  * origin — the centre of a 0×0 box — IS the hinge. The image is then offset so
  * its own root lands there. Rotating the wing image directly would pivot around
  * the middle of the wing, which reads as spinning rather than flapping.
+ *
+ * The image is mirrored because the art has the blade sweeping up-RIGHT from
+ * its root, which on a right-facing body points forward over the head.
  */
 function Wing({
   x, y, w, h, style,
@@ -252,6 +267,7 @@ function Wing({
           top: -h * WING_ROOT.y,
           width: w,
           height: h,
+          transform: [{ scaleX: -1 }],
         }}
       >
         <Image source={WING} style={styles.fill} contentFit="contain" transition={0} />
