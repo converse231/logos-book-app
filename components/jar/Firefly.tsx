@@ -71,13 +71,12 @@ export function flySpec(i: number, seed = 0): FlySpec {
     rateY2: 0.26 + r(13) * 0.34,
     period: 2.4 + r(14) * 2.8,
     offset: r(15),
-    // ~2-3Hz, i.e. 20-29 frames per beat at 60fps. Third pass at this number:
-    // 9-12Hz read as frozen (55 deg of phase per frame, the eye integrates it
-    // to a smear) and 4-6Hz still read as buzzing. A firefly really beats
-    // ~50Hz and is genuinely invisible, so the true rate is never the right
-    // rate — this is a stylised flap you can follow with your eye.
-    // Radians/sec, so Hz = beat / 2pi.
-    beat: 13 + r(16) * 6,
+    // ~3.2-4.6Hz, i.e. 13-19 frames per beat at 60fps. Every value here before
+    // the pivot bug was fixed was chosen against a rotation that never
+    // applied, so 2-3Hz was the first one actually seen — this is a step up
+    // from it. A firefly really beats ~50Hz and is genuinely invisible, so the
+    // true rate is never the right rate. Radians/sec, so Hz = beat / 2pi.
+    beat: 20 + r(16) * 9,
     beatLag: 0.35 + r(17) * 0.5,
     double: r(18) < 0.32,
   };
@@ -177,7 +176,7 @@ export function Firefly({
       if (u2 > 0 && u2 < 0.11) l = Math.pow(1 - u2 / 0.11, 1.6) * 0.55;
     }
     if (l > 0) l = Math.min(1, l * (1 + Math.sin(t * 31 + spec.offset * 9) * 0.08));
-    return { opacity: l, transform: [{ scale: 0.5 + l * 0.8 }] };
+    return { opacity: l, transform: [{ scale: 0.45 + l * 1.05 }] };
   }, [reduce]);
 
   const bodyStyle = useAnimatedStyle(() => {
@@ -189,7 +188,7 @@ export function Firefly({
     let l = 0;
     if (u < A) l = u / A;
     else if (u < A + D) l = Math.pow(1 - (u - A) / D, 1.9);
-    return { opacity: 0.62 + l * 0.38 };
+    return { opacity: 0.55 + l * 0.45 };
   }, [reduce]);
 
   // Dorsal wings sweep fore-and-aft in the image plane, which is pure rotation
@@ -228,7 +227,9 @@ export function Firefly({
     };
   }, [reduce, pdxL, pdxR, pdy]);
 
-  const glowR = H * 0.55;
+  // The glow sprite already peaks at full opacity, so a brighter flash has to
+  // come from reach and bloom rather than more alpha.
+  const glowR = H * 0.78;
 
   return (
     <Animated.View style={[styles.fly, { width: W, height: H }, container]} pointerEvents="none">
