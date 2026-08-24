@@ -107,6 +107,16 @@ export function Firefly({
 }) {
   const H = spec.size;
   const W = H * BODY_AR;
+  const wingH = H * 0.6;
+  const wingW = wingH * WING_AR;
+
+  // Offset from each wing view's centre to the root it hinges on. Mirroring the
+  // image moves the root to 1 - WING_ROOT.x, so the right wing's pivot follows.
+  // Plain numbers, resolved on the JS side — calling a helper from inside a
+  // worklet needs it to be a worklet too, and this needs no helper.
+  const pdxL = (WING_ROOT.x - 0.5) * wingW;
+  const pdxR = (0.5 - WING_ROOT.x) * wingW;
+  const pdy = (WING_ROOT.y - 0.5) * wingH;
 
   const container = useAnimatedStyle(() => {
     'worklet';
@@ -184,31 +194,41 @@ export function Firefly({
 
   // Dorsal wings sweep fore-and-aft in the image plane, which is pure rotation
   // about the shoulder — the one wing motion a flat sprite can do honestly.
+  //
+  // Each returns a FULL transform list, not a bare rotate: RN rotates about a
+  // view's centre, so the rotation is sandwiched between translations that move
+  // the pivot to the wing root and back. The previous version parked a 0x0 View
+  // on the hinge and rotated that, which silently never applied — the wings sat
+  // frozen at their untransformed angle, splayed forward past the head.
   const wingLeft = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ rotate: `${-WING_BASE}deg` }], opacity: 0.86 };
-    const s = Math.sin(clock.value * spec.beat);
+    const s = reduce ? 0 : Math.sin(clock.value * spec.beat);
     return {
-      transform: [{ rotate: `${-WING_BASE + s * WING_AMP}deg` }],
+      transform: [
+        { translateX: pdxL }, { translateY: pdy },
+        { rotate: `${-WING_BASE + s * WING_AMP}deg` },
+        { translateX: -pdxL }, { translateY: -pdy },
+      ],
       opacity: 0.8 + Math.abs(s) * 0.14,
     };
-  }, [reduce]);
+  }, [reduce, pdxL, pdxR, pdy]);
 
   const wingRight = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ rotate: `${WING_BASE}deg` }], opacity: 0.86 };
     // Very nearly in phase with the left — a real insect beats both together,
     // and the tiny lag only stops them reading as mechanically identical.
-    const s = Math.sin(clock.value * spec.beat + spec.beatLag * 0.15);
+    const s = reduce ? 0 : Math.sin(clock.value * spec.beat + spec.beatLag * 0.15);
     return {
-      transform: [{ rotate: `${WING_BASE - s * WING_AMP}deg` }],
+      transform: [
+        { translateX: pdxR }, { translateY: pdy },
+        { rotate: `${WING_BASE - s * WING_AMP}deg` },
+        { translateX: -pdxR }, { translateY: -pdy },
+      ],
       opacity: 0.8 + Math.abs(s) * 0.14,
     };
-  }, [reduce]);
+  }, [reduce, pdxL, pdxR, pdy]);
 
   const glowR = H * 0.55;
-  const wingH = H * 0.6;
-  const wingW = wingH * WING_AR;
 
   return (
     <Animated.View style={[styles.fly, { width: W, height: H }, container]} pointerEvents="none">
@@ -230,8 +250,8 @@ export function Firefly({
 
         {/* Wings under the body: they emerge from beneath the elytra, so the
             body has to cover their roots. */}
-        <Wing x={HINGE.x * W} y={HINGE.y * H} w={wingW} h={wingH} style={wingLeft} />
-        <Wing x={(1 - HINGE.x) * W} y={HINGE.y * H} w={wingW} h={wingH} mirror style={wingRight} />
+        <Wing hx={HINGE.x * W} hy={HINGE.y * H} w={wingW} h={wingH} style={wingLeft} />
+        <Wing hx={(1 - HINGE.x) * W} hy={HINGE.y * H} w={wingW} h={wingH} mirror style={wingRight} />
 
         <Animated.View style={[styles.fill, bodyStyle]}>
           <Image source={BODY} style={styles.fill} contentFit="contain" transition={0} />
@@ -242,37 +262,32 @@ export function Firefly({
 }
 
 /**
- * A wing that hinges at its root.
+ * A wing, sized normally and placed so its root sits on the hinge.
  *
- * The outer view is zero-sized and sits exactly on the hinge, so its transform
- * origin — the centre of a 0×0 box — IS the hinge. The image is then offset so
- * its own root lands there. Rotating the wing image directly would pivot around
- * the middle of the wing, which reads as spinning rather than flapping.
- *
- * The right wing is the same sprite mirrored, so both hinge identically.
+ * The rotation pivot is handled in the animated transform (see `pivot`) rather
+ * than by nesting inside a zero-sized View — that trick relies on RN applying a
+ * transform to a 0x0 frame, which it does not do, so the wings never moved.
  */
 function Wing({
-  x, y, w, h, mirror, style,
+  hx, hy, w, h, mirror, style,
 }: {
-  x: number; y: number; w: number; h: number; mirror?: boolean;
+  hx: number; hy: number; w: number; h: number; mirror?: boolean;
   style: { transform: unknown[]; opacity: number };
 }) {
+  const rootX = mirror ? 1 - WING_ROOT.x : WING_ROOT.x;
   return (
-    <Animated.View style={[styles.hinge, { left: x, top: y }, style as never]}>
-      <View
-        style={{
-          position: 'absolute',
-          // scaleX mirrors about the view's own centre, moving the root to
-          // 1 - WING_ROOT.x — so the offset has to follow it.
-          left: -w * (mirror ? 1 - WING_ROOT.x : WING_ROOT.x),
-          top: -h * WING_ROOT.y,
-          width: w,
-          height: h,
-          transform: [{ scaleX: mirror ? -1 : 1 }],
-        }}
-      >
-        <Image source={WING} style={styles.fill} contentFit="contain" transition={0} />
-      </View>
+    <Animated.View
+      style={[
+        { position: 'absolute', left: hx - w * rootX, top: hy - h * WING_ROOT.y, width: w, height: h },
+        style as never,
+      ]}
+    >
+      <Image
+        source={WING}
+        style={[styles.fill, mirror ? styles.flip : null]}
+        contentFit="contain"
+        transition={0}
+      />
     </Animated.View>
   );
 }
@@ -281,5 +296,5 @@ const styles = StyleSheet.create({
   fly: { position: 'absolute', left: 0, top: 0 },
   abs: { position: 'absolute' },
   fill: { ...StyleSheet.absoluteFillObject },
-  hinge: { position: 'absolute', width: 0, height: 0 },
+  flip: { transform: [{ scaleX: -1 }] },
 });
