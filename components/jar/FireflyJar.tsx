@@ -19,9 +19,20 @@ const JAR_AR = 561 / 760;
 const MAX_FLIES = 26;
 export const POUCH_COST = 100;
 
+/**
+ * One drawn fly per firefly you own, capped.
+ *
+ * This used to scale as a FRACTION of a full jar — 15 fireflies rendered 4 —
+ * so the count printed under the jar and the jar itself disagreed. The number
+ * is the thing that's true, so the art follows it.
+ *
+ * Past MAX_FLIES the jar just reads "full"; the progress bar carries the rest
+ * of the way to a pouch. The cap is a render budget, not a design choice —
+ * every fly costs six animated styles on the UI thread.
+ */
 export function visibleFlies(balance: number): number {
   if (balance <= 0) return 0;
-  return Math.max(1, Math.min(MAX_FLIES, Math.round((balance / POUCH_COST) * MAX_FLIES)));
+  return Math.min(MAX_FLIES, Math.round(balance));
 }
 
 /**
