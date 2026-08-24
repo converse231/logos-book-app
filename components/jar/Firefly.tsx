@@ -68,9 +68,12 @@ export function flySpec(i: number, seed = 0): FlySpec {
     rateY2: 0.26 + r(13) * 0.34,
     period: 2.4 + r(14) * 2.8,
     offset: r(15),
-    // ~9–12Hz. Fast enough to flutter, slow enough not to strobe at 60fps — a
-    // literal 50Hz wingbeat just aliases into jitter.
-    beat: 58 + r(16) * 20,
+    // ~4-6Hz, i.e. 10-15 frames per beat at 60fps. This is NOT the real rate:
+    // a firefly beats ~50Hz and is genuinely invisible, and even 9-12Hz (the
+    // previous value) advances 55 degrees of phase per frame and integrates
+    // into a static smear — the wings were animating and read as frozen.
+    // Animators always cheat this slow. Radians/sec, so Hz = beat / 2pi.
+    beat: 26 + r(16) * 11,
     beatLag: 0.35 + r(17) * 0.5,
     double: r(18) < 0.32,
   };
@@ -187,21 +190,25 @@ export function Firefly({
   // cellophane waving.
   const wingNear = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ rotate: '-6deg' }], opacity: 0.42 };
+    if (reduce) return { transform: [{ rotate: '-6deg' }], opacity: 0.46 };
     const s = Math.sin(clock.value * spec.beat);
     return {
-      transform: [{ rotate: `${-4 + s * 28}deg` }],
-      opacity: 0.2 + Math.abs(s) * 0.32,
+      // ~70 degree arc. A wide sweep is what makes a slow beat still read as
+      // frantic; a narrow one at this rate looks like lazy waving.
+      transform: [{ rotate: `${-6 + s * 34}deg` }],
+      // Shallow on purpose. |sin| runs at DOUBLE the beat, so a deep swing
+      // here buzzes rather than breathes.
+      opacity: 0.28 + Math.abs(s) * 0.22,
     };
   }, [reduce]);
 
   const wingFar = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ rotate: '-12deg' }], opacity: 0.22 };
+    if (reduce) return { transform: [{ rotate: '-14deg' }], opacity: 0.24 };
     const s = Math.sin(clock.value * spec.beat + spec.beatLag);
     return {
-      transform: [{ rotate: `${-11 + s * 24}deg` }],
-      opacity: 0.12 + Math.abs(s) * 0.2,
+      transform: [{ rotate: `${-14 + s * 30}deg` }],
+      opacity: 0.16 + Math.abs(s) * 0.14,
     };
   }, [reduce]);
 
