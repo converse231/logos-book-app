@@ -20,7 +20,6 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { celebrationFor } from '@/lib/sessionCelebration';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
-import { FireflySwarm } from '@/components/jar/FireflySwarm';
 import { ReadingInsightCard } from '@/components/session/ReadingInsightCard';
 import { Q } from '@/components/shared/Q';
 
@@ -48,7 +47,7 @@ export default function SessionComplete() {
   const api = useApi();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
-  const { height, width } = useWindowDimensions();
+  const { height } = useWindowDimensions();
 
   const result = useSessionStore((s) => s.lastResult);
   const active = useSessionStore((s) => s.active);
@@ -132,29 +131,17 @@ export default function SessionComplete() {
     : Math.max(190, Math.min(300, height * 0.34));
   const gold = celebration.halo === 'gold';
   const fireflies = result.firefliesEarned ?? 0;
-  const [leaving, setLeaving] = useState(false);
 
   const finish = () => {
-    if (leaving) return;
-    setLeaving(true);
-    const go = () => {
-      clearResult();
-      endSession();
-      router.replace('/(tabs)/home' as Href);
-    };
-    if (reduce || fireflies === 0) return go();
-    // Long enough to read as flight, short enough that nobody feels held up —
-    // the swarm keeps spiralling over the transition either way.
-    setTimeout(go, 380);
+    clearResult();
+    endSession();
+    router.replace('/(tabs)/home' as Href);
   };
   const share = () => router.push('/(modals)/share-card' as Href);
 
   return (
     <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top }]}>
       <Confetti fire={fireConfetti} particleCount={gold ? 120 : 80} />
-      {/* Over the copy, under the buttons — they should feel like they're in
-          the room, not pinned to a card. */}
-      <FireflySwarm count={fireflies} width={width} height={height * 0.62} leaving={leaving} />
 
       <View style={styles.column}>
         {/* Hero — Q, with nothing behind or over him. */}
