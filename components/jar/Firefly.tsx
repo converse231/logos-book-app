@@ -6,23 +6,26 @@ const BODY = require('@/assets/jar/fly-body.webp');
 const WING = require('@/assets/jar/fly-wing.webp');
 const GLOW = require('@/assets/jar/glow.webp');
 
-/** All measured off the art, not guessed. The body is a side profile facing
- *  RIGHT: lantern at the tail (left), thorax toward the head (right). */
-const BODY_AR = 200 / 101;
-const WING_AR = 200 / 152;
-/** Pale abdomen centroid, as a fraction of the body sprite. */
-const LANTERN = { x: 0.237, y: 0.476 };
-/** Where the wings hinge. Measured: the body's top edge over the thorax runs
- *  y 0.15-0.17, so the root tucks just inside it rather than floating above. */
-const WING_HINGE = { x: 0.60, y: 0.19 };
-/** The wing's narrow root, measured at x 0.000 y 0.933 — the bottom-LEFT corner,
- *  with the blade sweeping up-right. On a right-facing body that fans the wing
- *  forward over the head, so it's drawn mirrored (see Wing) and this anchor is
- *  in post-mirror coordinates: root bottom-RIGHT, blade sweeping back. */
-const WING_ROOT = { x: 0.98, y: 0.93 };
+/** Top-down (dorsal) view, facing UP. All anchors measured off the art. The
+ *  body sprite is the insect with its baked-in wings stripped away, so the two
+ *  animated wings below are the only ones on screen. */
+const BODY_AR = 140 / 398;
+const WING_AR = 100 / 247;
+/** Glowing abdomen centroid, as a fraction of the body sprite. */
+const LANTERN = { x: 0.485, y: 0.764 };
+/** Left shoulder, on the elytra just above where the baked wings emerged. The
+ *  right wing mirrors this across the midline. */
+const HINGE = { x: 0.2, y: 0.32 };
+/** The wing's narrow root — bottom-right of the sprite, blade running up-left
+ *  on a measured -108 degree axis. */
+const WING_ROOT = { x: 0.886, y: 0.996 };
+/** Rest angle putting a left wing swept back over the abdomen (-108 + -117
+ *  lands the blade at 135 deg), and the fore-aft sweep either side of it. */
+const WING_BASE = 117;
+const WING_AMP = 35;
 
 export interface FlySpec {
-  /** Sprite WIDTH — the body is nearly 2:1, so width is the honest dimension. */
+  /** Sprite HEIGHT — dorsal, the body is ~1:2.8, so height is the honest one. */
   size: number;
   homeX: number; homeY: number;
   ampX: number; ampY: number;
@@ -44,7 +47,7 @@ export function flySpec(i: number, seed = 0): FlySpec {
     return s - Math.floor(s);
   };
   return {
-    size: 30 + r(1) * 16,
+    size: 34 + r(1) * 18,
     // Home range plus max amplitude has to stay inside 0–1 or the fly clips on
     // the jar wall: 0.26..0.74 home and 0.18 total swing lands at 0.08..0.92,
     // which leaves room for the sprite's own half-width.
@@ -81,12 +84,11 @@ export function flySpec(i: number, seed = 0): FlySpec {
 }
 
 /**
- * One firefly: drifting flight, a flash envelope, and hinged wings.
+ * One firefly: drifting flight, a flash envelope, and two hinged wings.
  *
- * The body banks and turns to face where it's going — mirrored on the sign of
- * horizontal velocity, pitched by vertical velocity. That's the single biggest
- * difference between "a sprite being moved around" and "a thing flying", and it
- * costs two extra derivatives.
+ * The body turns to face where it's going, straight from atan2 of its own
+ * velocity. That's the single biggest difference between "a sprite being moved
+ * around" and "a thing flying", and dorsal view is what makes it exact.
  */
 export function Firefly({
   spec,
@@ -103,8 +105,8 @@ export function Firefly({
   reduce: boolean;
   scatter?: SharedValue<number>;
 }) {
-  const W = spec.size;
-  const H = W / BODY_AR;
+  const H = spec.size;
+  const W = H * BODY_AR;
 
   const container = useAnimatedStyle(() => {
     'worklet';
@@ -128,26 +130,25 @@ export function Firefly({
     return { transform: [{ translateX: x }, { translateY: y }], opacity: 1 - s * s };
   }, [boxW, boxH]);
 
-  // Heading lives on its own layer. Two `transform` keys in one style array
-  // silently discard one — the bug that flattened the wing mirror last time.
+  // Heading on its own layer — two `transform` keys in one style array
+  // silently discard one.
+  //
+  // This is what dorsal view buys: the fly rotates to face its own velocity, so
+  // it points exactly where it is going. The side profile could only fake this
+  // with a left/right mirror plus a clamped pitch.
   const heading = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ scaleX: 1 }, { rotate: '0deg' }] };
+    if (reduce) return { transform: [{ rotate: '0deg' }] };
     const t = clock.value;
-    // Analytic derivatives — smoother and cheaper than differencing frames.
-    //
-    // Deliberately the PRIMARY harmonic only. The second harmonic is a small
-    // fast wobble, but dividing by its short rate makes its velocity as large
-    // as the drift's, so including it flipped the sprite every 1.3s and pinned
-    // pitch to the clamp. Heading follows the course, not the jitter.
+    // Primary harmonic only — the second harmonic's velocity is as large as the
+    // drift's once divided by its short rate, which makes the fly twitch
+    // rather than turn.
     const vx = Math.cos(t / spec.rateX + spec.phaseX) * (spec.ampX / spec.rateX);
     const vy = -Math.sin(t / spec.rateY + spec.phaseY) * (spec.ampY / spec.rateY);
-    const dir = vx >= 0 ? 1 : -1;
-    // Noses up on the climb, down on the dive. Scaled so a typical drift sits
-    // well inside the clamp and only the steepest climb reaches it — an insect
-    // tilts a little; pegged at the limit reads as tumbling.
-    const pitch = Math.max(-16, Math.min(16, vy * 130)) * dir;
-    return { transform: [{ scaleX: dir }, { rotate: `${pitch}deg` }] };
+    // Sprite points UP (-y), so +90 converts "angle from +x" to sprite facing.
+    // Assigned directly each frame, never animated, so the atan2 wrap at +-180
+    // costs nothing.
+    return { transform: [{ rotate: `${(Math.atan2(vy, vx) * 180) / Math.PI + 90}deg` }] };
   }, [reduce]);
 
   // One envelope, read by both the glow and the body, so the lantern and the
@@ -181,44 +182,33 @@ export function Firefly({
     return { opacity: 0.62 + l * 0.38 };
   }, [reduce]);
 
-  // Rotation, not scaleY: in side profile a wing hinges up and down, and
-  // squashing it vertically reads as the wing shrinking rather than beating.
-  //
-  // Opacity tracks |sin| of the same phase, which is the part that actually
-  // sells a wingbeat. A wing stops at the top and bottom of the stroke and is
-  // fastest through the middle, so the eye catches it at the extremes and
-  // smears it in between — a constant-opacity wing just looks like a flap of
-  // cellophane waving.
-  const wingNear = useAnimatedStyle(() => {
+  // Dorsal wings sweep fore-and-aft in the image plane, which is pure rotation
+  // about the shoulder — the one wing motion a flat sprite can do honestly.
+  const wingLeft = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ rotate: '-6deg' }], opacity: 0.46 };
+    if (reduce) return { transform: [{ rotate: `${-WING_BASE}deg` }], opacity: 0.86 };
     const s = Math.sin(clock.value * spec.beat);
     return {
-      // ~86 degree arc, high over the back down to below level. The slower the
-      // beat, the wider the sweep has to be or it reads as lazy waving.
-      transform: [{ rotate: `${-8 + s * 43}deg` }],
-      // Nearly flat now. The dwell-opacity trick fakes motion blur, which only
-      // helps when the wing is too fast to see — at 2-3Hz you can see it, and
-      // a deep swing just reads as flickering.
-      opacity: 0.34 + Math.abs(s) * 0.14,
+      transform: [{ rotate: `${-WING_BASE + s * WING_AMP}deg` }],
+      opacity: 0.8 + Math.abs(s) * 0.14,
     };
   }, [reduce]);
 
-  const wingFar = useAnimatedStyle(() => {
+  const wingRight = useAnimatedStyle(() => {
     'worklet';
-    if (reduce) return { transform: [{ rotate: '-14deg' }], opacity: 0.24 };
-    const s = Math.sin(clock.value * spec.beat + spec.beatLag);
+    if (reduce) return { transform: [{ rotate: `${WING_BASE}deg` }], opacity: 0.86 };
+    // Very nearly in phase with the left — a real insect beats both together,
+    // and the tiny lag only stops them reading as mechanically identical.
+    const s = Math.sin(clock.value * spec.beat + spec.beatLag * 0.15);
     return {
-      transform: [{ rotate: `${-17 + s * 38}deg` }],
-      opacity: 0.2 + Math.abs(s) * 0.1,
+      transform: [{ rotate: `${WING_BASE - s * WING_AMP}deg` }],
+      opacity: 0.8 + Math.abs(s) * 0.14,
     };
   }, [reduce]);
 
-  const glowR = W * 1.5;
-  const wingW = W * 0.66;
-  const wingH = wingW / WING_AR;
-  const hingeX = WING_HINGE.x * W;
-  const hingeY = WING_HINGE.y * H;
+  const glowR = H * 0.55;
+  const wingH = H * 0.6;
+  const wingW = wingH * WING_AR;
 
   return (
     <Animated.View style={[styles.fly, { width: W, height: H }, container]} pointerEvents="none">
@@ -238,13 +228,14 @@ export function Firefly({
           <Image source={GLOW} style={styles.fill} contentFit="contain" transition={0} />
         </Animated.View>
 
-        <Wing x={hingeX} y={hingeY - H * 0.09} w={wingW} h={wingH} style={wingFar} />
+        {/* Wings under the body: they emerge from beneath the elytra, so the
+            body has to cover their roots. */}
+        <Wing x={HINGE.x * W} y={HINGE.y * H} w={wingW} h={wingH} style={wingLeft} />
+        <Wing x={(1 - HINGE.x) * W} y={HINGE.y * H} w={wingW} h={wingH} mirror style={wingRight} />
 
         <Animated.View style={[styles.fill, bodyStyle]}>
           <Image source={BODY} style={styles.fill} contentFit="contain" transition={0} />
         </Animated.View>
-
-        <Wing x={hingeX} y={hingeY} w={wingW} h={wingH} style={wingNear} />
       </Animated.View>
     </Animated.View>
   );
@@ -258,13 +249,12 @@ export function Firefly({
  * its own root lands there. Rotating the wing image directly would pivot around
  * the middle of the wing, which reads as spinning rather than flapping.
  *
- * The image is mirrored because the art has the blade sweeping up-RIGHT from
- * its root, which on a right-facing body points forward over the head.
+ * The right wing is the same sprite mirrored, so both hinge identically.
  */
 function Wing({
-  x, y, w, h, style,
+  x, y, w, h, mirror, style,
 }: {
-  x: number; y: number; w: number; h: number;
+  x: number; y: number; w: number; h: number; mirror?: boolean;
   style: { transform: unknown[]; opacity: number };
 }) {
   return (
@@ -272,11 +262,13 @@ function Wing({
       <View
         style={{
           position: 'absolute',
-          left: -w * WING_ROOT.x,
+          // scaleX mirrors about the view's own centre, moving the root to
+          // 1 - WING_ROOT.x — so the offset has to follow it.
+          left: -w * (mirror ? 1 - WING_ROOT.x : WING_ROOT.x),
           top: -h * WING_ROOT.y,
           width: w,
           height: h,
-          transform: [{ scaleX: -1 }],
+          transform: [{ scaleX: mirror ? -1 : 1 }],
         }}
       >
         <Image source={WING} style={styles.fill} contentFit="contain" transition={0} />
