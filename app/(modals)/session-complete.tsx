@@ -20,6 +20,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { celebrationFor } from '@/lib/sessionCelebration';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { FireflySwarm } from '@/components/jar/FireflySwarm';
 import { ReadingInsightCard } from '@/components/session/ReadingInsightCard';
 import { Q } from '@/components/shared/Q';
 
@@ -47,7 +48,7 @@ export default function SessionComplete() {
   const api = useApi();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
 
   const result = useSessionStore((s) => s.lastResult);
   const active = useSessionStore((s) => s.active);
@@ -130,17 +131,30 @@ export default function SessionComplete() {
     ? Math.max(150, Math.min(320, stageH * 0.9))
     : Math.max(190, Math.min(300, height * 0.34));
   const gold = celebration.halo === 'gold';
+  const fireflies = result.firefliesEarned ?? 0;
+  const [leaving, setLeaving] = useState(false);
 
   const finish = () => {
-    clearResult();
-    endSession();
-    router.replace('/(tabs)/home' as Href);
+    if (leaving) return;
+    setLeaving(true);
+    const go = () => {
+      clearResult();
+      endSession();
+      router.replace('/(tabs)/home' as Href);
+    };
+    if (reduce || fireflies === 0) return go();
+    // Long enough to read as flight, short enough that nobody feels held up —
+    // the swarm keeps spiralling over the transition either way.
+    setTimeout(go, 380);
   };
   const share = () => router.push('/(modals)/share-card' as Href);
 
   return (
     <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top }]}>
       <Confetti fire={fireConfetti} particleCount={gold ? 120 : 80} />
+      {/* Over the copy, under the buttons — they should feel like they're in
+          the room, not pinned to a card. */}
+      <FireflySwarm count={fireflies} width={width} height={height * 0.62} leaving={leaving} />
 
       <View style={styles.column}>
         {/* Hero — Q, with nothing behind or over him. */}
@@ -176,6 +190,17 @@ export default function SessionComplete() {
             </Text>
           ) : null}
         </Animated.View>
+
+        {fireflies > 0 ? (
+          <Animated.View
+            entering={reduce ? undefined : FadeInUp.delay(d(340)).duration(420)}
+            style={styles.fireflyLine}
+          >
+            <Text style={[styles.fireflyText, { color: t.gold }]}>
+              You collected {fireflies} {fireflies === 1 ? 'firefly' : 'fireflies'}
+            </Text>
+          </Animated.View>
+        ) : null}
 
         <View style={styles.spacer} />
 
@@ -292,6 +317,8 @@ const styles = StyleSheet.create({
   // Absorbs the slack so the stub sits at the foot of the screen rather than
   // floating just under the copy.
   spacer: { flex: 0.42 },
+  fireflyLine: { alignItems: 'center', marginTop: 10 },
+  fireflyText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.2 },
 
   ticket: {
     borderWidth: BORDER_WIDTH_THICK,
