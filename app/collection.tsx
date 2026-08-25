@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
@@ -60,8 +60,15 @@ export default function CollectionScreen() {
   const reduce = useReducedMotion();
   const width = useContentWidth();
 
+  // Arriving from a pouch: open on what it produced. `newest` falls back to the
+  // most recently first-found, which is wrong after a duplicate — the copy you
+  // just pulled has an old first_found_at, so it would never surface.
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
+  const focused =
+    focus && (CURIO_KEYS as readonly string[]).includes(focus) ? (focus as CurioKey) : null;
+
   const [owned, setOwned] = useState<OwnedCurio[] | null>(null);
-  const [picked, setPicked] = useState<CurioKey | null>(null);
+  const [picked, setPicked] = useState<CurioKey | null>(focused);
 
   useFocusEffect(
     useCallback(() => {
@@ -140,11 +147,21 @@ export default function CollectionScreen() {
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Back"
-            style={styles.roundBtn}
+            style={({ pressed }) => [
+              styles.roundBtn,
+              { opacity: pressed ? 0.6 : 1, transform: [{ scale: pressed ? 0.93 : 1 }] },
+            ]}
           >
             <Ionicons name="chevron-back" size={22} color={INK} />
           </Pressable>
-          <Text style={styles.tally} allowFontScaling={false}>
+          <Text
+            style={styles.tally}
+            allowFontScaling={false}
+            accessibilityRole="text"
+            accessibilityLabel={
+              owned == null ? 'Loading your collection' : `${found} of ${total} curios found`
+            }
+          >
             {owned == null ? '—' : `${found}/${total}`}
           </Text>
         </View>
@@ -303,8 +320,15 @@ function ShelfItem({
       : withSpring(selected ? 1 : 0, { damping: 13, stiffness: 190, mass: 0.6 });
   }, [selected, reduce, lift]);
 
+  // Pressing dips the curio immediately; the selection spring then lifts it.
+  // Without the dip the only feedback is a spring that starts ~1 frame later,
+  // which reads as lag rather than as a press.
+  const press = useSharedValue(0);
   const artStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -lift.value * 7 }, { scale: 1 + lift.value * 0.09 }],
+    transform: [
+      { translateY: -lift.value * 7 + press.value * 3 },
+      { scale: (1 + lift.value * 0.09) * (1 - press.value * 0.07) },
+    ],
   }));
 
   // Luminous curios breathe. Only the top tier runs a repeating animation, so a
@@ -331,11 +355,19 @@ function ShelfItem({
     >
       <Pressable
         onPress={onPress}
+        onPressIn={() => {
+          if (!reduce) press.value = withTiming(1, { duration: 70 });
+        }}
+        onPressOut={() => {
+          if (!reduce) press.value = withSpring(0, { damping: 15, stiffness: 240 });
+        }}
         hitSlop={6}
         accessibilityRole="button"
         accessibilityLabel={
           owned
-            ? `${def.name}${owned.count > 1 ? `, ${owned.count} of them` : ''}`
+            ? `${def.name}, ${(curioTier(owned.count).name ?? '').toLowerCase()}${
+                owned.count > 1 ? `, ${owned.count} copies` : ''
+              }`
             : 'Not found yet'
         }
         style={styles.itemPress}

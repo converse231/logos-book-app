@@ -219,9 +219,13 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
     return (
       <Pressable style={styles.scrimStatic} onPress={onDone} accessibilityRole="button">
         <View style={[styles.card, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-          <Text style={[styles.title, { color: t.text }]}>Not enough yet</Text>
+          <Text style={[styles.title, { color: t.text }]}>
+            {result.reason === 'error' ? 'That did not go through' : 'Not enough yet'}
+          </Text>
           <Text style={[styles.blurb, { color: t.textSec }]}>
-            {`A pouch costs ${result.cost} fireflies. Read a little more.`}
+            {result.reason === 'error'
+              ? 'Nothing was spent — your fireflies are all still there. Try again in a moment.'
+              : `A pouch costs ${result.cost} fireflies. Read a little more.`}
           </Text>
           <Text style={[styles.hint, { color: t.textTer }]}>TAP TO CLOSE</Text>
         </View>

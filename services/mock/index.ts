@@ -482,15 +482,20 @@ export const mockApi: QuireApi = {
       return { ok: false as const, reason: 'insufficient' as const, cost: 40 };
     }
     mockFireflyBalance -= 40;
-    // Mirrors the RPC's weighting: unowned keys are 3x as likely as owned ones,
-    // so the mock paces the same way the real thing does.
-    const owned = new Set(mockCurios.map((c) => c.key));
-    const pool: string[] = [];
+    // Mirrors the RPC's weighting (20260826000000): weight falls off with the
+    // copies already held, 3 / (1 + 2*count). Same Efraimidis-Spirakis draw, so
+    // mock mode paces like live instead of teaching the wrong feel.
+    const held = new Map(mockCurios.map((c) => [c.key, c.count]));
+    let key = MOCK_CURIO_KEYS[0];
+    let best = -1;
     for (const k of MOCK_CURIO_KEYS) {
-      const n = owned.has(k) ? 1 : 3;
-      for (let i = 0; i < n; i++) pool.push(k);
+      const w = 3 / (1 + 2 * (held.get(k) ?? 0));
+      const score = Math.pow(Math.random(), 1 / w);
+      if (score > best) {
+        best = score;
+        key = k;
+      }
     }
-    const key = pool[Math.floor(Math.random() * pool.length)];
     const hit = mockCurios.find((c) => c.key === key);
     const duplicate = !!hit;
     if (hit) hit.count += 1;

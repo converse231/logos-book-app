@@ -411,7 +411,10 @@ export interface OwnedCurio {
 
 /** Outcome of opening one pouch. The server decides all of it. */
 export type PouchResult =
-  | { ok: false; reason: 'insufficient'; cost: number }
+  /** `error` is a request that never reached a verdict — offline, timeout, a
+   *  server fault. Distinct from `insufficient` because telling someone with
+   *  200 fireflies that they cannot afford 40 is both wrong and alarming. */
+  | { ok: false; reason: 'insufficient' | 'error'; cost: number }
   | {
       ok: true;
       key: string;

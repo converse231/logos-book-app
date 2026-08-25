@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { useContentWidth } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { ProgressBar } from '@/components/shared/ProgressBar';
+import { PressBlock } from '@/components/shared/PressBlock';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { FireflyJar } from '@/components/jar/FireflyJar';
 import { POUCH_COST } from '@/components/curio/curios';
@@ -32,6 +33,8 @@ export default function JarScreen() {
   const [balance, setBalance] = useState<number | null>(null);
   const [opening, setOpening] = useState(false);
   const [reveal, setReveal] = useState<PouchResult | null>(null);
+  // What the last pouch produced, so the collection can open on it.
+  const [lastKey, setLastKey] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,27 +55,39 @@ export default function JarScreen() {
   );
 
   const jarW = Math.min(300, width * 0.78);
-  const toNext = balance == null ? 0 : Math.max(0, POUCH_COST - (balance % POUCH_COST));
+  // Not modulo: at exactly POUCH_COST the remainder is 0, which drew an EMPTY
+  // bar under a visually full jar reading "enough for a pouch".
+  const toNext = balance == null ? 0 : Math.max(0, POUCH_COST - balance);
+  const fill = balance == null ? 0 : Math.min(1, balance / POUCH_COST);
   const full = balance != null && balance >= POUCH_COST;
 
-  // `opening` gates the button because open_pouch is deliberately not
-  // idempotent — a double tap would buy two pouches.
+  // open_pouch is deliberately NOT idempotent, so a double tap buys two pouches
+  // — 80 fireflies. `opening` alone cannot prevent that: setState is async, so
+  // two taps in the same frame both read it as false and both get through. The
+  // ref flips synchronously and is the real guard; the state exists only to
+  // drive the label and the disabled style.
+  const inFlight = useRef(false);
   const openPouch = useCallback(async () => {
-    if (opening) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     setOpening(true);
     try {
       const r = await api.openPouch();
       if (r.ok) {
         setBalance(r.fireflies);
         markFirefliesSeen(r.fireflies);
+        setLastKey(r.key);
       }
       setReveal(r);
     } catch {
-      setReveal({ ok: false, reason: 'insufficient', cost: POUCH_COST });
+      // Never report a network failure as "not enough fireflies" — nothing was
+      // spent, and the balance on screen is still correct.
+      setReveal({ ok: false, reason: 'error', cost: POUCH_COST });
     } finally {
+      inFlight.current = false;
       setOpening(false);
     }
-  }, [api, opening]);
+  }, [api]);
 
   return (
     <ScreenBackground>
@@ -86,7 +101,14 @@ export default function JarScreen() {
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Back"
-            style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
+            style={({ pressed }) => [
+              styles.roundBtn,
+              {
+                backgroundColor: pressed ? t.bgTer : t.bgSec,
+                borderColor: t.border,
+                transform: [{ scale: pressed ? 0.93 : 1 }],
+              },
+            ]}
           >
             <Ionicons name="chevron-back" size={22} color={t.text} />
           </Pressable>
@@ -136,7 +158,7 @@ export default function JarScreen() {
 
           <View style={styles.progWrap}>
             <ProgressBar
-              value={balance == null ? 0 : Math.min(1, (balance % POUCH_COST) / POUCH_COST)}
+              value={fill}
               max={1}
               height={8}
               accent={t.gold}
@@ -150,35 +172,39 @@ export default function JarScreen() {
             </Text>
           </View>
 
-          <Pressable
+          {/* The screen's main action, so it gets the primary press: into the
+              shadow, springing back past rest on release. */}
+          <PressBlock
             onPress={openPouch}
             disabled={!full || opening}
-            accessibilityRole="button"
-            accessibilityLabel={
-              full ? `Open a pouch for ${POUCH_COST} fireflies` : `Not enough fireflies yet`
-            }
-            accessibilityState={{ disabled: !full || opening }}
-            style={({ pressed }) => [
+            emphasis="primary"
+            haptic="medium"
+            radius={16}
+            containerStyle={styles.ctaWrap}
+            style={[
               styles.cta,
-              {
-                backgroundColor: full ? t.accent : t.bgTer,
-                borderColor: t.border,
-                opacity: opening ? 0.6 : 1,
-                transform: [{ translateY: pressed && full ? 2 : 0 }],
-              },
+              { backgroundColor: full ? t.accent : t.bgTer, borderColor: t.border },
             ]}
+            accessibilityLabel={
+              full ? `Open a pouch for ${POUCH_COST} fireflies` : 'Not enough fireflies yet'
+            }
+            accessibilityState={{ disabled: !full || opening, busy: opening }}
           >
             <Text style={[styles.ctaText, { color: full ? t.onAccent : t.textTer }]}>
               {opening ? 'OPENING…' : `OPEN A POUCH · ${POUCH_COST}`}
             </Text>
-          </Pressable>
+          </PressBlock>
 
           <Pressable
-            onPress={() => router.push('/collection' as Href)}
+            onPress={() =>
+              router.push(
+                (lastKey ? `/collection?focus=${encodeURIComponent(lastKey)}` : '/collection') as Href
+              )
+            }
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="See your collection"
-            style={styles.linkRow}
+            style={({ pressed }) => [styles.linkRow, { opacity: pressed ? 0.55 : 1 }]}
           >
             <Text style={[styles.link, { color: t.textSec }]}>See what you&apos;ve found</Text>
             <Ionicons name="chevron-forward" size={15} color={t.textSec} />
@@ -209,8 +235,9 @@ const styles = StyleSheet.create({
   unit: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 3 },
   progWrap: { alignSelf: 'center', width: '100%', maxWidth: 300, gap: 7, alignItems: 'center' },
   progText: { fontFamily: FONTS.mono, fontSize: 11.5, letterSpacing: 0.3, textAlign: 'center' },
+  ctaWrap: { marginTop: 6 },
   cta: {
-    marginTop: 6, minWidth: 240, paddingHorizontal: 22, paddingVertical: 14,
+    minWidth: 240, paddingHorizontal: 22, paddingVertical: 14,
     borderRadius: 16, borderWidth: 2, alignItems: 'center',
   },
   ctaText: { fontFamily: FONTS.monoBold, fontSize: 13, letterSpacing: 1.4 },
