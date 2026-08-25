@@ -76,6 +76,10 @@ export default function CollectionScreen() {
   const shown = picked ?? newest;
   const shownDef = shown ? CURIOS[shown] : null;
   const shownOwned = shown ? byKey.get(shown) : undefined;
+  // A curio you have not found stays a silhouette on the plinth too, and keeps
+  // its name. Putting it up there in full colour with its blurb hands over the
+  // whole reward for free.
+  const revealed = !!shownOwned;
 
   const W = Math.min(width, 420);
   const shelfW = W;
@@ -134,9 +138,23 @@ export default function CollectionScreen() {
             <Animated.View
               key={shown}
               entering={reduce ? undefined : FadeInDown.duration(320)}
-              style={[styles.heroArt, { width: hero, height: hero, bottom: plinthH * (1 - PLINTH_STAND) }]}
+              style={[
+                styles.heroArt,
+                {
+                  width: hero,
+                  height: hero,
+                  bottom: plinthH * (1 - PLINTH_STAND),
+                  opacity: revealed ? 1 : 0.34,
+                },
+              ]}
             >
-              <Image source={shownDef.art} style={StyleSheet.absoluteFill} contentFit="contain" transition={0} />
+              <Image
+                source={shownDef.art}
+                style={StyleSheet.absoluteFill}
+                contentFit="contain"
+                transition={0}
+                tintColor={revealed ? undefined : '#231A12'}
+              />
             </Animated.View>
           ) : null}
 
@@ -147,18 +165,20 @@ export default function CollectionScreen() {
               pointerEvents="none"
             >
               <Text style={styles.plateText} numberOfLines={1} adjustsFontSizeToFit>
-                {shownDef ? shownDef.name.toUpperCase() : 'NOTHING FOUND YET'}
+                {!shownDef ? 'NOTHING FOUND YET' : revealed ? shownDef.name.toUpperCase() : '? ? ?'}
               </Text>
             </View>
           </View>
         </View>
 
         <Text style={styles.blurb}>
-          {shownDef
-            ? shownOwned && shownOwned.count > 1
-              ? `${shownDef.blurb}  ·  ${shownOwned.count} of them`
-              : shownDef.blurb
-            : 'Open a pouch and something will turn up.'}
+          {!shownDef
+            ? 'Open a pouch and something will turn up.'
+            : !revealed
+            ? 'Still out there somewhere.'
+            : shownOwned && shownOwned.count > 1
+            ? `${shownDef.blurb}  ·  ${shownOwned.count} of them`
+            : shownDef.blurb}
         </Text>
 
         {/* ── the shelves ──────────────────────────────────────────────── */}
