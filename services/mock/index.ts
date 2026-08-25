@@ -69,6 +69,15 @@ let _notifSettings: NotificationSettings = {
   quietHoursEnd: 8,
 };
 
+// Mutable mock state for the curio shelf — module-level so a pouch opened on one
+// screen is still there when another reads it, the way the server would behave.
+const MOCK_CURIO_KEYS = [
+  'acorn', 'acorn-gold', 'berries', 'clover', 'egg', 'feather', 'lantern',
+  'leaf', 'moonflower', 'mushroom', 'pebble', 'pinecone', 'snail',
+];
+const mockCurios: { key: string; count: number; firstFoundAt: string }[] = [];
+let mockFireflyBalance = 128;
+
 export const mockApi: QuireApi = {
   // ── Auth ────────────────────────────────────────────────────────────────
   async signIn(_email, _password) {
@@ -461,6 +470,40 @@ export const mockApi: QuireApi = {
 
   async deleteAccount() {
     await delay(300);
+  },
+
+  // ── Curios ────────────────────────────────────────────────────────────────
+  async getCurios() {
+    return mockCurios.map((c) => ({ ...c }));
+  },
+
+  async openPouch() {
+    if (mockFireflyBalance < 40) {
+      return { ok: false as const, reason: 'insufficient' as const, cost: 40 };
+    }
+    mockFireflyBalance -= 40;
+    // Mirrors the RPC's weighting: unowned keys are 3x as likely as owned ones,
+    // so the mock paces the same way the real thing does.
+    const owned = new Set(mockCurios.map((c) => c.key));
+    const pool: string[] = [];
+    for (const k of MOCK_CURIO_KEYS) {
+      const n = owned.has(k) ? 1 : 3;
+      for (let i = 0; i < n; i++) pool.push(k);
+    }
+    const key = pool[Math.floor(Math.random() * pool.length)];
+    const hit = mockCurios.find((c) => c.key === key);
+    const duplicate = !!hit;
+    if (hit) hit.count += 1;
+    else mockCurios.push({ key, count: 1, firstFoundAt: new Date().toISOString() });
+    if (duplicate) mockFireflyBalance += 12;
+    return {
+      ok: true as const,
+      key,
+      duplicate,
+      count: hit ? hit.count : 1,
+      refunded: duplicate ? 12 : 0,
+      fireflies: mockFireflyBalance,
+    };
   },
 
   async submitFeedback(_input: { kind: string; message: string }) {

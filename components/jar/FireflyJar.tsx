@@ -17,7 +17,6 @@ const IN = { x: 0.152, y: 0.238, w: 0.712, h: 0.654 };
 const JAR_AR = 561 / 760;
 
 const MAX_FLIES = 26;
-export const POUCH_COST = 100;
 
 /**
  * One drawn fly per firefly you own, capped.

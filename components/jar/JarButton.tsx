@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { POUCH_COST } from '@/components/jar/FireflyJar';
+import { POUCH_COST } from '@/components/curio/curios';
 
 const ICON = require('@/assets/jar/jar-icon.webp');
 

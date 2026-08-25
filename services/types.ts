@@ -398,3 +398,28 @@ export interface AiRecResult {
   recs: AiBookRec[];
   cached: boolean; // served from the 7-day ai_rec_cache vs a fresh Claude call
 }
+
+// ── Curios (the collection fireflies buy) ─────────────────────────────────────
+
+/** One curio on the shelf. `key` stays a plain string here so services/ does not
+ *  depend on components/; components/curio/curios.ts narrows it for rendering. */
+export interface OwnedCurio {
+  key: string;
+  count: number;
+  firstFoundAt: string;
+}
+
+/** Outcome of opening one pouch. The server decides all of it. */
+export type PouchResult =
+  | { ok: false; reason: 'insufficient'; cost: number }
+  | {
+      ok: true;
+      key: string;
+      /** True when you already had it — `refunded` fireflies come back. */
+      duplicate: boolean;
+      /** How many of this curio you now own. */
+      count: number;
+      refunded: number;
+      /** Balance after the spend (and the refund, if any). */
+      fireflies: number;
+    };

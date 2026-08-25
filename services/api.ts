@@ -24,6 +24,8 @@ import {
   ThemePref,
   UserBook,
   UserProfile,
+  OwnedCurio,
+  PouchResult,
 } from './types';
 
 export interface QuireApi {
@@ -174,6 +176,14 @@ export interface QuireApi {
   exportData(): Promise<string>;
   /** Permanently delete the account + all data (cascade). Signs out after. */
   deleteAccount(): Promise<void>;
+
+  // ── Curios (the collection) ──────────────────────────────────────────────────
+  /** Everything the caller has found so far. Owner-scoped; empty until a pouch. */
+  getCurios(): Promise<OwnedCurio[]>;
+  /** Spend fireflies on one pouch. Atomic and server-rolled — spend, roll, grant
+   *  and duplicate-refund all happen in a single transaction, so the client can
+   *  neither choose its prize nor overdraw by tapping twice. */
+  openPouch(): Promise<PouchResult>;
 
   // ── Feedback (test phase) ─────────────────────────────────────────────────────
   /** Store a tester's feedback / bug report in the DB for the owner to review.

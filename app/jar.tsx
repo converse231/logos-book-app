@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,16 +11,16 @@ import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { Skeleton } from '@/components/shared/Skeleton';
-import { FireflyJar, POUCH_COST } from '@/components/jar/FireflyJar';
+import { FireflyJar } from '@/components/jar/FireflyJar';
+import { POUCH_COST } from '@/components/curio/curios';
+import { PouchReveal } from '@/components/curio/PouchReveal';
 import { markFirefliesSeen } from '@/lib/jarSeen';
+import type { PouchResult } from '@/services/types';
 
 // The firefly jar — your reading currency, made physical.
 //
-// Read-only for now. Fireflies have been banking server-side since the
-// migration landed, so this screen opens with a balance already built rather
-// than at zero. Trading a full jar for a pouch is the next phase; until the
-// collection exists there is nothing to trade for, and a button that does
-// nothing is worse than no button.
+// Fireflies come in from reading and go out as pouches. The spend is a single
+// server RPC that decides the prize; nothing here rolls anything.
 export default function JarScreen() {
   const t = useTheme();
   const router = useRouter();
@@ -30,6 +30,8 @@ export default function JarScreen() {
   const width = useContentWidth();
 
   const [balance, setBalance] = useState<number | null>(null);
+  const [opening, setOpening] = useState(false);
+  const [reveal, setReveal] = useState<PouchResult | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,6 +54,25 @@ export default function JarScreen() {
   const jarW = Math.min(300, width * 0.78);
   const toNext = balance == null ? 0 : Math.max(0, POUCH_COST - (balance % POUCH_COST));
   const full = balance != null && balance >= POUCH_COST;
+
+  // `opening` gates the button because open_pouch is deliberately not
+  // idempotent — a double tap would buy two pouches.
+  const openPouch = useCallback(async () => {
+    if (opening) return;
+    setOpening(true);
+    try {
+      const r = await api.openPouch();
+      if (r.ok) {
+        setBalance(r.fireflies);
+        markFirefliesSeen(r.fireflies);
+      }
+      setReveal(r);
+    } catch {
+      setReveal({ ok: false, reason: 'insufficient', cost: POUCH_COST });
+    } finally {
+      setOpening(false);
+    }
+  }, [api, opening]);
 
   return (
     <ScreenBackground>
@@ -124,13 +145,49 @@ export default function JarScreen() {
               {balance == null
                 ? ' '
                 : full
-                ? 'Full jar — pouches are coming soon.'
-                : `${toNext} more to fill the jar`}
+                ? 'Enough for a pouch.'
+                : `${toNext} more for a pouch`}
             </Text>
           </View>
+
+          <Pressable
+            onPress={openPouch}
+            disabled={!full || opening}
+            accessibilityRole="button"
+            accessibilityLabel={
+              full ? `Open a pouch for ${POUCH_COST} fireflies` : `Not enough fireflies yet`
+            }
+            accessibilityState={{ disabled: !full || opening }}
+            style={({ pressed }) => [
+              styles.cta,
+              {
+                backgroundColor: full ? t.accent : t.bgTer,
+                borderColor: t.border,
+                opacity: opening ? 0.6 : 1,
+                transform: [{ translateY: pressed && full ? 2 : 0 }],
+              },
+            ]}
+          >
+            <Text style={[styles.ctaText, { color: full ? t.onAccent : t.textTer }]}>
+              {opening ? 'OPENING…' : `OPEN A POUCH · ${POUCH_COST}`}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/collection' as Href)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="See your collection"
+            style={styles.linkRow}
+          >
+            <Text style={[styles.link, { color: t.textSec }]}>See what you&apos;ve found</Text>
+            <Ionicons name="chevron-forward" size={15} color={t.textSec} />
+          </Pressable>
         </Animated.View>
 
       </ScrollView>
+
+      {reveal ? <PouchReveal result={reveal} onDone={() => setReveal(null)} /> : null}
     </ScreenBackground>
   );
 }
@@ -152,4 +209,11 @@ const styles = StyleSheet.create({
   unit: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 3 },
   progWrap: { alignSelf: 'center', width: '100%', maxWidth: 300, gap: 7, alignItems: 'center' },
   progText: { fontFamily: FONTS.mono, fontSize: 11.5, letterSpacing: 0.3, textAlign: 'center' },
+  cta: {
+    marginTop: 6, minWidth: 240, paddingHorizontal: 22, paddingVertical: 14,
+    borderRadius: 16, borderWidth: 2, alignItems: 'center',
+  },
+  ctaText: { fontFamily: FONTS.monoBold, fontSize: 13, letterSpacing: 1.4 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 4 },
+  link: { fontFamily: FONTS.uiMedium, fontSize: 14 },
 });

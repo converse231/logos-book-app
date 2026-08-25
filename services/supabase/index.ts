@@ -27,6 +27,7 @@ import { aiApi } from './ai';
 import { accountApi } from './account';
 import { bestsellerApi } from './bestsellers';
 import { notificationApi } from './notifications';
+import { curioApi } from './curios';
 import { feedbackApi } from './feedback';
 
 // Real method groups, in B-phase order. Spread last-wins over the mock.
@@ -40,4 +41,5 @@ export const liveApi: QuireApi = {
   ...bestsellerApi,
   ...notificationApi,
   ...feedbackApi,
+  ...curioApi,
 };
