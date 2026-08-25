@@ -40,21 +40,54 @@ export interface FlySpec {
   double: boolean;
 }
 
-/** Deterministic from the index — the same jar draws the same every render. */
-export function flySpec(i: number, seed = 0): FlySpec {
+/**
+ * Deterministic from the index — the same jar draws the same every render.
+ *
+ * `count` and the box size are required, not optional extras: the placement grid
+ * needs the count, and the usable band needs the box so each fly's own size can
+ * set its margin.
+ */
+export function flySpec(
+  i: number,
+  count: number,
+  boxW: number,
+  boxH: number,
+  seed = 0
+): FlySpec {
   const r = (n: number) => {
     const s = Math.sin((i + 1) * 12.9898 + n * 78.233 + seed * 3.71) * 43758.5453;
     return s - Math.floor(s);
   };
+  const size = 26 + r(1) * 14;
+  // Half the diagonal the sprite sweeps as it rotates, per axis. This is the
+  // margin the fly cannot cross without the interior's overflow:hidden
+  // clipping it.
+  const reach = (size * 1.06) / 2;
+  const mx = reach / Math.max(1, boxW);
+  const my = reach / Math.max(1, boxH);
+
+  const ampX = 0.045 + r(4) * 0.04;
+  const ampY = 0.038 + r(5) * 0.034;
+  const ampX2 = 0.012 + r(10) * 0.016;
+  const ampY2 = 0.01 + r(11) * 0.014;
+
+  // One fly per cell of a grid shaped to the box, jittered inside its cell so
+  // the arrangement never reads as a lattice. This is what fixes the crowding:
+  // a hash over a fixed band piles flies into the middle at low counts, while a
+  // grid covers the jar evenly at any count.
+  const cols = Math.max(1, Math.ceil(Math.sqrt((count * boxW) / Math.max(1, boxH))));
+  const rows = Math.max(1, Math.ceil(count / cols));
+  const padX = mx + ampX + ampX2;
+  const padY = my + ampY + ampY2;
+  const spanX = Math.max(0.02, 1 - 2 * padX);
+  const spanY = Math.max(0.02, 1 - 2 * padY);
+
   return {
-    size: 34 + r(1) * 18,
-    // Home range plus max amplitude has to stay inside 0–1 or the fly clips on
-    // the jar wall: 0.26..0.74 home and 0.18 total swing lands at 0.08..0.92,
-    // which leaves room for the sprite's own half-width.
-    homeX: 0.26 + r(2) * 0.48,
-    homeY: 0.26 + r(3) * 0.48,
-    ampX: 0.07 + r(4) * 0.07,
-    ampY: 0.055 + r(5) * 0.055,
+    size,
+    homeX: padX + spanX * (((i % cols) + 0.2 + r(2) * 0.6) / cols),
+    homeY: padY + spanY * ((Math.floor(i / cols) + 0.2 + r(3) * 0.6) / rows),
+    ampX,
+    ampY,
     // These are DIVISORS, so the period is 2*PI*rate. The old 3.7–7.6 meant a
     // 23–48 second sweep, which is barely motion at all; 1.1–2.5 gives a 7–16
     // second drift. Non-simple ratios between the axes so the path never closes
@@ -65,8 +98,8 @@ export function flySpec(i: number, seed = 0): FlySpec {
     phaseY: r(9) * Math.PI * 2,
     // The second harmonic must be FASTER than the first — fine wobble riding on
     // the slow drift. Smaller divisor, smaller amplitude.
-    ampX2: 0.018 + r(10) * 0.022,
-    ampY2: 0.014 + r(11) * 0.02,
+    ampX2,
+    ampY2,
     rateX2: 0.3 + r(12) * 0.4,
     rateY2: 0.26 + r(13) * 0.34,
     period: 2.4 + r(14) * 2.8,

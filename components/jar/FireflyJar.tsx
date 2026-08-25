@@ -72,7 +72,10 @@ export function FireflyJar({ balance, width, style }: Props) {
   );
 
   const count = visibleFlies(balance);
-  const specs = useMemo(() => Array.from({ length: count }, (_, i) => flySpec(i)), [count]);
+  const specs = useMemo(
+    () => Array.from({ length: count }, (_, i) => flySpec(i, count, box.w, box.h)),
+    [count, box.w, box.h]
+  );
 
   return (
     <View style={[{ width, height }, style]}>
