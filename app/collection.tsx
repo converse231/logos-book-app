@@ -2,24 +2,40 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInUp, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, NO_FONT_PAD } from '@/theme/tokens';
 import { useContentWidth } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
-import { ScreenBackground } from '@/components/shared/ScreenBackground';
-import { ProgressBar } from '@/components/shared/ProgressBar';
 import { CURIOS, CURIO_KEYS, type CurioKey } from '@/components/curio/curios';
 import type { OwnedCurio } from '@/services/types';
 
-// The shelf. Thirteen curios, found one pouch at a time.
+const BG = require('@/assets/curio/bg-nook.webp');
+const SHELF = require('@/assets/curio/shelf-oak.webp');
+const PLINTH = require('@/assets/curio/shelf-brass.webp');
+
+// Aspect ratios of the cropped art, and where things stand on it. All measured,
+// not guessed: the oak plank is drawn in slight perspective, so its top surface
+// runs from the back edge down to roughly 44% before the front face begins.
+const SHELF_AR = 1200 / 184;
+const PLINTH_AR = 900 / 278;
+/** How far a curio's base tucks behind the plank's front lip. At 0.30 the art
+ *  looked embedded in the wood; 0.14 reads as standing on it. */
+const STAND = 0.14;
+const PLINTH_STAND = 0.1;
+/** The engraved brass band, as a fraction of the plinth's height. */
+const PLATE_TOP = 0.36;
+const PLATE_H = 0.36;
+
+const ROWS = [5, 4, 4];
+
+// The forest floor — a shelf in a reading nook, not a grid of icons.
 //
-// Unfound ones are drawn as flat silhouettes rather than hidden: an empty slot
-// you can see the shape of is an invitation, an absent slot is nothing at all.
+// Curios you have found stand in full colour; the rest are silhouettes holding
+// their place. Tapping one puts it on the brass plinth with its name engraved
+// on the plate, which is what that piece of art was drawn for.
 export default function CollectionScreen() {
-  const t = useTheme();
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
@@ -27,7 +43,7 @@ export default function CollectionScreen() {
   const width = useContentWidth();
 
   const [owned, setOwned] = useState<OwnedCurio[] | null>(null);
-  const [selected, setSelected] = useState<CurioKey | null>(null);
+  const [picked, setPicked] = useState<CurioKey | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,21 +65,42 @@ export default function CollectionScreen() {
 
   const found = byKey.size;
   const total = CURIO_KEYS.length;
-  const complete = found === total;
 
-  // Three across, sized off the real content width so it holds on a small phone.
-  const gap = 12;
-  const cell = Math.floor((Math.min(width, 420) - gap * 2) / 3);
+  // Default the plinth to the newest find, so the screen opens on what you last
+  // pulled out of a pouch rather than on nothing.
+  const newest = useMemo(() => {
+    if (!owned?.length) return null;
+    return [...owned].sort((a, b) => b.firstFoundAt.localeCompare(a.firstFoundAt))[0]
+      .key as CurioKey;
+  }, [owned]);
+  const shown = picked ?? newest;
+  const shownDef = shown ? CURIOS[shown] : null;
+  const shownOwned = shown ? byKey.get(shown) : undefined;
 
-  const detail = selected ? CURIOS[selected] : null;
-  const detailOwned = selected ? byKey.get(selected) : undefined;
+  const W = Math.min(width, 420);
+  const shelfW = W;
+  const shelfH = shelfW / SHELF_AR;
+  const plinthW = W * 0.74;
+  const plinthH = plinthW / PLINTH_AR;
+  const curio = Math.round(W / 5.7);
+  const hero = Math.round(W * 0.2);
+
+  // Row height derived so the tallest curio always clears the shelf above it —
+  // flex spacing then guarantees no overlap, which absolute offsets did not.
+  const rowH = curio + shelfH * (1 - STAND);
+  const stageH = hero + plinthH * (1 - PLINTH_STAND);
 
   return (
-    <ScreenBackground>
+    <View style={styles.root}>
+      <Image source={BG} style={StyleSheet.absoluteFill} contentFit="cover" transition={0} />
+      {/* Scrim, not a blur — house rule. The backdrop is a painting; it has to
+          sit back far enough for ink text to read on top of it. */}
+      <View style={styles.scrim} pointerEvents="none" />
+
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 6, paddingBottom: insets.bottom + 40 },
+          { paddingTop: insets.top + 6, paddingBottom: insets.bottom + 36 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -73,129 +110,177 @@ export default function CollectionScreen() {
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Back"
-            style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
+            style={styles.roundBtn}
           >
-            <Ionicons name="chevron-back" size={22} color={t.text} />
+            <Ionicons name="chevron-back" size={22} color="#F7EFE0" />
           </Pressable>
+          <Text style={styles.tally} allowFontScaling={false}>
+            {owned == null ? '—' : `${found}/${total}`}
+          </Text>
         </View>
 
-        <Animated.View entering={reduce ? undefined : FadeInUp.duration(420)} style={styles.head}>
-          <Text style={[styles.title, { color: t.text }]}>The forest floor</Text>
-          <Text style={[styles.sub, { color: t.textSec }]}>
-            {complete
+        <Animated.View entering={reduce ? undefined : FadeIn.duration(420)} style={styles.head}>
+          <Text style={styles.title}>The forest floor</Text>
+          <Text style={styles.sub}>
+            {found === total
               ? 'Every last one of them found.'
-              : 'Small things worth stopping for. Pouches turn fireflies into them.'}
+              : 'Small things worth stopping for.'}
           </Text>
         </Animated.View>
 
-        <View style={styles.countWrap}>
-          <Text style={[styles.count, { color: t.text }]} allowFontScaling={false}>
-            {owned == null ? '—' : found}
-            <Text style={[styles.countTotal, { color: t.textTer }]}>{` / ${total}`}</Text>
-          </Text>
-          <View style={styles.bar}>
-            <ProgressBar value={found} max={total} height={8} accent={t.gold} />
+        {/* ── the plinth: whatever is currently being looked at ─────────── */}
+        <View style={[styles.stage, { height: stageH, width: W }]}>
+          {shownDef ? (
+            <Animated.View
+              key={shown}
+              entering={reduce ? undefined : FadeInDown.duration(320)}
+              style={[styles.heroArt, { width: hero, height: hero, bottom: plinthH * (1 - PLINTH_STAND) }]}
+            >
+              <Image source={shownDef.art} style={StyleSheet.absoluteFill} contentFit="contain" transition={0} />
+            </Animated.View>
+          ) : null}
+
+          <View style={[styles.plinthWrap, { width: plinthW, height: plinthH }]}>
+            <Image source={PLINTH} style={StyleSheet.absoluteFill} contentFit="fill" transition={0} />
+            <View
+              style={[styles.plate, { top: plinthH * PLATE_TOP, height: plinthH * PLATE_H }]}
+              pointerEvents="none"
+            >
+              <Text style={styles.plateText} numberOfLines={1} adjustsFontSizeToFit>
+                {shownDef ? shownDef.name.toUpperCase() : 'NOTHING FOUND YET'}
+              </Text>
+            </View>
           </View>
         </View>
 
-        <View style={[styles.grid, { gap }]}>
-          {CURIO_KEYS.map((key, i) => {
-            const def = CURIOS[key];
-            const has = byKey.get(key);
+        <Text style={styles.blurb}>
+          {shownDef
+            ? shownOwned && shownOwned.count > 1
+              ? `${shownDef.blurb}  ·  ${shownOwned.count} of them`
+              : shownDef.blurb
+            : 'Open a pouch and something will turn up.'}
+        </Text>
+
+        {/* ── the shelves ──────────────────────────────────────────────── */}
+        <View style={styles.shelves}>
+          {ROWS.map((n, row) => {
+            const start = ROWS.slice(0, row).reduce((a, b) => a + b, 0);
+            const keys = CURIO_KEYS.slice(start, start + n);
+            const slot = shelfW / n;
             return (
-              <Animated.View
-                key={key}
-                entering={reduce ? undefined : FadeIn.delay(60 + i * 28).duration(320)}
-              >
-                <Pressable
-                  onPress={() => setSelected(key)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    has
-                      ? `${def.name}, found${has.count > 1 ? `, ${has.count} of them` : ''}`
-                      : 'Not found yet'
-                  }
-                  style={[
-                    styles.cell,
-                    {
-                      width: cell,
-                      height: cell,
-                      backgroundColor: has ? t.bgSec : t.bgTer,
-                      borderColor: selected === key ? t.gold : t.border,
-                    },
-                  ]}
-                >
-                  <Image
-                    source={def.art}
-                    style={[styles.art, !has && styles.artLocked]}
-                    contentFit="contain"
-                    transition={0}
-                  />
-                  {has && has.count > 1 ? (
-                    <View style={[styles.badge, { backgroundColor: t.bgTer, borderColor: t.border }]}>
-                      <Text style={[styles.badgeText, { color: t.textSec }]}>{`×${has.count}`}</Text>
-                    </View>
-                  ) : null}
-                </Pressable>
-              </Animated.View>
+              <View key={row} style={{ width: shelfW, height: rowH }}>
+                {keys.map((key, i) => {
+                  const has = byKey.get(key);
+                  const def = CURIOS[key];
+                  return (
+                    <Pressable
+                      key={key}
+                      onPress={() => setPicked(key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        has
+                          ? `${def.name}${has.count > 1 ? `, ${has.count} of them` : ''}`
+                          : 'Not found yet'
+                      }
+                      hitSlop={6}
+                      style={[
+                        styles.slot,
+                        {
+                          width: slot,
+                          height: curio,
+                          left: slot * i,
+                          bottom: shelfH * (1 - STAND),
+                        },
+                      ]}
+                    >
+                      <Image
+                        source={def.art}
+                        style={{ width: curio, height: curio, opacity: has ? 1 : 0.34 }}
+                        contentFit="contain"
+                        transition={0}
+                        // A silhouette rather than a hidden slot: an outline you
+                        // can see is an invitation, an empty gap is nothing.
+                        tintColor={has ? undefined : '#231A12'}
+                      />
+                      {has && has.count > 1 ? (
+                        <View style={styles.dupe}>
+                          <Text style={styles.dupeText}>{`×${has.count}`}</Text>
+                        </View>
+                      ) : null}
+                      {shown === key ? <View style={styles.pickRing} /> : null}
+                    </Pressable>
+                  );
+                })}
+                {/* Drawn after the curios so the plank's front lip overlaps
+                    their bases — that tuck is what puts them ON the shelf. */}
+                <Image
+                  source={SHELF}
+                  style={{ position: 'absolute', left: 0, bottom: 0, width: shelfW, height: shelfH }}
+                  contentFit="fill"
+                  transition={0}
+                  pointerEvents="none"
+                />
+              </View>
             );
           })}
         </View>
-
-        {detail ? (
-          <Animated.View
-            entering={reduce ? undefined : FadeIn.duration(220)}
-            style={[styles.detail, { backgroundColor: t.bgSec, borderColor: t.border }]}
-          >
-            <Text style={[styles.detailName, { color: t.text }]}>
-              {detailOwned ? detail.name : 'Not found yet'}
-            </Text>
-            <Text style={[styles.detailBlurb, { color: t.textSec }]}>
-              {detailOwned ? detail.blurb : 'Open a pouch and see what turns up.'}
-            </Text>
-          </Animated.View>
-        ) : null}
       </ScrollView>
-    </ScreenBackground>
+    </View>
   );
 }
 
+const INK = '#F7EFE0';
+
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 18, gap: 14, alignItems: 'center' },
-  topBar: { alignSelf: 'stretch', flexDirection: 'row' },
+  root: { flex: 1, backgroundColor: '#2A2018' },
+  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(20,14,10,0.44)' },
+  content: { alignItems: 'center', paddingHorizontal: 0, gap: 10 },
+  topBar: {
+    width: '100%', paddingHorizontal: 18, flexDirection: 'row',
+    alignItems: 'center', justifyContent: 'space-between',
+  },
   roundBtn: {
     width: 42, height: 42, borderRadius: 14, borderWidth: 1,
+    borderColor: 'rgba(247,239,224,0.34)', backgroundColor: 'rgba(20,14,10,0.4)',
     alignItems: 'center', justifyContent: 'center',
   },
-  head: { alignItems: 'center', gap: 4, marginTop: 4 },
-  title: { fontFamily: FONTS.displayBold, fontSize: 30, lineHeight: 34, textAlign: 'center' },
-  sub: { fontFamily: FONTS.uiRegular, fontSize: 14.5, textAlign: 'center', maxWidth: 320 },
-  countWrap: { alignItems: 'center', gap: 8, alignSelf: 'stretch', marginTop: 2 },
-  count: {
-    fontFamily: FONTS.monoBold, fontSize: 30, lineHeight: 34,
+  tally: {
+    fontFamily: FONTS.monoBold, fontSize: 15, color: INK,
     fontVariant: ['tabular-nums'], ...NO_FONT_PAD,
   },
-  countTotal: { fontFamily: FONTS.mono, fontSize: 18 },
-  bar: { alignSelf: 'center', width: '100%', maxWidth: 300 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 },
-  cell: {
-    borderRadius: 18, borderWidth: 2,
-    alignItems: 'center', justifyContent: 'center', padding: 10,
+  head: { alignItems: 'center', gap: 2, marginTop: 2, paddingHorizontal: 18 },
+  title: {
+    fontFamily: FONTS.serifBold, fontSize: 30, lineHeight: 36,
+    color: INK, textAlign: 'center',
   },
-  art: { width: '100%', height: '100%' },
-  // A found curio is full colour; an unfound one keeps its silhouette but loses
-  // every bit of its character — that gap is the whole point of the screen.
-  artLocked: { opacity: 0.16 },
-  badge: {
-    position: 'absolute', right: 5, bottom: 5,
-    paddingHorizontal: 6, paddingVertical: 1,
-    borderRadius: 9, borderWidth: 1,
+  sub: {
+    fontFamily: FONTS.uiRegular, fontSize: 14, color: 'rgba(247,239,224,0.72)',
+    textAlign: 'center',
   },
-  badgeText: { fontFamily: FONTS.monoMedium, fontSize: 11 },
-  detail: {
-    alignSelf: 'stretch', maxWidth: 420, borderRadius: 18, borderWidth: 2,
-    padding: 14, gap: 4, marginTop: 2,
+  stage: { alignItems: 'center', justifyContent: 'flex-end', marginTop: 4 },
+  heroArt: { position: 'absolute' },
+  plinthWrap: { position: 'absolute', bottom: 0 },
+  plate: { position: 'absolute', left: '9%', right: '9%', alignItems: 'center', justifyContent: 'center' },
+  plateText: {
+    fontFamily: FONTS.monoBold, fontSize: 12, letterSpacing: 2.2,
+    // Ink on brass. The plate is a bright warm gold, so dark text is the only
+    // thing that reads on it.
+    color: '#3A2A12', textAlign: 'center',
   },
-  detailName: { fontFamily: FONTS.serifBold, fontSize: 19 },
-  detailBlurb: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },
+  blurb: {
+    fontFamily: FONTS.uiRegular, fontSize: 14.5, lineHeight: 20, color: 'rgba(247,239,224,0.86)',
+    textAlign: 'center', paddingHorizontal: 30, minHeight: 40, marginTop: 2,
+  },
+  shelves: { width: '100%', alignItems: 'center', gap: 16, marginTop: 4 },
+  slot: { position: 'absolute', alignItems: 'center', justifyContent: 'flex-end' },
+  dupe: {
+    position: 'absolute', right: 6, bottom: -2,
+    paddingHorizontal: 5, borderRadius: 8,
+    backgroundColor: 'rgba(20,14,10,0.66)',
+  },
+  dupeText: { fontFamily: FONTS.monoMedium, fontSize: 10, color: INK },
+  pickRing: {
+    position: 'absolute', left: '50%', bottom: -7, width: 22, height: 3,
+    marginLeft: -11, borderRadius: 2, backgroundColor: '#F3C24C',
+  },
 });
