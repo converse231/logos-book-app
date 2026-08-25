@@ -31,8 +31,7 @@ const SHELF_AR = 1200 / 184;
 const PLINTH_AR = 900 / 278;
 // The plank is drawn in perspective: its visible top surface runs from the back
 // edge to roughly 0.44 of its height. Objects stand at 0.26, ON that surface,
-// and are drawn AFTER the shelf so nothing clips them. Contact is sold with a
-// shadow rather than by hiding their feet behind the wood.
+// and are drawn AFTER the shelf so nothing clips them.
 const BASE = 0.26;
 const PLINTH_BASE = 0.2;
 /** The engraved brass band, as a fraction of the plinth's height. */
@@ -173,12 +172,6 @@ export default function CollectionScreen() {
                 { bottom: plinthH * (1 - PLINTH_BASE), width: hero, height: hero },
               ]}
             >
-              <View
-                style={[
-                  styles.shadow,
-                  { width: hero * 0.5, height: hero * 0.15, bottom: -hero * 0.075 },
-                ]}
-              />
               <Animated.View
                 style={[StyleSheet.absoluteFill, heroFloat, { opacity: revealed ? 1 : 0.34 }]}
               >
@@ -247,8 +240,9 @@ export default function CollectionScreen() {
 /**
  * One curio standing on a shelf.
  *
- * Selecting it lifts it and shrinks its contact shadow. The shadow moving is
- * what reads as "picked up" — the translate on its own just looks like a nudge.
+ * Selecting it springs it up and scales it slightly. Contact with the shelf is
+ * carried by placement alone — objects stand on the plank's visible top surface
+ * (BASE), with no drawn shadow.
  */
 function ShelfItem({
   def, owned, selected, size, left, slot, bottom, delay, reduce, onPress,
@@ -276,10 +270,6 @@ function ShelfItem({
   const artStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: -lift.value * 7 }, { scale: 1 + lift.value * 0.09 }],
   }));
-  const shadowStyle = useAnimatedStyle(() => ({
-    opacity: (owned ? 0.42 : 0.24) - lift.value * 0.14,
-    transform: [{ scaleX: 1 - lift.value * 0.18 }],
-  }));
 
   return (
     <Animated.View
@@ -297,13 +287,6 @@ function ShelfItem({
         }
         style={styles.itemPress}
       >
-        <Animated.View
-          style={[
-            styles.shadow,
-            { width: size * 0.56, height: size * 0.17, bottom: -size * 0.085 },
-            shadowStyle,
-          ]}
-        />
         <Animated.View style={[{ width: size, height: size }, artStyle]}>
           <Image
             source={def.art}
@@ -364,10 +347,6 @@ const styles = StyleSheet.create({
   },
   shelves: { width: '100%', alignItems: 'center', gap: 18, marginTop: 2 },
   itemPress: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
-  // An ellipse via borderRadius. RN cannot draw a soft radial falloff on a View,
-  // so this is a flat ellipse kept small and low-opacity — at this size it reads
-  // as contact, not as a black blob.
-  shadow: { position: 'absolute', borderRadius: 999, backgroundColor: '#160E06' },
   dupe: {
     position: 'absolute', right: 2, bottom: -4,
     paddingHorizontal: 5, borderRadius: 8, backgroundColor: 'rgba(20,14,10,0.72)',
