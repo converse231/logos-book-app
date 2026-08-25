@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Firefly, flySpec } from '@/components/jar/Firefly';
+import { POUCH_COST } from '@/components/curio/curios';
 
 const JAR = require('@/assets/jar/jar.webp');
 
@@ -16,7 +17,14 @@ const JAR = require('@/assets/jar/jar.webp');
 const IN = { x: 0.152, y: 0.238, w: 0.712, h: 0.654 };
 const JAR_AR = 561 / 760;
 
-const MAX_FLIES = 26;
+// Tied to the pouch price on purpose. At 26 the jar looked full while a pouch
+// still cost 40, so the art contradicted the progress bar sitting under it — a
+// full jar now means exactly "you can afford a pouch".
+//
+// It is also a render budget: each fly costs ~6 animated styles on the UI
+// thread, so this is 240 of them. If a low-end device drops frames in the jar,
+// this is the knob — but decoupling it reopens the seam above.
+const MAX_FLIES = POUCH_COST;
 
 /**
  * One drawn fly per firefly you own, capped.
@@ -26,8 +34,8 @@ const MAX_FLIES = 26;
  * is the thing that's true, so the art follows it.
  *
  * Past MAX_FLIES the jar just reads "full"; the progress bar carries the rest
- * of the way to a pouch. The cap is a render budget, not a design choice —
- * every fly costs six animated styles on the UI thread.
+ * of the way to a pouch. The cap equals the pouch price, so a visually full jar
+ * and an affordable pouch are the same moment.
  */
 export function visibleFlies(balance: number): number {
   if (balance <= 0) return 0;
