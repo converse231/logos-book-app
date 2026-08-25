@@ -18,12 +18,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { FONTS, NO_FONT_PAD } from '@/theme/tokens';
 import { useContentWidth } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
-import { CURIOS, CURIO_KEYS, type CurioDef, type CurioKey } from '@/components/curio/curios';
+import {
+  CURIOS,
+  CURIO_KEYS,
+  TIER_LOOK,
+  curioTier,
+  type CurioDef,
+  type CurioKey,
+} from '@/components/curio/curios';
 import type { OwnedCurio } from '@/services/types';
 
 const BG = require('@/assets/curio/bg-nook.webp');
 const SHELF = require('@/assets/curio/shelf-oak.webp');
 const PLINTH = require('@/assets/curio/shelf-brass.webp');
+const GLOW = require('@/assets/jar/glow.webp');
 
 // Aspect ratios of the cropped art, and where things stand on it — measured off
 // the files, not guessed.
@@ -144,7 +152,9 @@ export default function CollectionScreen() {
         <Animated.View entering={reduce ? undefined : FadeIn.duration(420)} style={styles.head}>
           <Text style={styles.title}>The forest floor</Text>
           <Text style={styles.sub}>
-            {found === total ? 'Every last one of them found.' : 'Small things worth stopping for.'}
+            {found === total
+              ? 'All thirteen found. Copies polish them from here.'
+              : 'Small things worth stopping for.'}
           </Text>
         </Animated.View>
 
@@ -192,10 +202,10 @@ export default function CollectionScreen() {
             ? 'Open a pouch and something will turn up.'
             : !revealed
             ? 'Still out there somewhere.'
-            : shownOwned && shownOwned.count > 1
-            ? `${shownDef.blurb}  ·  ${shownOwned.count} of them`
             : shownDef.blurb}
         </Text>
+
+        {revealed && shownOwned ? <TierLine count={shownOwned.count} /> : null}
 
         {/* ── the shelves ────────────────────────────────────────────────── */}
         <View style={styles.shelves}>
@@ -238,6 +248,30 @@ export default function CollectionScreen() {
 }
 
 /**
+ * Where the selected curio sits on its way up, and what is left to the next
+ * tier. This is what stops a finished collection reading as finished.
+ */
+function TierLine({ count }: { count: number }) {
+  const t = curioTier(count);
+  if (t.index < 0) return null;
+  const top = t.toNext === null;
+  return (
+    <View style={styles.tierLine}>
+      <View style={[styles.tierPill, top && styles.tierPillTop]}>
+        <Text style={[styles.tierName, top && styles.tierNameTop]}>
+          {(t.name ?? '').toUpperCase()}
+        </Text>
+      </View>
+      <Text style={styles.tierNext}>
+        {top
+          ? `${count} copies · nothing left to reach`
+          : `${count} ${count === 1 ? 'copy' : 'copies'} · ${t.toNext} more to ${(t.nextName ?? '').toLowerCase()}`}
+      </Text>
+    </View>
+  );
+}
+
+/**
  * One curio standing on a shelf.
  *
  * Selecting it springs it up and scales it slightly. Contact with the shelf is
@@ -258,6 +292,8 @@ function ShelfItem({
   reduce: boolean;
   onPress: () => void;
 }) {
+  const tier = owned ? curioTier(owned.count).index : -1;
+
   const lift = useSharedValue(0);
   useEffect(() => {
     lift.value = reduce
@@ -269,6 +305,23 @@ function ShelfItem({
 
   const artStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: -lift.value * 7 }, { scale: 1 + lift.value * 0.09 }],
+  }));
+
+  // Luminous curios breathe. Only the top tier runs a repeating animation, so a
+  // shelf of ordinary finds costs nothing extra.
+  const pulse = useSharedValue(0);
+  const look = TIER_LOOK[Math.max(0, tier)];
+  useEffect(() => {
+    if (reduce || !look.pulse) return;
+    pulse.value = withRepeat(
+      withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true
+    );
+  }, [reduce, look.pulse, pulse]);
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: look.glow * (look.pulse ? 0.7 + pulse.value * 0.5 : 1) + lift.value * 0.12,
+    transform: [{ scale: look.scale * (1 + lift.value * 0.08) }],
   }));
 
   return (
@@ -287,6 +340,20 @@ function ShelfItem({
         }
         style={styles.itemPress}
       >
+        {tier > 0 ? (
+          <Animated.View
+            style={[styles.tierGlow, { width: size, height: size }, glowStyle]}
+            pointerEvents="none"
+          >
+            <Image
+              source={GLOW}
+              style={StyleSheet.absoluteFill}
+              contentFit="contain"
+              transition={0}
+              tintColor={look.tint}
+            />
+          </Animated.View>
+        ) : null}
         <Animated.View style={[{ width: size, height: size }, artStyle]}>
           <Image
             source={def.art}
@@ -347,6 +414,20 @@ const styles = StyleSheet.create({
   },
   shelves: { width: '100%', alignItems: 'center', gap: 18, marginTop: 2 },
   itemPress: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  tierGlow: { position: 'absolute', bottom: 0 },
+  tierLine: { alignItems: 'center', gap: 6, marginTop: 2 },
+  tierPill: {
+    paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999,
+    borderWidth: 1, borderColor: 'rgba(243,194,76,0.5)',
+    backgroundColor: 'rgba(243,194,76,0.14)',
+  },
+  tierPillTop: { borderColor: '#F3C24C', backgroundColor: 'rgba(243,194,76,0.26)' },
+  tierName: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 2, color: '#F3C24C' },
+  tierNameTop: { color: '#FFE9AE' },
+  tierNext: {
+    fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.3,
+    color: 'rgba(247,239,224,0.6)', textAlign: 'center',
+  },
   dupe: {
     position: 'absolute', right: 2, bottom: -4,
     paddingHorizontal: 5, borderRadius: 8, backgroundColor: 'rgba(20,14,10,0.72)',

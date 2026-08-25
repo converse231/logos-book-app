@@ -95,6 +95,54 @@ export const CURIOS: Record<CurioKey, CurioDef> = {
   },
 };
 
+/**
+ * Copies raise a curio through tiers, so a finished collection still has
+ * somewhere to go and duplicates stop being waste.
+ *
+ * Derived from user_curios.count, which the server already owns — there is no
+ * tier column and there does not need to be. The roll weights toward whatever
+ * you hold fewest of (see 20260826000000), so these fill roughly together
+ * rather than one curio racing ahead.
+ */
+export const TIERS = [
+  { at: 1, name: 'Found' },
+  { at: 3, name: 'Polished' },
+  { at: 6, name: 'Gilded' },
+  { at: 12, name: 'Luminous' },
+] as const;
+
+export interface CurioTier {
+  /** -1 not found, then 0..3 indexing TIERS. */
+  index: number;
+  name: string | null;
+  /** Copies still needed for the next tier, or null at the top. */
+  toNext: number | null;
+  nextName: string | null;
+}
+
+export function curioTier(count: number): CurioTier {
+  let i = -1;
+  for (let k = 0; k < TIERS.length; k++) if (count >= TIERS[k].at) i = k;
+  const next = TIERS[i + 1];
+  return {
+    index: i,
+    name: i < 0 ? null : TIERS[i].name,
+    toNext: next ? next.at - count : null,
+    nextName: next ? next.name : null,
+  };
+}
+
+/**
+ * How a tier reads on the shelf. Effects over the existing art rather than new
+ * sprites — the whole point of tiers is that they cost no new content.
+ */
+export const TIER_LOOK: { glow: number; scale: number; tint: string; pulse: boolean }[] = [
+  { glow: 0, scale: 1, tint: '#F3C24C', pulse: false },       // Found — plain
+  { glow: 0.2, scale: 1.35, tint: '#F7E3A8', pulse: false },  // Polished — a warm breath
+  { glow: 0.32, scale: 1.6, tint: '#F3C24C', pulse: false },  // Gilded — gold
+  { glow: 0.4, scale: 1.8, tint: '#F3C24C', pulse: true },    // Luminous — gold, alive
+];
+
 /** Cost of one pouch, and what a duplicate hands back. Mirrors the RPC. */
 export const POUCH_COST = 40;
 export const DUPLICATE_REFUND = 12;

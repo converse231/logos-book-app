@@ -17,7 +17,12 @@ import Svg, { Circle, Defs, G, Polygon, RadialGradient, Stop } from 'react-nativ
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, NO_FONT_PAD } from '@/theme/tokens';
-import { CURIOS, DUPLICATE_REFUND, type CurioKey } from '@/components/curio/curios';
+import {
+  CURIOS,
+  DUPLICATE_REFUND,
+  curioTier,
+  type CurioKey,
+} from '@/components/curio/curios';
 import type { PouchResult } from '@/services/types';
 
 const POUCH = require('@/assets/curio/pouch.webp');
@@ -76,6 +81,13 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
 
   const ok = result.ok;
   const isNew = result.ok && !result.duplicate;
+  // A duplicate that crosses a tier threshold is a promotion, not a
+  // consolation, so it gets the loud treatment: rays, gold, success haptic.
+  const tierUp =
+    result.ok &&
+    result.duplicate &&
+    curioTier(result.count).index > curioTier(result.count - 1).index;
+  const loud = isNew || tierUp;
 
   useEffect(() => {
     // The refusal state has nothing to reveal, so it just appears.
@@ -124,7 +136,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
     tap(T.shake + 420, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
     tap(T.shake + 660, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
     tap(T.flash, () =>
-      isNew
+      loud
         ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
         : Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     );
@@ -134,7 +146,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
       timers.current.forEach(clearTimeout);
       timers.current = [];
     };
-  }, [ok, isNew, reduce, scrim, drop, shake, flash, vanish, item, burst, spin, motes, name, blurb, hint]);
+  }, [ok, loud, reduce, scrim, drop, shake, flash, vanish, item, burst, spin, motes, name, blurb, hint]);
 
   /** Tapping mid-sequence jumps to the end rather than throwing the reward away. */
   const skip = () => {
@@ -183,7 +195,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
   }));
 
   const burstStyle = useAnimatedStyle(() => ({
-    opacity: burst.value * (isNew ? 1 : 0.5),
+    opacity: burst.value * (loud ? 1 : 0.5),
     transform: [{ scale: 0.55 + burst.value * 0.45 }, { rotate: `${spin.value * 360}deg` }],
   }));
 
@@ -234,7 +246,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
     );
   }
 
-  const tint = isNew ? '#F3C24C' : '#9AA7B4';
+  const tint = loud ? '#F3C24C' : '#9AA7B4';
 
   return (
     <Animated.View style={[styles.scrimAnim, scrimStyle]}>
@@ -251,7 +263,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
         <View style={styles.stage}>
           {/* Burst sits behind everything on the stage. */}
           <Animated.View style={[styles.burst, burstStyle]} pointerEvents="none">
-            <Burst tint={tint} rays={isNew} />
+            <Burst tint={tint} rays={loud} />
           </Animated.View>
 
           <Animated.View style={[styles.slot, itemStyle]} pointerEvents="none">
@@ -277,18 +289,18 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
         </View>
 
         <Animated.View style={nameStyle}>
-          <Text style={[styles.kicker, { color: isNew ? '#F3C24C' : 'rgba(247,239,224,0.6)' }]}>
-            {isNew ? 'NEW FIND' : 'ANOTHER ONE'}
+          <Text style={[styles.kicker, { color: loud ? '#F3C24C' : 'rgba(247,239,224,0.6)' }]}>
+            {isNew
+              ? 'NEW FIND'
+              : tierUp
+              ? (curioTier(result.count).name ?? '').toUpperCase()
+              : 'ANOTHER ONE'}
           </Text>
           <Text style={styles.name}>{def.name}</Text>
         </Animated.View>
 
         <Animated.View style={blurbStyle}>
-          <Text style={styles.blurbLight}>
-            {result.duplicate
-              ? `You had one already — ${DUPLICATE_REFUND} fireflies back. That makes ${result.count}.`
-              : def.blurb}
-          </Text>
+          <Text style={styles.blurbLight}>{revealCopy(result, def.blurb)}</Text>
         </Animated.View>
 
         <Animated.View style={hintStyle}>
@@ -297,6 +309,27 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
       </Pressable>
     </Animated.View>
   );
+}
+
+/**
+ * What the reveal says.
+ *
+ * A duplicate is framed three different ways depending on what it did: promoted
+ * this curio a tier, moved it closer to one, or topped it out. "You had one
+ * already" is only right the first few times — past completion every pouch is a
+ * duplicate, and that framing would turn the whole late game into an apology.
+ */
+function revealCopy(result: Extract<PouchResult, { ok: true }>, blurb: string) {
+  if (!result.duplicate) return blurb;
+  const now = curioTier(result.count);
+  const before = curioTier(result.count - 1);
+  if (now.index > before.index) {
+    return `Copy ${result.count}. This one is ${(now.name ?? '').toLowerCase()} now — and ${DUPLICATE_REFUND} fireflies back.`;
+  }
+  if (now.toNext === null) {
+    return `Copy ${result.count}. Nothing left to reach on this one. ${DUPLICATE_REFUND} fireflies back.`;
+  }
+  return `Copy ${result.count} — ${now.toNext} more to ${(now.nextName ?? '').toLowerCase()}. ${DUPLICATE_REFUND} fireflies back.`;
 }
 
 /**
