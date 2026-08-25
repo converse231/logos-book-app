@@ -71,12 +71,17 @@ export function flySpec(i: number, seed = 0): FlySpec {
     rateY2: 0.26 + r(13) * 0.34,
     period: 2.4 + r(14) * 2.8,
     offset: r(15),
-    // ~3.2-4.6Hz, i.e. 13-19 frames per beat at 60fps. Every value here before
-    // the pivot bug was fixed was chosen against a rotation that never
-    // applied, so 2-3Hz was the first one actually seen — this is a step up
-    // from it. A firefly really beats ~50Hz and is genuinely invisible, so the
-    // true rate is never the right rate. Radians/sec, so Hz = beat / 2pi.
-    beat: 20 + r(16) * 9,
+    // ~5.1-6.7Hz, i.e. 9-12 frames per beat at 60fps.
+    //
+    // History worth keeping: an early comment here claimed 9-12Hz "read as
+    // frozen". That was measured while the rotation was silently not applying
+    // at all (the 0x0 pivot bug), so it was never a real finding about rate.
+    // The ceiling that does matter is frames-per-beat, not Hz — below about 6
+    // the stroke starts to look stepped rather than fast, which caps this
+    // around 10Hz on a 60fps display. A firefly really beats ~50Hz and is
+    // genuinely invisible, so the true rate is never the right rate.
+    // Radians/sec, so Hz = beat / 2pi.
+    beat: 32 + r(16) * 10,
     beatLag: 0.35 + r(17) * 0.5,
     double: r(18) < 0.32,
   };
