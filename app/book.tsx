@@ -118,6 +118,15 @@ export default function BookPage() {
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
+  // This screen is reached two ways, and they are presented differently.
+  //
+  // From add-book (a transparentModal) it arrives as a stacked card that already
+  // begins BELOW the status bar, so adding the device's top inset counts that
+  // clearance twice and leaves a dead strip above the back button. From
+  // Discover / Browse / Author it is a plain full-screen push and needs the
+  // whole inset or the button sits under the clock.
+  const stacked = from === 'search' || from === 'session_picker';
+  const topPad = (stacked ? 0 : insets.top) + 6;
   const reduce = useReducedMotion();
 
   const book = useMemo(() => sanitizeBook(data), [data]);
@@ -188,7 +197,7 @@ export default function BookPage() {
   if (!book) {
     return (
       <ScreenBackground>
-        <View style={[styles.bar, { paddingTop: insets.top + 6 }]}>
+        <View style={[styles.bar, { paddingTop: topPad }]}>
           <BackButton onPress={() => router.back()} />
         </View>
         <View style={styles.missing}>
@@ -212,7 +221,7 @@ export default function BookPage() {
 
   return (
     <ScreenBackground>
-      <View style={[styles.bar, { paddingTop: insets.top + 6 }]}>
+      <View style={[styles.bar, { paddingTop: topPad }]}>
         <BackButton onPress={() => router.back()} />
       </View>
 
@@ -450,12 +459,12 @@ function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children:
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingBottom: 6 },
+  bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingBottom: 2 },
   roundBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 
   content: { paddingHorizontal: 18, gap: 18 },
 
-  hero: { alignItems: 'center', paddingTop: 4 },
+  hero: { alignItems: 'center', paddingTop: 0 },
   // Must match BookCover's own 14px radius — a square shadow box behind a rounded
   // cover shows its corners and reads as a rendering bug.
   coverShadow: { borderRadius: RADIUS.md },
