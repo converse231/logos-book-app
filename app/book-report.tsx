@@ -76,20 +76,24 @@ export default function BookReportScreen() {
       ]
     : [];
 
-  const secondary = report
+  // Kept deliberately disjoint from `primary`: an audiobook's "time spent" and
+  // "total listened" are the same number, and printing it twice makes the page
+  // look padded rather than detailed.
+  const secondary = !report
+    ? []
+    : isAudio
     ? [
-        isAudio
-          ? { label: 'Total listened', value: formatDuration(report.totalMinutes) }
-          : { label: 'Pages', value: report.totalPages != null ? String(report.totalPages) : '—' },
-        isAudio
-          ? { label: 'Longest sitting', value: formatDuration(report.longestSessionMinutes) }
-          : {
-              label: 'Per session',
-              value: report.avgPagesPerSession != null ? `${report.avgPagesPerSession} p` : '—',
-            },
         { label: 'Longest sitting', value: formatDuration(report.longestSessionMinutes) },
-      ].slice(0, isAudio ? 2 : 3)
-    : [];
+        { label: 'Days read', value: String(report.daysRead) },
+      ]
+    : [
+        { label: 'Pages', value: report.totalPages != null ? String(report.totalPages) : '—' },
+        {
+          label: 'Per session',
+          value: report.avgPagesPerSession != null ? `${report.avgPagesPerSession} p` : '—',
+        },
+        { label: 'Longest sitting', value: formatDuration(report.longestSessionMinutes) },
+      ];
 
   // Lines, not tiles: these are observations about how you read, and a number in
   // a box would flatten them back into statistics.

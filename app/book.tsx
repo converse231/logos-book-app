@@ -125,8 +125,11 @@ export default function BookPage() {
   // clearance twice and leaves a dead strip above the back button. From
   // Discover / Browse / Author it is a plain full-screen push and needs the
   // whole inset or the button sits under the clock.
+  // 16 rather than 0: the card starts below the status bar, but its own top edge
+  // still needs the breathing room any screen edge gets — at 6 the button was
+  // jammed against it.
   const stacked = from === 'search' || from === 'session_picker';
-  const topPad = (stacked ? 0 : insets.top) + 6;
+  const topPad = stacked ? 16 : insets.top + 6;
   const reduce = useReducedMotion();
 
   const book = useMemo(() => sanitizeBook(data), [data]);
