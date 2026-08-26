@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto'; // supabase-js needs a WHATWG URL impl in RN
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
@@ -33,3 +34,38 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     flowType: 'pkce',
   },
 });
+
+// supabase-js can only refresh while a JS timer is alive, and React Native
+// suspends timers in the background. Without this the token quietly expires
+// while the app is away, and the NEXT cold start has to do a network refresh
+// before it can answer "is this reader signed in?" — which is exactly the
+// moment a flaky connection turns a signed-in reader into an apparent new one.
+// This is the wiring Supabase's own React Native guide requires.
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') supabase.auth.startAutoRefresh();
+  else supabase.auth.stopAutoRefresh();
+});
+// The app starts foregrounded; the listener above only fires on CHANGES.
+supabase.auth.startAutoRefresh();
+
+/** Where supabase-js keeps the session blob: sb-<project-ref>-auth-token. */
+const PROJECT_REF = SUPABASE_URL.match(/^https:\/\/([^.]+)\./)?.[1] ?? '';
+export const AUTH_STORAGE_KEY = `sb-${PROJECT_REF}-auth-token`;
+
+/**
+ * Is there still a session on disk?
+ *
+ * getSession() returns null both for "this reader has never signed in" and for
+ * "there IS a session but I could not refresh it just now". Those must not be
+ * treated the same: the first belongs in onboarding, the second belongs in a
+ * retry. A blob on disk means an account exists on this device.
+ */
+export async function hasPersistedSession(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(AUTH_STORAGE_KEY)) != null;
+  } catch {
+    // Storage itself is unreadable — assume an account rather than shunting a
+    // real reader into signup.
+    return true;
+  }
+}

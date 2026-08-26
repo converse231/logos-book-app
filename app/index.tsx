@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Redirect, type Href } from 'expo-router';
+import { Redirect, useRouter, type Href } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
-import { supabase } from '@/lib/supabase';
+import { hasPersistedSession, supabase } from '@/lib/supabase';
 import {
   ONBOARDING_STEPS,
   firstIncompleteStep,
@@ -29,6 +29,7 @@ type Boot =
 // re-asking for a birth year the reader already gave is pure friction.
 export default function Index() {
   const t = useTheme();
+  const router = useRouter();
   const [boot, setBoot] = useState<Boot>({ phase: 'loading' });
   const [attempt, setAttempt] = useState(0);
 
@@ -37,7 +38,14 @@ export default function Index() {
   const [hydrated, setHydrated] = useState(() => useOnboardingStore.persist.hasHydrated());
   useEffect(() => {
     if (hydrated) return;
-    return useOnboardingStore.persist.onFinishHydration(() => setHydrated(true));
+    const unsub = useOnboardingStore.persist.onFinishHydration(() => setHydrated(true));
+    // Re-check AFTER subscribing. hasHydrated() is read once during the first
+    // render, but this effect only runs after that render commits — hydration
+    // finishing inside that gap fired onFinishHydration before anyone was
+    // listening, so `hydrated` stayed false forever and boot never left
+    // 'loading'. That is the blank screen some readers are stuck on.
+    if (useOnboardingStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
   }, [hydrated]);
 
   const resumeStep = useCallback(() => firstIncompleteStep(useOnboardingStore.getState()), []);
@@ -48,7 +56,16 @@ export default function Index() {
 
     const resolve = async (hasSession: boolean) => {
       if (!hasSession) {
-        if (alive) setBoot({ phase: 'onboarding', step: resumeStep() });
+        // getSession() answers null for two very different situations: nobody
+        // has ever signed in on this device, and there IS an account but the
+        // token could not be refreshed right now (offline, flaky network, a
+        // rejected rotation). Sending the second case to onboarding drops a
+        // real reader on the account-creation step — which is what "I opened
+        // the app and I was logged out" actually is. A session blob still on
+        // disk means an account exists, so offer a retry instead.
+        const stranded = await hasPersistedSession();
+        if (!alive) return;
+        setBoot(stranded ? { phase: 'error' } : { phase: 'onboarding', step: resumeStep() });
         return;
       }
       // Session exists — has this user been provisioned, and did they finish?
@@ -69,8 +86,13 @@ export default function Index() {
 
     supabase.auth.getSession().then(({ data }) => resolve(!!data.session));
 
-    // React to sign-in / sign-out that happen after first paint.
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    // React to sign-in / sign-out that happen after first paint. INITIAL_SESSION
+    // is skipped deliberately: getSession() above is the authoritative cold
+    // read, and letting both drive the route means whichever resolves first
+    // wins — including an early null that redirects to onboarding before the
+    // stored session has even been read.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') return;
       resolve(!!session);
     });
 
@@ -98,6 +120,17 @@ export default function Index() {
         >
           <Text style={[styles.retryText, { color: t.onAccent }]}>TRY AGAIN</Text>
         </Pressable>
+        {/* Escape hatch. Retry covers a network blip, but a session that can
+            never be refreshed again would otherwise strand the reader on this
+            screen with no way forward. */}
+        <Pressable
+          onPress={() => router.replace('/(auth)/sign-in' as Href)}
+          accessibilityRole="button"
+          accessibilityLabel="Sign in instead"
+          hitSlop={10}
+        >
+          <Text style={[styles.altLink, { color: t.textSec }]}>Sign in instead</Text>
+        </Pressable>
       </View>
     );
   }
@@ -119,4 +152,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   retryText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.6 },
+  altLink: { fontFamily: FONTS.uiMedium, fontSize: 14.5, textDecorationLine: 'underline' },
 });
