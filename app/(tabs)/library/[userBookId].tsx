@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { AppIcon } from '@/components/shared/AppIcon';
+import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD, GENRE_PALETTE } from '@/theme/tokens';
@@ -304,23 +304,37 @@ export default function BookDetail() {
         {/* Top bar */}
         <View style={styles.topBar}>
           <RoundBtn icon="chevron-back" label="Back" onPress={() => router.navigate('/(tabs)/library' as Href)} t={t} />
-          <RoundBtn
-            icon={favorite ? 'heart' : 'heart-outline'}
-            label={favorite ? 'Remove from favorites' : 'Add to favorites'}
-            color={favorite ? t.danger : t.text}
-            active={favorite}
-            onPress={async () => {
-              Haptics.selectionAsync();
-              const next = !favorite;
-              setFavorite(next); // optimistic
-              try {
-                await api.setFavorite(ub.id, next);
-              } catch {
-                setFavorite(!next); // revert on failure
-              }
-            }}
-            t={t}
-          />
+          <View style={styles.topRight}>
+            {/* Only a finished book has a story about how it was read. */}
+            {status === 'finished' ? (
+              <RoundBtn
+                icon="bar-chart"
+                tint="accent"
+                label="See the reading report for this book"
+                onPress={() =>
+                  router.push(`/book-report?userBookId=${encodeURIComponent(ub.id)}` as Href)
+                }
+                t={t}
+              />
+            ) : null}
+            <RoundBtn
+              icon={favorite ? 'heart' : 'heart-outline'}
+              label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+              color={favorite ? t.danger : t.text}
+              active={favorite}
+              onPress={async () => {
+                Haptics.selectionAsync();
+                const next = !favorite;
+                setFavorite(next); // optimistic
+                try {
+                  await api.setFavorite(ub.id, next);
+                } catch {
+                  setFavorite(!next); // revert on failure
+                }
+              }}
+              t={t}
+            />
+          </View>
         </View>
 
         {/* Hero */}
@@ -362,24 +376,6 @@ export default function BookDetail() {
             </PressRow>
           )}
 
-          {/* Only a finished book has a story to tell about how it was read.
-              Sits under the banner rather than inside it: the banner edits the
-              finish date, and one row cannot own two actions. */}
-          {status === 'finished' ? (
-            <PressRow
-              onPress={() =>
-                router.push(`/book-report?userBookId=${encodeURIComponent(ub.id)}` as Href)
-              }
-              accessibilityLabel="See the reading report for this book"
-              tint={[t.bgTer, t.bgSec]}
-              containerStyle={styles.bannerWrap}
-              style={styles.finishedRow}
-            >
-              <Ionicons name="stats-chart" size={18} color={t.text} />
-              <Text style={[styles.finishedText, { color: t.text }]}>Reading report</Text>
-              <Ionicons name="chevron-forward" size={15} color={t.textSec} />
-            </PressRow>
-          ) : null}
         </Reveal>
 
         {/* Identity */}
@@ -750,12 +746,16 @@ function RoundBtn({
   t,
   color,
   active = false,
+  tint,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
   t: ReturnType<typeof useTheme>;
   color?: string;
+  /** Serve the painted variant of this glyph where art exists (see AppIcon).
+   *  Omit for the font glyph. */
+  tint?: IconTint;
   /** Toggles (the heart) pop when they switch ON — a state change, not a tap. */
   active?: boolean;
 }) {
@@ -794,7 +794,11 @@ function RoundBtn({
         accessibilityLabel={label}
         style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
       >
-        <Ionicons name={icon} size={icon === 'chevron-back' ? 22 : 20} color={color ?? t.text} />
+        {tint ? (
+          <AppIcon name={icon} tint={tint} size={20} />
+        ) : (
+          <Ionicons name={icon} size={icon === 'chevron-back' ? 22 : 20} color={color ?? t.text} />
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -934,6 +938,7 @@ const styles = StyleSheet.create({
   skelIdentity: { alignItems: 'center', gap: 8 },
   skelChips: { flexDirection: 'row', gap: 8 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
   hero: { alignItems: 'center', justifyContent: 'flex-end', paddingTop: 8, marginBottom: 2 },
