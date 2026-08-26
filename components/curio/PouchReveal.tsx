@@ -40,21 +40,29 @@ const POUCH = require('@/assets/curio/pouch.webp');
 const T = {
   scrim: 0,
   pouch: 60,
-  shake: 430,
-  flash: 1210,
-  vanish: 1215,
-  item: 1290,
-  burst: 1290,
-  motes: 1300,
-  name: 1600,
-  blurb: 1740,
-  hint: 1880,
+  shake: 500,
+  flash: 1680,
+  vanish: 1685,
+  item: 1760,
+  burst: 1760,
+  motes: 1770,
+  name: 2080,
+  blurb: 2220,
+  hint: 2360,
   /** When a tap starts meaning "close" instead of "skip ahead". */
-  settled: 1760,
+  settled: 2240,
 };
+/** The wind-up, stretched from 780ms. This is what "too quick" actually was:
+ *  the reveal already landed late enough, but 780ms is not long enough for
+ *  anticipation to register before the payoff arrives. */
+const SHAKE_MS = 1180;
 
 const RAYS = 12;
-const MOTES = 16;
+const MOTES = 34;
+/** Half-width of a spoke, in radians at the rim. At 0.052 (a 6 degree spoke)
+ *  twelve rays did not resolve as rays — the whole burst read as one turning
+ *  disc. 0.085 is a ~10 degree spoke. */
+const RAY_W = 0.085;
 
 export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: () => void }) {
   const t = useTheme();
@@ -71,6 +79,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
   const item = useSharedValue(0);
   const burst = useSharedValue(0);
   const spin = useSharedValue(0);
+  const spin2 = useSharedValue(0);
   const motes = useSharedValue(0);
   const name = useSharedValue(0);
   const blurb = useSharedValue(0);
@@ -107,7 +116,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
     scrim.value = withTiming(1, { duration: 240 });
     // Lands with weight: overshoot, then a squash resolved in the style below.
     drop.value = withDelay(T.pouch, withSpring(1, { damping: 12, stiffness: 140, mass: 0.9 }));
-    shake.value = withDelay(T.shake, withTiming(1, { duration: 780, easing: Easing.linear }));
+    shake.value = withDelay(T.shake, withTiming(1, { duration: SHAKE_MS, easing: Easing.linear }));
     flash.value = withDelay(
       T.flash,
       withSequence(
@@ -122,7 +131,13 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
     // as light.
     spin.value = withDelay(
       T.burst,
-      withRepeat(withTiming(1, { duration: 22000, easing: Easing.linear }), -1, false)
+      withRepeat(withTiming(1, { duration: 24000, easing: Easing.linear }), -1, false)
+    );
+    // The inner ring turns the OTHER way, and slower. One ring alone reads as a
+    // rigid wheel; two speeds in opposition read as light.
+    spin2.value = withDelay(
+      T.burst,
+      withRepeat(withTiming(1, { duration: 34000, easing: Easing.linear }), -1, false)
     );
     motes.value = withDelay(T.motes, withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) }));
     name.value = withDelay(T.name, withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) }));
@@ -132,9 +147,9 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
     // Haptics ride the same beats: three rising taps through the shake, then the
     // payoff. A duplicate gets a flatter thud instead of the success pattern.
     const tap = (at: number, fn: () => void) => timers.current.push(setTimeout(fn, at));
-    tap(T.shake + 120, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
-    tap(T.shake + 420, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
-    tap(T.shake + 660, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
+    tap(T.shake + 180, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
+    tap(T.shake + 580, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
+    tap(T.shake + 940, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
     tap(T.flash, () =>
       loud
         ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
@@ -146,7 +161,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
       timers.current.forEach(clearTimeout);
       timers.current = [];
     };
-  }, [ok, loud, reduce, scrim, drop, shake, flash, vanish, item, burst, spin, motes, name, blurb, hint]);
+  }, [ok, loud, reduce, scrim, drop, shake, flash, vanish, item, burst, spin, spin2, motes, name, blurb, hint]);
 
   /** Tapping mid-sequence jumps to the end rather than throwing the reward away. */
   const skip = () => {
@@ -172,7 +187,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
     // Build: ~7 cycles across the window, amplitude ramping so it winds up
     // rather than rattling at full tilt from the first frame.
     const s = shake.value;
-    const swing = Math.sin(s * Math.PI * 7) * Math.pow(s, 1.5);
+    const swing = Math.sin(s * Math.PI * 11) * Math.pow(s, 1.5);
     const land = drop.value;
     return {
       opacity: 1 - vanish.value,
@@ -197,6 +212,11 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
   const burstStyle = useAnimatedStyle(() => ({
     opacity: burst.value * (loud ? 1 : 0.5),
     transform: [{ scale: 0.55 + burst.value * 0.45 }, { rotate: `${spin.value * 360}deg` }],
+  }));
+
+  const burstInnerStyle = useAnimatedStyle(() => ({
+    opacity: burst.value * (loud ? 0.9 : 0.4),
+    transform: [{ scale: 0.4 + burst.value * 0.44 }, { rotate: `${-spin2.value * 360}deg` }],
   }));
 
   const nameStyle = useAnimatedStyle(() => ({
@@ -268,6 +288,10 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
           {/* Burst sits behind everything on the stage. */}
           <Animated.View style={[styles.burst, burstStyle]} pointerEvents="none">
             <Burst tint={tint} rays={loud} />
+          </Animated.View>
+          {/* Offset half a spoke so the short rays sit BETWEEN the long ones. */}
+          <Animated.View style={[styles.burstInner, burstInnerStyle]} pointerEvents="none">
+            <Burst tint={tint} rays={loud} inner />
           </Animated.View>
 
           <Animated.View style={[styles.slot, itemStyle]} pointerEvents="none">
@@ -344,16 +368,17 @@ function revealCopy(result: Extract<PouchResult, { ok: true }>, blurb: string) {
  * they read as a paper windmill. Both fills are radial gradients centred on the
  * burst, which is what tapers each ray along its own length.
  */
-function Burst({ tint, rays }: { tint: string; rays: boolean }) {
+function Burst({ tint, rays, inner }: { tint: string; rays: boolean; inner?: boolean }) {
   const spokes = [];
   if (rays) {
     for (let i = 0; i < RAYS; i++) {
-      const a = (i / RAYS) * Math.PI * 2;
-      const w = 0.052; // half-width in radians at the rim
+      // The inner ring is rotated half a step so its spokes fall in the gaps.
+      const a = ((i + (inner ? 0.5 : 0)) / RAYS) * Math.PI * 2;
+      const w = inner ? RAY_W * 0.62 : RAY_W;
       const p1 = [50 + 49 * Math.cos(a - w), 50 + 49 * Math.sin(a - w)];
       const p2 = [50 + 49 * Math.cos(a + w), 50 + 49 * Math.sin(a + w)];
       // Alternating length, so it reads as light rather than a gear.
-      const k = i % 2 ? 0.66 : 1;
+      const k = (i % 2 ? 0.66 : 1) * (inner ? 0.8 : 1);
       spokes.push(
         <Polygon
           key={i}
@@ -415,10 +440,13 @@ function Mote({
     const s = Math.sin((i + 1) * 12.9898 + n * 78.233) * 43758.5453;
     return s - Math.floor(s);
   };
-  const angle = (i / MOTES) * Math.PI * 2 + h(1) * 0.4;
-  const dist = 74 + h(2) * 66;
-  const size = 3 + h(3) * 4;
-  const lag = h(4) * 0.18;
+  // Two rings at different radii. With every spark on one circle the burst
+  // reads as a ring expanding rather than as a spray.
+  const ring = i % 2;
+  const angle = (i / MOTES) * Math.PI * 2 + h(1) * 0.5;
+  const dist = (ring ? 58 : 98) + h(2) * 62;
+  const size = 2.5 + h(3) * 5;
+  const lag = h(4) * 0.22;
 
   const style = useAnimatedStyle(() => {
     const p = Math.max(0, Math.min(1, (progress.value - lag) / (1 - lag)));
@@ -467,7 +495,12 @@ const styles = StyleSheet.create({
   },
   stage: { width: 260, height: 260, alignItems: 'center', justifyContent: 'center' },
   burst: { position: 'absolute', width: 300, height: 300 },
-  slot: { width: 152, height: 152 },
+  burstInner: { position: 'absolute', width: 198, height: 198 },
+  // ABSOLUTE, or the pouch and the curio become flex siblings and stack
+  // vertically — 304px of children in a 260px stage, which is why the revealed
+  // item sat above centre with the pouch shoved below it. They have to occupy
+  // the same square.
+  slot: { position: 'absolute', width: 152, height: 152 },
   moteLayer: { position: 'absolute', width: 1, height: 1, alignItems: 'center', justifyContent: 'center' },
   mote: { position: 'absolute' },
   flash: { ...StyleSheet.absoluteFillObject, backgroundColor: '#FFF6E2', borderRadius: 130 },
