@@ -361,6 +361,25 @@ export default function BookDetail() {
               <Ionicons name="pencil" size={14} color={t.accent} />
             </PressRow>
           )}
+
+          {/* Only a finished book has a story to tell about how it was read.
+              Sits under the banner rather than inside it: the banner edits the
+              finish date, and one row cannot own two actions. */}
+          {status === 'finished' ? (
+            <PressRow
+              onPress={() =>
+                router.push(`/book-report?userBookId=${encodeURIComponent(ub.id)}` as Href)
+              }
+              accessibilityLabel="See the reading report for this book"
+              tint={[t.bgTer, t.bgSec]}
+              containerStyle={styles.bannerWrap}
+              style={styles.finishedRow}
+            >
+              <Ionicons name="stats-chart" size={18} color={t.text} />
+              <Text style={[styles.finishedText, { color: t.text }]}>Reading report</Text>
+              <Ionicons name="chevron-forward" size={15} color={t.textSec} />
+            </PressRow>
+          ) : null}
         </Reveal>
 
         {/* Identity */}

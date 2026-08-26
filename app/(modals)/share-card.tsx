@@ -55,7 +55,11 @@ export default function ShareCard() {
   const params = useLocalSearchParams<{
     title?: string; cover?: string; format?: string; pages?: string; minutes?: string; pph?: string;
     streak?: string; pagesTotal?: string; booksTotal?: string;
+    // Book-report mode, opened from a finished book's reading report. Leads with
+    // the days it took rather than a single session.
+    report?: string; days?: string; sessionCount?: string; pace?: string; bookPages?: string;
   }>();
+  const isReport = params.report === '1';
   const reshare = params.pages !== undefined;
   // Streak mode: opened from the streak celebration, so the card leads with the
   // streak instead of a session. There's no book behind it — the canvas already
@@ -101,9 +105,9 @@ export default function ShareCard() {
   const pph = reshare
     ? Number(params.pph)
     : (result?.pph ?? Math.round((pages / ((result?.durationSeconds ?? 3600) / 3600)) * 10) / 10);
-  const bookTitle = reshare ? params.title : active?.bookTitle;
-  const bookCoverUrl = reshare ? (params.cover || null) : (active?.coverUrl ?? null);
-  const bookFormat = (reshare ? params.format : active?.format) as CardStats['format'];
+  const bookTitle = isReport || reshare ? params.title : active?.bookTitle;
+  const bookCoverUrl = isReport || reshare ? (params.cover || null) : (active?.coverUrl ?? null);
+  const bookFormat = (isReport || reshare ? params.format : active?.format) as CardStats['format'];
 
   // Book position — drives the shape of the progress mark on the no-cover cards.
   // Only a live paged session knows it; re-shares and audiobooks don't carry it,
@@ -118,7 +122,23 @@ export default function ShareCard() {
     num(params.booksTotal) ? { label: 'books', value: num(params.booksTotal)! } : null,
   ].filter(Boolean) as CardStats['sub'];
 
-  const stats: CardStats = streakDays != null
+  const reportSub = [
+    { label: 'minutes', value: params.minutes ?? '0' },
+    params.sessionCount ? { label: 'sessions', value: params.sessionCount } : null,
+    params.pace ? { label: 'pages/hr', value: params.pace } : null,
+    !params.pace && params.bookPages ? { label: 'pages', value: params.bookPages } : null,
+  ].filter(Boolean).slice(0, 3) as CardStats['sub'];
+
+  const stats: CardStats = isReport
+    ? {
+        headline: params.days || '—',
+        headlineUnit: params.days === '1' ? 'day to finish' : 'days to finish',
+        sub: reportSub,
+        bookTitle,
+        bookCoverUrl,
+        format: bookFormat,
+      }
+    : streakDays != null
     ? {
         headline: String(streakDays),
         headlineUnit: streakDays === 1 ? 'day read' : 'day streak',
