@@ -10,6 +10,10 @@ import { CardTextColor, cardInk } from '@/services/cardColors';
 export interface CardStats {
   headline: string; // big number/text
   headlineUnit: string; // "pages" | "minutes" | "day streak"
+  /** AT MOST TWO. The feature layout puts these on one row with the wordmark,
+   *  and the vertical layout stacks them under the headline inside a fixed 4:5
+   *  card — a third collides with the wordmark and overflows the card. Extras
+   *  are dropped rather than allowed to corrupt the render. */
   sub: { label: string; value: string }[];
   bookTitle?: string;
   bookCoverUrl?: string | null;
@@ -60,10 +64,12 @@ export const ShareCardCanvas = forwardRef<View, ShareCardCanvasProps>(
     const bookProgress =
       stats.pageCount && stats.endPage != null ? stats.endPage / stats.pageCount : null;
 
+    const subStats = stats.sub.slice(0, MAX_SUB);
+
     // Hero stat + the sub-stats, as one ordered list for the vertical layout.
     const allStats = [
       { value: stats.headline, label: stats.headlineUnit },
-      ...stats.sub.map((s) => ({ value: s.value, label: s.label })),
+      ...subStats.map((s) => ({ value: s.value, label: s.label })),
     ];
 
     return (
@@ -172,7 +178,7 @@ export const ShareCardCanvas = forwardRef<View, ShareCardCanvasProps>(
                 one corner left free by every layout, on the same safe margin. */}
             <View style={styles.bottomRow}>
               <View style={styles.subRow}>
-                {stats.sub.map((s, i) => (
+                {subStats.map((s, i) => (
                   <View key={i} style={styles.subItem}>
                     <Text style={[styles.subValue, textShadow, primary, { fontSize: width * 0.095 }]}>{s.value}</Text>
                     <Text style={[styles.subLabel, textShadow, secondary, { fontSize: width * 0.052 }]}>{s.label.toUpperCase()}</Text>
@@ -189,6 +195,9 @@ export const ShareCardCanvas = forwardRef<View, ShareCardCanvasProps>(
   }
 );
 ShareCardCanvas.displayName = 'ShareCardCanvas';
+
+/** The card's capacity, enforced rather than assumed — see CardStats.sub. */
+const MAX_SUB = 2;
 
 const styles = StyleSheet.create({
   card: { borderRadius: 14, justifyContent: 'space-between', overflow: 'hidden' },

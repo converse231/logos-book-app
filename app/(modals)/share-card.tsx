@@ -128,12 +128,16 @@ export default function ShareCard() {
     num(params.booksTotal) ? { label: 'books', value: num(params.booksTotal)! } : null,
   ].filter(Boolean) as CardStats['sub'];
 
+  // TWO, never three. The canvas lays the sub-stats and the wordmark out on one
+  // row, so a third pushes into the wordmark, and the vertical "Stats" layout
+  // overflows the fixed 4:5 card. Time plus pace tells the story of a finished
+  // book; an audiobook has no pace, so it shows sessions instead.
   const reportSub = [
     { label: 'minutes', value: params.minutes ?? '0' },
-    params.sessionCount ? { label: 'sessions', value: params.sessionCount } : null,
-    params.pace ? { label: 'pages/hr', value: params.pace } : null,
-    !params.pace && params.bookPages ? { label: 'pages', value: params.bookPages } : null,
-  ].filter(Boolean).slice(0, 3) as CardStats['sub'];
+    params.pace
+      ? { label: 'pages/hr', value: params.pace }
+      : { label: 'sessions', value: params.sessionCount ?? '0' },
+  ] as CardStats['sub'];
 
   const stats: CardStats = isReport
     ? {
