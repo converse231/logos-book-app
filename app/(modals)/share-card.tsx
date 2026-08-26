@@ -86,7 +86,10 @@ export default function ShareCard() {
     setStatus('idle');
   }, [layout, variant, textColor]);
 
-  if (!result && !reshare && streakDays == null) {
+  // Report mode carries everything it needs in params, so it must be listed
+  // here too — without it the screen fell through to "Nothing to share yet"
+  // and the Share this read button looked broken.
+  if (!result && !reshare && streakDays == null && !isReport) {
     return (
       <View style={[styles.fallback, { backgroundColor: t.bg }]}>
         <Text style={[styles.fallbackText, { color: t.textSec }]}>Nothing to share yet.</Text>
@@ -112,8 +115,11 @@ export default function ShareCard() {
   // Book position — drives the shape of the progress mark on the no-cover cards.
   // Only a live paged session knows it; re-shares and audiobooks don't carry it,
   // and the mark then draws a neutral open book.
-  const bookPageCount = reshare ? null : (active?.pageCount ?? null);
-  const bookStartPage = reshare || active?.startPage == null ? null : active.startPage;
+  // `active` is whatever session is live right now, which in report mode is a
+  // DIFFERENT book to the one being shared — so report mode takes none of it and
+  // the canvas draws its neutral mark instead.
+  const bookPageCount = reshare || isReport ? null : (active?.pageCount ?? null);
+  const bookStartPage = reshare || isReport || active?.startPage == null ? null : active.startPage;
   const bookEndPage = bookStartPage != null ? bookStartPage + pages : null;
 
   const num = (v?: string) => (v && Number(v) > 0 ? Number(v).toLocaleString() : null);
