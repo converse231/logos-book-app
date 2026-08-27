@@ -10,6 +10,7 @@ import {
   BookFormat,
   BookSearchResult,
   CompleteSessionResult,
+  CurioSetId,
   HomeData,
   LevelName,
   NotificationSettings,
@@ -71,10 +72,18 @@ let _notifSettings: NotificationSettings = {
 
 // Mutable mock state for the curio shelf — module-level so a pouch opened on one
 // screen is still there when another reads it, the way the server would behave.
-const MOCK_CURIO_KEYS = [
-  'acorn', 'acorn-gold', 'berries', 'clover', 'egg', 'feather', 'lantern',
-  'leaf', 'moonflower', 'mushroom', 'pebble', 'pinecone', 'snail',
-];
+// Per set, mirroring open_pouch(p_set) — a pouch is bought for one shelf.
+const MOCK_CURIO_KEYS: Record<CurioSetId, string[]> = {
+  found: [
+    'acorn', 'acorn-gold', 'berries', 'clover', 'egg', 'feather', 'lantern',
+    'leaf', 'moonflower', 'mushroom', 'pebble', 'pinecone', 'snail',
+  ],
+  lit: [
+    'lit-boot', 'lit-bow', 'lit-goldfish', 'lit-harpoon', 'lit-horseshoe',
+    'lit-notebook', 'lit-paintbox', 'lit-portrait', 'lit-silk-shirt',
+    'lit-soma', 'lit-spectacles',
+  ],
+};
 const mockCurios: { key: string; count: number; firstFoundAt: string }[] = [];
 let mockFireflyBalance = 128;
 
@@ -477,18 +486,19 @@ export const mockApi: QuireApi = {
     return mockCurios.map((c) => ({ ...c }));
   },
 
-  async openPouch() {
+  async openPouch(set: CurioSetId) {
     if (mockFireflyBalance < 40) {
       return { ok: false as const, reason: 'insufficient' as const, cost: 40 };
     }
     mockFireflyBalance -= 40;
+    const pool = MOCK_CURIO_KEYS[set] ?? MOCK_CURIO_KEYS.found;
     // Mirrors the RPC's weighting (20260826000000): weight falls off with the
     // copies already held, 3 / (1 + 2*count). Same Efraimidis-Spirakis draw, so
     // mock mode paces like live instead of teaching the wrong feel.
     const held = new Map(mockCurios.map((c) => [c.key, c.count]));
-    let key = MOCK_CURIO_KEYS[0];
+    let key = pool[0];
     let best = -1;
-    for (const k of MOCK_CURIO_KEYS) {
+    for (const k of pool) {
       const w = 3 / (1 + 2 * (held.get(k) ?? 0));
       const score = Math.pow(Math.random(), 1 / w);
       if (score > best) {

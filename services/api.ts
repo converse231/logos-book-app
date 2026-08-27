@@ -24,6 +24,7 @@ import {
   ThemePref,
   UserBook,
   UserProfile,
+  CurioSetId,
   OwnedCurio,
   PouchResult,
 } from './types';
@@ -180,10 +181,12 @@ export interface QuireApi {
   // ── Curios (the collection) ──────────────────────────────────────────────────
   /** Everything the caller has found so far. Owner-scoped; empty until a pouch. */
   getCurios(): Promise<OwnedCurio[]>;
-  /** Spend fireflies on one pouch. Atomic and server-rolled — spend, roll, grant
-   *  and duplicate-refund all happen in a single transaction, so the client can
-   *  neither choose its prize nor overdraw by tapping twice. */
-  openPouch(): Promise<PouchResult>;
+  /** Spend fireflies on one pouch from `set`. Atomic and server-rolled — spend,
+   *  roll, grant and duplicate-refund all happen in a single transaction, so the
+   *  client can neither choose its prize nor overdraw by tapping twice. The set
+   *  only narrows WHICH keys are in the hat; the roll itself is still the
+   *  server's. */
+  openPouch(set: CurioSetId): Promise<PouchResult>;
 
   // ── Feedback (test phase) ─────────────────────────────────────────────────────
   /** Store a tester's feedback / bug report in the DB for the owner to review.

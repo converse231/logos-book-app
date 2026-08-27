@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { OwnedCurio, PouchResult } from '@/services/types';
+import type { CurioSetId, OwnedCurio, PouchResult } from '@/services/types';
 
 // Curios: read your shelf, and open a pouch.
 //
@@ -21,8 +21,10 @@ export const curioApi = {
     }));
   },
 
-  async openPouch(): Promise<PouchResult> {
-    const { data, error } = await supabase.rpc('open_pouch');
+  async openPouch(set: CurioSetId): Promise<PouchResult> {
+    // p_set has no default server-side on purpose (it would make the legacy
+    // zero-arg overload ambiguous), so it is always sent.
+    const { data, error } = await supabase.rpc('open_pouch', { p_set: set });
     if (error) throw error;
     // The RPC returns jsonb; it reports "can't afford it" as a value rather than
     // an error, so the UI can say so without a try/catch.

@@ -401,6 +401,12 @@ export interface AiRecResult {
 
 // ── Curios (the collection fireflies buy) ─────────────────────────────────────
 
+/** Which collection a pouch rolls from. Doubles as the key prefix: every curio
+ *  in 'lit' is named `lit-*`, and the original thirteen are bare, which is why
+ *  set one is not retro-prefixed — those keys are already rows in user_curios.
+ *  Mirrored by open_pouch(p_set) server-side. */
+export type CurioSetId = 'found' | 'lit';
+
 /** One curio on the shelf. `key` stays a plain string here so services/ does not
  *  depend on components/; components/curio/curios.ts narrows it for rendering. */
 export interface OwnedCurio {

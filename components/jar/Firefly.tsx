@@ -22,6 +22,8 @@ const WING_ROOT = { x: 0.886, y: 0.996 };
 /** Rest angle putting a left wing swept back over the abdomen (-108 + -117
  *  lands the blade at 135 deg), and the fore-aft sweep either side of it. */
 const WING_BASE = 117;
+/** Floor under the flash envelope, so an unlit fly still carries a faint lantern. */
+const REST_GLOW = 0.18;
 const WING_AMP = 35;
 
 export interface FlySpec {
@@ -114,7 +116,10 @@ export function flySpec(
     // around 10Hz on a 60fps display. A firefly really beats ~50Hz and is
     // genuinely invisible, so the true rate is never the right rate.
     // Radians/sec, so Hz = beat / 2pi.
-    beat: 32 + r(16) * 10,
+    // ~7.6-9.9Hz. Real fireflies beat far faster than this, but past ~15Hz a
+    // 60fps sprite starts to alias into a flicker instead of reading as a beat,
+    // so this is the fastest that still looks like flight.
+    beat: 48 + r(16) * 14,
     beatLag: 0.35 + r(17) * 0.5,
     double: r(18) < 0.32,
   };
@@ -205,7 +210,7 @@ export function Firefly({
     if (reduce) return { opacity: 0.5, transform: [{ scale: 1 }] };
     const t = clock.value;
     const u = (((t / spec.period + spec.offset) % 1) + 1) % 1;
-    const A = 0.035, D = 0.17;
+    const A = 0.035, D = 0.2;
     let l = 0;
     if (u < A) l = u / A;
     else if (u < A + D) l = Math.pow(1 - (u - A) / D, 1.9);
@@ -214,6 +219,10 @@ export function Firefly({
       if (u2 > 0 && u2 < 0.11) l = Math.pow(1 - u2 / 0.11, 1.6) * 0.55;
     }
     if (l > 0) l = Math.min(1, l * (1 + Math.sin(t * 31 + spec.offset * 9) * 0.08));
+    // A resting ember under the flash. The envelope is only lit for ~a fifth of
+    // its period, so without a floor most of the jar is dark most of the time —
+    // which read as a dim jar rather than as fireflies pulsing in one.
+    l = Math.max(REST_GLOW, l);
     return { opacity: l, transform: [{ scale: 0.45 + l * 1.05 }] };
   }, [reduce]);
 
@@ -226,7 +235,7 @@ export function Firefly({
     let l = 0;
     if (u < A) l = u / A;
     else if (u < A + D) l = Math.pow(1 - (u - A) / D, 1.9);
-    return { opacity: 0.55 + l * 0.45 };
+    return { opacity: 0.62 + l * 0.38 };
   }, [reduce]);
 
   // Dorsal wings sweep fore-and-aft in the image plane, which is pure rotation
@@ -267,7 +276,7 @@ export function Firefly({
 
   // The glow sprite already peaks at full opacity, so a brighter flash has to
   // come from reach and bloom rather than more alpha.
-  const glowR = H * 0.78;
+  const glowR = H * 0.88;
 
   return (
     <Animated.View style={[styles.fly, { width: W, height: H }, container]} pointerEvents="none">

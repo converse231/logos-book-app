@@ -376,6 +376,7 @@ export default function Home() {
           <ReadTodayCard
             readDates={readDates}
             readToday={readToday}
+            streak={data.streak}
             activeBook={data.activeBook}
             onLog={() => router.push('/(modals)/read-today' as Href)}
           />

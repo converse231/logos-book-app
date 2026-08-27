@@ -12,6 +12,11 @@ interface ProgressBarProps {
   value: number;
   max: number;
   accent?: string;
+  /** Track fill and border. Defaults to the theme, which is right everywhere the
+   *  substrate is paper — override only on the painted dark surfaces (the jar,
+   *  the collection), where a cream pill would read as a hole in the picture. */
+  track?: string;
+  border?: string;
   height?: number;
   animateOnMount?: boolean;
 }
@@ -24,6 +29,8 @@ export function ProgressBar({
   value,
   max,
   accent,
+  track,
+  border,
   height = 8,
   animateOnMount = true,
 }: ProgressBarProps) {
@@ -54,7 +61,10 @@ export function ProgressBar({
 
   return (
     <View
-      style={[styles.track, { height, borderRadius: radius, backgroundColor: t.bgTer, borderColor: t.border }]}
+      style={[
+        styles.track,
+        { height, borderRadius: radius, backgroundColor: track ?? t.bgTer, borderColor: border ?? t.border },
+      ]}
       onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
       accessibilityRole="progressbar"
       // Fabric types accessibilityValue.now/min/max as integers (long long).
