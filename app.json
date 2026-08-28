@@ -2,7 +2,7 @@
   "expo": {
     "name": "Quire",
     "slug": "quire",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "scheme": "quire",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
