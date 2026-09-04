@@ -2,10 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  FadeInUp,
-  useReducedMotion,
-} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
@@ -36,6 +32,7 @@ import { drainQueue } from '@/lib/sessionQueue';
 import { takeBreakOverlay, takeStreakCelebration } from '@/lib/streakCelebration';
 import { shouldOfferTour } from '@/lib/tour';
 import { useTour } from '@/components/tour/TourProvider';
+import { Reveal } from '@/components/shared/Reveal';
 
 /** How long the shelf + lifetime stats stay good for across a tab return. */
 const SHELF_FRESH_MS = 30_000;
@@ -50,7 +47,6 @@ export default function Home() {
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
-  const reduce = useReducedMotion();
   const { offer: offerTour } = useTour();
 
   const [data, setData] = useState<HomeData | null>(null);
@@ -152,7 +148,7 @@ export default function Home() {
                 (a, b) => Number(!!b.body?.trim()) - Number(!!a.body?.trim())
               );
               if (alive && ranked.length) setFeatured({ book: finished, reviews: ranked });
-            });
+            }).catch(() => {});
           }
         })
         .catch(() => alive && setError(true))
@@ -305,7 +301,7 @@ export default function Home() {
         }
       >
         {/* Header */}
-        <Reveal index={0} reduce={reduce}>
+        <Reveal index={0}>
           <View style={styles.header}>
             <Pressable
               onPress={() => router.push('/(tabs)/profile' as Href)}
@@ -343,7 +339,7 @@ export default function Home() {
         </Reveal>
 
         {/* 1 — Illustrated streak hero (Duolingo-style, keyed to live streak state) */}
-        <Reveal index={1} reduce={reduce}>
+        <Reveal index={1}>
           <StreakHero
             currentStreak={data.streak.currentStreak}
             isAtRisk={data.streak.isAtRisk}
@@ -356,7 +352,7 @@ export default function Home() {
         </Reveal>
 
         {/* 2 — Reading stats (tinted blocks; almost-there lives in the hero + challenges) */}
-        <Reveal index={2} reduce={reduce}>
+        <Reveal index={2}>
           <View style={styles.section}>
             <SectionHeader
               title="Your reading"
@@ -372,7 +368,7 @@ export default function Home() {
         </Reveal>
 
         {/* Daily check-in — "I read today" streak saver */}
-        <Reveal index={3} reduce={reduce}>
+        <Reveal index={3}>
           <ReadTodayCard
             readDates={readDates}
             readToday={readToday}
@@ -383,7 +379,7 @@ export default function Home() {
         </Reveal>
 
         {/* 2 — Shelf Builder (level / XP) */}
-        <Reveal index={4} reduce={reduce}>
+        <Reveal index={4}>
           <Card padded style={styles.levelCard}>
             <LevelNameBadge levelName={data.user.levelName} context="home" />
             <View style={styles.xpWrap}>
@@ -401,7 +397,7 @@ export default function Home() {
         </Reveal>
 
         {/* 3 — Continue reading */}
-        <Reveal index={4} reduce={reduce}>
+        <Reveal index={4}>
           {data.activeBook ? (
             <Card padded>
               <Text style={[styles.kicker, { color: t.textSec }]}>CONTINUE READING</Text>
@@ -459,7 +455,7 @@ export default function Home() {
         </Reveal>
 
         {/* 4 — Up next (TBR) */}
-        <Reveal index={5} reduce={reduce}>
+        <Reveal index={5}>
           <View style={styles.section}>
             <SectionHeader
               title="Up next"
@@ -496,7 +492,7 @@ export default function Home() {
 
         {/* 5 — Recent sessions */}
         {recentSessions.length > 0 ? (
-          <Reveal index={6} reduce={reduce}>
+          <Reveal index={6}>
             <View style={styles.section}>
               <SectionHeader
                 title="Recent sessions"
@@ -520,7 +516,7 @@ export default function Home() {
 
         {/* 6 — Reviews */}
         {featured ? (
-          <Reveal index={7} reduce={reduce}>
+          <Reveal index={7}>
             <View style={styles.section}>
               <SectionHeader
                 title="What readers are saying"
@@ -546,7 +542,7 @@ export default function Home() {
         ) : null}
 
         {/* 7 — Challenges */}
-        <Reveal index={8} reduce={reduce}>
+        <Reveal index={8}>
           <View style={styles.section}>
             <SectionHeader title="Challenges" />
             <Carousel>
@@ -563,10 +559,6 @@ export default function Home() {
 }
 
 // Module-level so cards don't remount (and reload covers) on focus refetches.
-function Reveal({ index, reduce, children }: { index: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(index * 70).duration(440)}>{children}</Animated.View>;
-}
 
 // A tinted, ink-bordered stat block on a hard shadow — one reward colour each, the
 // same neubrutalist language as the session-complete cards.

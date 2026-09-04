@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn,
-  FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -18,6 +17,7 @@ import { CENTER_COLUMN } from '@/theme/layout';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Q } from '@/components/shared/Q';
+import { Reveal } from '@/components/shared/Reveal';
 
 // Level-up celebration (blueprint Section 5). Pushed on top of session-complete
 // when complete_session reports a crossed level boundary (result.leveledUp).
@@ -45,18 +45,18 @@ export default function LevelUp() {
 
       <View style={[styles.center, { paddingTop: insets.top, paddingBottom: insets.bottom }]} pointerEvents="box-none">
         {level > 0 ? (
-          <Reveal d={reduce ? 0 : 160} reduce={reduce}>
+          <Reveal delay={reduce ? 0 : 160}>
             <Text style={[styles.kicker, { color: t.level }]}>LEVEL {level}</Text>
           </Reveal>
         ) : null}
 
         <QHero reduce={reduce} />
 
-        <Reveal d={reduce ? 0 : 440} reduce={reduce}>
+        <Reveal delay={reduce ? 0 : 440}>
           <Text style={[styles.name, { color: t.level }]}>{name}</Text>
         </Reveal>
 
-        <Reveal d={reduce ? 0 : 520} reduce={reduce}>
+        <Reveal delay={reduce ? 0 : 520}>
           <Text style={[styles.blurb, { color: t.textSec }]}>
             A new title is yours. Keep logging pages to climb higher.
           </Text>
@@ -93,10 +93,6 @@ function QHero({ reduce }: { reduce: boolean }) {
   );
 }
 
-function Reveal({ d, reduce, children }: { d: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(d).duration(420)}>{children}</Animated.View>;
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1 },

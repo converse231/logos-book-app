@@ -9,10 +9,12 @@ import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { BookSearchResult, UserProfile } from '@/services/types';
-import { fetchAuthorPhoto, toSubject } from '@/lib/bookSearch';
+import { fetchAuthorPhoto, isSearchUnavailable, toSubject } from '@/lib/bookSearch';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
+import { OfflineNotice } from '@/components/shared/OfflineNotice';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { DiscoverRow } from '@/components/discover/DiscoverRow';
+import { Reveal } from '@/components/shared/Reveal';
 
 // NYT lists surfaced as carousels (encoded name → display title).
 const NYT_LISTS: { name: string; title: string }[] = [
@@ -45,6 +47,8 @@ export default function Discover() {
     Object.fromEntries(NYT_LISTS.map((l) => [l.name, null]))
   );
   const [moreOpen, setMoreOpen] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [nonce, setNonce] = useState(0);
 
   // Discover is the app's heaviest mount — sixteen requests across profile, two
   // recommendation rows, two NYT lists, three category shelves and eight author
@@ -62,7 +66,14 @@ export default function Discover() {
       if (!alive) return;
       setProfile(p);
       const genre = p.genrePrefs?.[0] ?? 'fiction';
-      api.searchBooks(`subject:${toSubject(genre)}`).then((r) => alive && setForYou(r)).catch(() => alive && setForYou([]));
+      api.searchBooks(`subject:${toSubject(genre)}`)
+        .then((r) => alive && setForYou(r))
+        .catch((e) => {
+          if (!alive) return;
+          setForYou([]);
+          // One notice at the top beats eight silently-empty carousels.
+          if (isSearchUnavailable(e)) setOffline(true);
+        });
     }).catch(() => {});
     api.getRecommendedBooks().then((r) => alive && setTrending(r)).catch(() => alive && setTrending([]));
 
@@ -86,7 +97,7 @@ export default function Discover() {
       alive = false;
       handle.cancel();
     };
-  }, [api]);
+  }, [api, nonce]);
 
   const topGenre = profile?.genrePrefs?.[0];
   const openBook = (b: BookSearchResult) => {
@@ -112,53 +123,67 @@ export default function Discover() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 28 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.title, { color: t.text }]}>Discover</Text>
+        <Reveal index={0}>
+          <Text style={[styles.title, { color: t.text }]}>Discover</Text>
+        </Reveal>
+
+        {offline ? (
+          <View style={styles.padded}>
+            <OfflineNotice onRetry={() => { setOffline(false); setNonce((n) => n + 1); }} />
+          </View>
+        ) : null}
 
         {/* Mood Reader banner — parked. Every open spends Anthropic credit, and
             it isn't worth funding before launch, so the banner teases without
             routing anywhere. Re-enable by restoring the onPress and dropping
             `disabled`; the whole feature underneath is built and working. */}
-        <View style={styles.padded}>
-          <PressBlock
-            onPress={() => {}}
-            disabled
-            accessibilityLabel="Mood Reader, coming soon"
-            accessibilityState={{ disabled: true }}
-            style={[styles.banner, { backgroundColor: t.bgTer, borderColor: t.border }]}
-          >
-            <View style={styles.bannerText}>
-              <View style={styles.bannerTag}>
-                <Ionicons name="sparkles" size={13} color={t.textSec} />
-                <Text style={[styles.bannerTagText, { color: t.textSec }]}>MOOD READER</Text>
+        <Reveal index={1}>
+          <View style={styles.padded}>
+            <PressBlock
+              onPress={() => {}}
+              disabled
+              accessibilityLabel="Mood Reader, coming soon"
+              accessibilityState={{ disabled: true }}
+              style={[styles.banner, { backgroundColor: t.bgTer, borderColor: t.border }]}
+            >
+              <View style={styles.bannerText}>
+                <View style={styles.bannerTag}>
+                  <Ionicons name="sparkles" size={13} color={t.textSec} />
+                  <Text style={[styles.bannerTagText, { color: t.textSec }]}>MOOD READER</Text>
+                </View>
+                <Text style={[styles.bannerTitle, { color: t.text }]}>Find your next read by vibe</Text>
+                <Text style={[styles.bannerSub, { color: t.textSec }]}>Pick a mood, get picks that match</Text>
               </View>
-              <Text style={[styles.bannerTitle, { color: t.text }]}>Find your next read by vibe</Text>
-              <Text style={[styles.bannerSub, { color: t.textSec }]}>Pick a mood, get picks that match</Text>
-            </View>
-            <View style={[styles.soon, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-              <Text style={[styles.soonText, { color: t.textSec }]}>SOON</Text>
-            </View>
-          </PressBlock>
-        </View>
+              <View style={[styles.soon, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+                <Text style={[styles.soonText, { color: t.textSec }]}>SOON</Text>
+              </View>
+            </PressBlock>
+          </View>
+        </Reveal>
 
         {/* For You */}
-        <DiscoverRow
-          title="For you"
-          subtitle={topGenre ? `Because you like ${topGenre}` : 'Picks to get you started'}
-          books={forYou ?? []}
-          loading={forYou === null}
-          onTapBook={openBook}
-          onSeeAll={() => browse(topGenre ? `For you · ${topGenre}` : 'For you', `subject:${toSubject(topGenre ?? 'fiction')}`)}
-        />
+        <Reveal index={2}>
+          <DiscoverRow
+            title="For you"
+            subtitle={topGenre ? `Because you like ${topGenre}` : 'Picks to get you started'}
+            books={forYou ?? []}
+            loading={forYou === null}
+            onTapBook={openBook}
+            onSeeAll={() => browse(topGenre ? `For you · ${topGenre}` : 'For you', `subject:${toSubject(topGenre ?? 'fiction')}`)}
+          />
+        </Reveal>
 
         {/* Trending */}
-        <DiscoverRow
-          title="Trending now"
-          subtitle="What readers are picking up"
-          books={trending ?? []}
-          loading={trending === null}
-          onTapBook={openBook}
-          onSeeAll={() => browse('Trending', 'subject:fiction bestseller')}
-        />
+        <Reveal index={3}>
+          <DiscoverRow
+            title="Trending now"
+            subtitle="What readers are picking up"
+            books={trending ?? []}
+            loading={trending === null}
+            onTapBook={openBook}
+            onSeeAll={() => browse('Trending', 'subject:fiction bestseller')}
+          />
+        </Reveal>
 
         {/* NYT Bestsellers — cached weekly server-side. Attribution required by ToS. */}
         {NYT_LISTS.map((l) => (

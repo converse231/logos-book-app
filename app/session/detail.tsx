@@ -11,6 +11,7 @@ import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { Reveal } from '@/components/shared/Reveal';
 
 // Per-session detail (Strava activity view). Reads the session's stats from nav
 // params (the history list already has them — no refetch) and offers a re-share
@@ -141,68 +142,72 @@ export default function SessionDetail() {
         </View>
 
         {/* Book + date */}
-        <View style={styles.bookRow}>
-          <View style={[styles.coverFrame, { borderColor: t.border }]}>
-            <BookCover url={p.cover || null} title={p.title ?? 'Book'} format={p.format as any} width={66} />
-          </View>
-          <View style={styles.bookInfo}>
-            <Text style={[styles.bookTitle, { color: t.text }]} numberOfLines={2}>{p.title}</Text>
-            <Text style={[styles.date, { color: t.textSec }]}>{longDate(p.startedAt)}</Text>
-            {isPB ? (
-              <View style={[styles.pbBadge, { backgroundColor: t.gold }]}>
-                <Ionicons name="trophy" size={13} color={INK} />
-                <Text style={styles.pbText}>PERSONAL BEST</Text>
-              </View>
-            ) : null}
-          </View>
-        </View>
-
-        {isCheckIn ? (
-          /* Check-in — no pages/duration to show; explain what it is */
-          <View style={[styles.checkInCard, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
-            <Ionicons name="flame" size={44} color={t.accent} />
-            <Text style={[styles.checkInTitle, { color: t.text }]}>READING CHECK-IN</Text>
-            <Text style={[styles.checkInSub, { color: t.textSec }]}>
-              You checked in to keep your streak going{xp > 0 ? ` · +${xp} XP` : ''}.
-            </Text>
-          </View>
-        ) : (
-          <>
-            {/* Hero stat */}
-            <View style={[styles.heroCard, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-              <Text style={[styles.hero, { color: t.text }]}>{hero}</Text>
-              <Text style={[styles.heroUnit, { color: t.textSec }]}>{heroUnit.toUpperCase()}</Text>
+        <Reveal index={0}>
+          <View style={styles.bookRow}>
+            <View style={[styles.coverFrame, { borderColor: t.border }]}>
+              <BookCover url={p.cover || null} title={p.title ?? 'Book'} format={p.format as any} width={66} />
             </View>
-
-            {/* Sub-stats row */}
-            <View style={styles.statRow}>
-              {subStats.map((s) => (
-                <View key={s.label} style={[styles.statTile, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-                  <Text
-                    style={[styles.statValue, { color: t.text }]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.6}
-                  >
-                    {s.value}
-                  </Text>
-                  <Text style={[styles.statLabel, { color: t.textSec }]} numberOfLines={1}>
-                    {s.label.toUpperCase()}
-                  </Text>
+            <View style={styles.bookInfo}>
+              <Text style={[styles.bookTitle, { color: t.text }]} numberOfLines={2}>{p.title}</Text>
+              <Text style={[styles.date, { color: t.textSec }]}>{longDate(p.startedAt)}</Text>
+              {isPB ? (
+                <View style={[styles.pbBadge, { backgroundColor: t.gold }]}>
+                  <Ionicons name="trophy" size={13} color={INK} />
+                  <Text style={styles.pbText}>PERSONAL BEST</Text>
                 </View>
-              ))}
+              ) : null}
             </View>
-          </>
-        )}
+          </View>
+        </Reveal>
+
+        <Reveal index={1}>
+          {isCheckIn ? (
+            /* Check-in — no pages/duration to show; explain what it is */
+            <View style={[styles.checkInCard, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
+              <Ionicons name="flame" size={44} color={t.accent} />
+              <Text style={[styles.checkInTitle, { color: t.text }]}>READING CHECK-IN</Text>
+              <Text style={[styles.checkInSub, { color: t.textSec }]}>
+                You checked in to keep your streak going{xp > 0 ? ` · +${xp} XP` : ''}.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {/* Hero stat */}
+              <View style={[styles.heroCard, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+                <Text style={[styles.hero, { color: t.text }]}>{hero}</Text>
+                <Text style={[styles.heroUnit, { color: t.textSec }]}>{heroUnit.toUpperCase()}</Text>
+              </View>
+
+              {/* Sub-stats row */}
+              <View style={styles.statRow}>
+                {subStats.map((s) => (
+                  <View key={s.label} style={[styles.statTile, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+                    <Text
+                      style={[styles.statValue, { color: t.text }]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.6}
+                    >
+                      {s.value}
+                    </Text>
+                    <Text style={[styles.statLabel, { color: t.textSec }]} numberOfLines={1}>
+                      {s.label.toUpperCase()}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+        </Reveal>
 
         {/* Re-share — a check-in has nothing meaningful to put on a card */}
         {isCheckIn ? null : (
-          <View style={styles.shareWrap}>
+          <Reveal index={2} style={styles.shareWrap}>
             <PressBlock onPress={reshare} accessibilityLabel="Share this session" style={[styles.shareBtn, { backgroundColor: t.accent }]}>
               <Ionicons name="share-social" size={20} color={PALETTE.onAccent} />
               <Text style={styles.shareText}>SHARE THIS SESSION</Text>
             </PressBlock>
-          </View>
+          </Reveal>
         )}
       </ScrollView>
     </ScreenBackground>

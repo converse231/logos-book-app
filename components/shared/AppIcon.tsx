@@ -1,4 +1,4 @@
-import type { ImageStyle, StyleProp } from 'react-native';
+import type { ColorValue, ImageStyle, StyleProp } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -124,7 +124,7 @@ interface AppIconProps {
   tint?: IconTint;
   size?: number;
   /** Tints font glyphs. Ignored by custom art, which carries its own colour. */
-  color?: string;
+  color?: ColorValue;
   style?: StyleProp<ImageStyle>;
 }
 

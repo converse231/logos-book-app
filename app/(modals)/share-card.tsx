@@ -78,7 +78,9 @@ export default function ShareCard() {
   const [perm, requestPerm] = MediaLibrary.usePermissions();
 
   useEffect(() => {
-    api.getProfile().then((p) => setLevelName(p.levelName));
+    let alive = true;
+    api.getProfile().then((p) => alive && setLevelName(p.levelName)).catch(() => {});
+    return () => { alive = false; };
   }, [api]);
 
   // reset transient feedback when the user changes the design
@@ -445,7 +447,7 @@ const styles = StyleSheet.create({
   page: { alignItems: 'center', justifyContent: 'center' },
   previewBox: { borderRadius: 14, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
   cardWrap: {},
-  checker: { ...StyleSheet.absoluteFillObject },
+  checker: { ...StyleSheet.absoluteFill },
   checkerRow: { flex: 1, flexDirection: 'row' },
   checkerCell: { flex: 1 },
 

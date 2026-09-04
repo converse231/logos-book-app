@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
@@ -31,7 +31,7 @@ function TabIcon({
 }: {
   name: IconName;
   focused: boolean;
-  color: string;
+  color: ColorValue;
   accentMuted: string;
   /** Set on the one tab the tour spotlights. */
   tourKey?: TourTargetKey;

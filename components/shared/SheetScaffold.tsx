@@ -2,7 +2,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   SlideInDown,
-  useAnimatedKeyboard,
   useAnimatedStyle,
   useReducedMotion,
 } from 'react-native-reanimated';
@@ -10,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { CENTER_COLUMN, useIsWideScreen } from '@/theme/layout';
+import { useKeyboardLift } from '@/components/shared/KeyboardLift';
 
 interface SheetScaffoldProps {
   title: string;
@@ -37,12 +37,11 @@ export function SheetScaffold({ title, onClose, children, hideHeader = false, sc
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
   const isDark = t.mode === 'dark';
-  const keyboard = useAnimatedKeyboard();
   const wide = useIsWideScreen();
 
   // Lift the whole (flex-end) sheet by the keyboard height. Padding on the root
   // pushes the anchored sheet up without disturbing the full-screen scrim.
-  const liftStyle = useAnimatedStyle(() => ({ paddingBottom: keyboard.height.value }));
+  const liftStyle = useKeyboardLift();
 
   const body = scroll ? (
     <ScrollView

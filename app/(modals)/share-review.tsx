@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
 
   previewArea: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingVertical: 12, marginTop: 12 },
   previewBox: { borderRadius: 14, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
-  checker: { ...StyleSheet.absoluteFillObject },
+  checker: { ...StyleSheet.absoluteFill },
   checkerRow: { flex: 1, flexDirection: 'row' },
   checkerCell: { flex: 1 },
 

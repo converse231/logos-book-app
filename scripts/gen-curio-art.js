@@ -128,7 +128,7 @@ async function backdrop(src) {
   const args = process.argv.slice(2);
   const files = fs
     .readdirSync(ROOT)
-    .filter((f) => f.endsWith('.png') && (f.startsWith('lit-') || f.startsWith('tok-')))
+    .filter((f) => /^(tok|lit|epic)-.*\.png$/.test(f))
     .filter((f) => !args.length || args.some((a) => f.includes(a)));
 
   for (const f of files) await curio(path.join(ROOT, f));

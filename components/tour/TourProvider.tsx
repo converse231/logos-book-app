@@ -280,7 +280,7 @@ const SCRIM = 'rgba(10,8,6,0.74)';
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scrimFull: { ...StyleSheet.absoluteFillObject, backgroundColor: SCRIM },
+  scrimFull: { ...StyleSheet.absoluteFill, backgroundColor: SCRIM },
   dim: { position: 'absolute', backgroundColor: SCRIM },
   ring: { position: 'absolute', borderWidth: 2 },
 

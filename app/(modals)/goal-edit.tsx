@@ -33,9 +33,11 @@ export default function GoalEdit() {
       if (!alive) return;
       if (g) {
         setGoal(g);
-        setBooks(g.goalBooks);
+        // Clamp to the Stepper's own range: a stored 0 made the pace row read
+        // "1 book every Infinity days".
+        setBooks(Math.max(1, Math.min(365, g.goalBooks)));
       }
-    });
+    }).catch(() => {});
     return () => { alive = false; };
   }, [api, year]);
 

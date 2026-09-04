@@ -1,5 +1,5 @@
-import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, type AnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
 const BODY = require('@/assets/jar/fly-body.webp');
@@ -320,7 +320,9 @@ function Wing({
   hx, hy, w, h, mirror, style,
 }: {
   hx: number; hy: number; w: number; h: number; mirror?: boolean;
-  style: { transform: unknown[]; opacity: number };
+  // Reanimated's animated style is an opaque handle, not a plain object — take
+  // whatever useAnimatedStyle produces rather than re-describing its shape.
+  style: AnimatedStyle<ViewStyle>;
 }) {
   const rootX = mirror ? 1 - WING_ROOT.x : WING_ROOT.x;
   return (
@@ -343,6 +345,6 @@ function Wing({
 const styles = StyleSheet.create({
   fly: { position: 'absolute', left: 0, top: 0 },
   abs: { position: 'absolute' },
-  fill: { ...StyleSheet.absoluteFillObject },
+  fill: { ...StyleSheet.absoluteFill },
   flip: { transform: [{ scaleX: -1 }] },
 });

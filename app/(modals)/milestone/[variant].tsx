@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn,
-  FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -21,6 +20,7 @@ import { Confetti } from '@/components/shared/Confetti';
 import { CountUp } from '@/components/onboarding/CountUp';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Sparkle } from '@/components/shared/Sparkle';
+import { Reveal } from '@/components/shared/Reveal';
 
 type Variant = 'normal' | 'bigger' | 'cinematic' | 'legendary';
 
@@ -71,17 +71,17 @@ export default function MilestoneCelebration() {
       <Confetti fire particleCount={reduce ? 0 : cfg.confetti} />
 
       <View style={[styles.center, { paddingTop: insets.top, paddingBottom: insets.bottom }]} pointerEvents="box-none">
-        <Reveal d={reduce ? 0 : 200} reduce={reduce}>
+        <Reveal delay={reduce ? 0 : 200}>
           <Text style={[styles.kicker, { color: accent }]}>{cfg.kicker.toUpperCase()}</Text>
         </Reveal>
 
         <FireStreak count={count} reduce={reduce} />
 
-        <Reveal d={reduce ? 0 : 420} reduce={reduce}>
+        <Reveal delay={reduce ? 0 : 420}>
           <Text style={[styles.label, { color: t.textSec }]}>DAY STREAK</Text>
         </Reveal>
 
-        <Reveal d={reduce ? 0 : 500} reduce={reduce}>
+        <Reveal delay={reduce ? 0 : 500}>
           <Text style={[styles.blurb, { color: t.textSec }]}>{blurbFor(count)}</Text>
         </Reveal>
       </View>
@@ -157,10 +157,6 @@ function FireStreak({ count, reduce }: { count: number; reduce: boolean }) {
   );
 }
 
-function Reveal({ d, reduce, children }: { d: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(d).duration(420)}>{children}</Animated.View>;
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -172,7 +168,7 @@ const styles = StyleSheet.create({
   sparkA: { position: 'absolute', top: 6, left: 0, zIndex: 2 },
   sparkB: { position: 'absolute', top: 36, right: 4, zIndex: 2 },
   sparkC: { position: 'absolute', bottom: 52, right: 18, zIndex: 2 },
-  fireNumberSlot: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  fireNumberSlot: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   fireNumber: {
     fontFamily: FONTS.monoBold, fontVariant: ['tabular-nums'], textAlign: 'center',
     includeFontPadding: false, padding: 0, minWidth: 60,

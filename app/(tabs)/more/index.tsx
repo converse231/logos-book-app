@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { useTour } from '@/components/tour/TourProvider';
@@ -16,6 +15,7 @@ import { UserProfile } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { Card } from '@/components/shared/Card';
 import { LevelNameBadge } from '@/components/shared/LevelNameBadge';
+import { Reveal } from '@/components/shared/Reveal';
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -60,13 +60,12 @@ export default function More() {
   const { start: startTour } = useTour();
   const api = useApi();
   const insets = useSafeAreaInsets();
-  const reduce = useReducedMotion();
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
-      api.getProfile().then((p) => alive && setProfile(p));
+      api.getProfile().then((p) => alive && setProfile(p)).catch(() => {});
       return () => {
         alive = false;
       };
@@ -90,7 +89,7 @@ export default function More() {
         <Text style={[styles.title, { color: t.text }]}>More</Text>
 
         {/* Identity */}
-        <Reveal i={0} reduce={reduce}>
+        <Reveal index={0}>
           <Pressable onPress={() => router.push('/(tabs)/profile' as Href)} accessibilityRole="button" accessibilityLabel="Open profile">
             <Card padded glow style={styles.identity}>
               <View style={[styles.avatar, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
@@ -121,7 +120,7 @@ export default function More() {
         </Reveal>
 
         {GROUPS.map((group, gi) => (
-          <Reveal i={gi + 1} reduce={reduce} key={group.title}>
+          <Reveal index={gi + 1} key={group.title}>
             <View style={styles.group}>
               <Text style={[styles.groupTitle, { color: t.textSec }]}>{group.title}</Text>
               {/* overflow:hidden is load-bearing. RN doesn't clip children to a
@@ -175,7 +174,7 @@ export default function More() {
           </Reveal>
         ))}
 
-        <Reveal i={GROUPS.length + 1} reduce={reduce}>
+        <Reveal index={GROUPS.length + 1}>
           <Pressable
             onPress={signOut}
             accessibilityRole="button"
@@ -196,10 +195,6 @@ export default function More() {
 }
 
 // Module-level so the menu groups don't re-animate when the profile loads in.
-function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(i * 70).duration(420)}>{children}</Animated.View>;
-}
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 16 },

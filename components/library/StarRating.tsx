@@ -204,5 +204,5 @@ function Pip({
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   star: { alignItems: 'center', justifyContent: 'center' },
-  pip: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  pip: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
 });

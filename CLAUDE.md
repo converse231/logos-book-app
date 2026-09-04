@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Quire** (renamed 2026-07-21 from "Logos" — a quire is a gathering of folded pages; the display name, slug `quire`, scheme `quire://`, and bundle id/package `com.quire.app` all use it) — a gamified reading-tracker mobile app. The emotional north star is making readers feel like *literary athletes*: "Before the book, there was the quire. Track every page you read." (renamed from the old Logos tagline "In the beginning was the Word.") Streaks, comeback challenges, variable-reward reading insights, and XP/levels are not features bolted onto a tracker — **gamification IS the product**. (The repo folder `LOGOS-APP` and `LOGOS_BLUEPRINT.md` keep their old names; the blueprint's prose/deep-links still say "logos" — historical, not user-facing.)
 
-React Native + Expo (managed, **SDK 54**), file-based routing via **Expo Router**, written in **TypeScript**. Entry point today is `index.js` → `App.js` (default scaffold); phase **F0** migrates the app to the Expo Router `app/` tree.
+React Native + Expo (managed, **SDK 57**), file-based routing via **Expo Router**, written in **TypeScript**. Entry point today is `index.js` → `App.js` (default scaffold); phase **F0** migrates the app to the Expo Router `app/` tree.
 
 > **`LOGOS_BLUEPRINT.md` is the single source of truth.** It is the authoritative 22-section product + technical spec. This file is the working guide; when the two conflict on product or architecture, the blueprint wins. The blueprint marks unverified claims with `[VERIFY]` — confirm those against live SDK/API docs before relying on them.
 
@@ -33,10 +33,10 @@ npm run web        # Start in browser
 
 Installed today: `expo`, `expo-asset`, `expo-status-bar` only. Items marked *(to add)* arrive in F0+.
 
-- React 19.1.0 · React Native 0.81.5 · Expo SDK 54 (managed)
+- React 19.2.3 · React Native 0.86.3 · Expo SDK 57 (managed) — upgraded from SDK 54 on 2026-09-04
 - **Expo Router** — file-based `app/` tree *(to add)*
 - **TypeScript** *(to add)*
-- **Reanimated 3** — all animation on the UI thread; never the legacy `Animated` API *(to add)*
+- **Reanimated 4** — all animation on the UI thread; never the legacy `Animated` API
 - **Zustand + MMKV** — state + offline session queue *(to add)*
 - `@gorhom/bottom-sheet`, `expo-image`, `react-native-gesture-handler`, `react-native-view-shot`, Lottie *(to add as each feature lands)*
 - Backend (later): **Supabase** (Postgres / Auth / Storage / Realtime / Edge Functions / pg_cron)
@@ -45,20 +45,32 @@ Installed today: `expo`, `expo-asset`, `expo-status-bar` only. Items marked *(to
 
 ### Expo SDK version (load-bearing constraint)
 
-Expo SDK is **54**. Always consult the versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any Expo-specific code — APIs change between SDK versions.
+Expo SDK is **57**. Always consult the versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any Expo-specific code — APIs change between SDK versions.
 
-**iOS Expo Go only supports the single latest SDK.** The App Store Expo Go currently ships SDK 54, so this project must stay on SDK 54 to run on a physical iPhone via Expo Go. Do not downgrade. When Apple ships a newer Expo Go, upgrade with `npm install expo@^<new> && npx expo install --fix`.
+**iOS Expo Go only supports the single latest SDK.** The App Store Expo Go currently ships SDK 57, so this project must stay on SDK 57 to run on a physical iPhone via Expo Go. Do not downgrade. When Apple ships a newer Expo Go, upgrade with `npx expo install expo@^<new> --fix` then `npx expo-doctor@latest`.
+
+**What the 54 → 57 jump actually cost (2026-09-04), so the next one is cheaper:**
+
+- **`newArchEnabled` is gone from app.json** (SDK 55). The legacy architecture was deleted outright — there is nothing left to opt into.
+- **`StyleSheet.absoluteFillObject` was deleted in RN 0.86** (19 sites here). `StyleSheet.absoluteFill` is now a plain frozen object rather than a registered style id, so it is a straight rename and still spreads.
+- **expo-router no longer depends on react-navigation** (SDK 56), and Metro *hard-errors* on any `@react-navigation/*` import. `app/(onboarding)/_layout.tsx` had bridged `createStackNavigator` in through `withLayoutContext` purely to get `forHorizontalIOS`; it is now the native `Stack` with `animation: "ios_from_right"` — the same transition, run natively instead of emulated on the JS thread. `@react-navigation/stack` is uninstalled; do not add it back.
+- **`@expo/vector-icons` is deprecated** in favour of the `@react-native-vector-icons/*` scoped packages, and `expo` no longer depends on it — so it stays an explicit dependency here. 71 files import it, so the codemod (`npx @react-native-vector-icons/codemod`) is deferred, not forgotten. Deprecated, still working.
+- **`expo/fetch` is now `globalThis.fetch`** (SDK 56). `lib/bookSearch.ts` and supabase-js both ride it. If a network behaviour looks off after this upgrade, `EXPO_PUBLIC_USE_RN_FETCH=1` in `.env` restores the old implementation — try that first, not last.
+- **RN 0.86 types tab-icon colours as `ColorValue`**, not `string` (an `OpaqueColorValue` from `PlatformColor` is not a string). `AppIcon.color` and `(tabs)/_layout`’s `TabIcon` were widened to match.
+- **Minimum iOS is now 16.4** (SDK 56) — drops iPhone 7/7+, 6s/6s+, SE 1st gen, iPad mini 4 and iPad Air 2.
 
 ## Front-end architecture rules
 
 These are the non-negotiable client rules distilled from the blueprint (Sections 2/3/4/8/9/20):
 
-- **Reanimated 3, on the UI thread.** Drive the session timer and PPH counter with a shared clock + `useDerivedValue` / `useFrameCallback` — **never** `setState` / `setInterval` (causes dropped frames and full re-renders).
+- **Reanimated 4, on the UI thread.** Drive the session timer and PPH counter with a shared clock + `useDerivedValue` / `useFrameCallback` — **never** `setState` / `setInterval` (causes dropped frames and full re-renders).
 - **The session tracker is a root `Stack` route _above_ the tabs** — not a modal, not inside the tab navigator. This lets the Live Activity / Dynamic Island deep-link straight into it and keeps the tab bar from stealing the bottom thumb zone reserved for session controls. Celebrations are `transparentModal` overlays composited on top of the tracker.
 - **`level_name` is identity everywhere** (share cards, notifications, alerts). It is denormalized and trigger-maintained server-side; the client only ever **reads** it. Surface it through `LevelNameBadge`.
 - **Format-aware data.** Audiobooks share the `reading_sessions` shape but with `pages_read NULL` and `minutes_listened NOT NULL`. Guard every PPH / page aggregate against `format === 'audiobook'` (COALESCE / filter) — otherwise NaN/Infinity in averages.
 - **Offline-first sessions.** Sessions are captured into an MMKV queue with a **frozen `local_date`** and a `client_uuid`; sync drains the queue through the idempotent `complete_session`. Compute `local_date` at capture time, never at sync time.
 - **Accessibility from the start.** Every icon-only control (FAB, Stop, share, scanner) needs an `accessibilityLabel`; gate all decorative motion behind `useReducedMotion()`; the invisible-UI Stop control must stay reachable for screen readers even after the timer auto-hides.
+- **One keyboard strategy: `KeyboardLift`.** Every keyboard-avoiding surface uses `components/shared/KeyboardLift.tsx` (Reanimated `useAnimatedKeyboard` → `paddingBottom`). Never `KeyboardAvoidingView`: `behavior={Platform.OS === "ios" ? "padding" : undefined}` is a **no-op on Android**, and the two approaches cannot coexist — `useAnimatedKeyboard` calls `setDecorFitsSystemWindows(window, false)` **Activity-wide** on its first subscriber and only restores it when the last unmounts, so once the Library tab mounts, the window stops applying IME insets for the whole session. `app.json` therefore also has **no `softwareKeyboardLayoutMode`** (Expo defaults to `adjustResize`); `pan` would move the window underneath the lift.
+- **Staged entrances come from `components/shared/Reveal.tsx`** — `index` for a stagger (65ms step), `delay` for a beat hand-timed against another animation, 430ms either way. It reads `useReducedMotion()` itself; there is no `reduce` prop to forget to pass. This replaced 13 private copies with three prop names and five rhythms.
 - **Backdrop policy — no glass blur.** Modals, sheets (`SheetScaffold`), and celebration overlays dim the screen behind them with a **darkened translucent rgba scrim** (≈ `rgba(3,4,6,0.62)` dark / `rgba(17,19,24,0.4)` light), never a `BlurView`/frosted-glass. `expo-blur` is intentionally not a dependency (consistent cross-platform, cheaper on Android). The `SessionControlBar`'s near-opaque `t.glass` fill is a solid translucent surface, not a blur.
 
 ## App structure (Expo Router target — blueprint Section 3)

@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'flex-end',
     justifyContent: 'center',
     paddingHorizontal: 20,

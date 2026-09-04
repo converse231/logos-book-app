@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -21,6 +19,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { GoogleButton } from '@/components/auth/GoogleButton';
+import { KeyboardLift } from '@/components/shared/KeyboardLift';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -165,10 +164,7 @@ export default function Account() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardLift style={styles.flex}>
       <OnboardingScaffold
         step={5}
         totalSteps={TOTAL_STEPS}
@@ -321,7 +317,7 @@ export default function Account() {
           ) : null}
         </View>
       </OnboardingScaffold>
-    </KeyboardAvoidingView>
+    </KeyboardLift>
   );
 }
 

@@ -11,7 +11,6 @@ import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Extrapolation,
-  FadeInUp,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -32,6 +31,7 @@ import { BookCover } from '@/components/shared/BookCover';
 import { Q } from '@/components/shared/Q';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { Reveal } from '@/components/shared/Reveal';
 
 // Author page. Reached from a book's author byline and from the Discover hub's
 // top-author tiles; replaces the old bare `inauthor:` grid, which showed a naked
@@ -210,7 +210,7 @@ export default function Author() {
               from the route so it paints immediately — only the portrait and the
               facts have to wait, and skeletoning text we already have would be a
               flash of nothing for no reason. */}
-          <Reveal i={0} reduce={reduce}>
+          <Reveal index={0}>
             <View style={styles.hero}>
               {loadingProfile ? (
                 <Skeleton width={PORTRAIT} height={PORTRAIT} radius={RADIUS.md} />
@@ -244,7 +244,7 @@ export default function Author() {
               paints high and then gets shoved down a screenful when the profile
               lands. Links are genuinely uncommon, so they get no placeholder. */}
           {loadingProfile ? (
-            <Reveal i={1} reduce={reduce}>
+            <Reveal index={1}>
               <View style={styles.profileSkeleton}>
                 <Skeleton height={62} radius={RADIUS.md} />
                 <View style={styles.bioSkeleton}>
@@ -263,7 +263,7 @@ export default function Author() {
 
           {/* ── Best known for ───────────────────────────────────────────── */}
           {knownFor ? (
-            <Reveal i={1} reduce={reduce}>
+            <Reveal index={1}>
               <Pressable
                 onPress={() => openBook(knownFor)}
                 accessibilityRole="button"
@@ -289,7 +289,7 @@ export default function Author() {
 
           {/* ── Bio ──────────────────────────────────────────────────────── */}
           {profile?.bio ? (
-            <Reveal i={2} reduce={reduce}>
+            <Reveal index={2}>
               <View style={styles.bioWrap}>
                 <Text
                   style={[styles.bio, { color: t.text }]}
@@ -330,7 +330,7 @@ export default function Author() {
 
           {/* ── Themes ───────────────────────────────────────────────────── */}
           {profile?.subjects.length ? (
-            <Reveal i={3} reduce={reduce}>
+            <Reveal index={3}>
               <View style={styles.block}>
                 <Text style={[styles.blockLabel, { color: t.textSec }]}>RECURRING THEMES</Text>
                 <View style={styles.chipWrap}>
@@ -355,7 +355,7 @@ export default function Author() {
 
           {/* ── External links ───────────────────────────────────────────── */}
           {profile?.links.length ? (
-            <Reveal i={4} reduce={reduce}>
+            <Reveal index={4}>
               <View style={styles.chipWrap}>
                 {profile.links.map((l) => (
                   <Pressable
@@ -492,10 +492,6 @@ interface MetaItem {
   color?: string;
 }
 
-function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(i * 60).duration(420)}>{children}</Animated.View>;
-}
 
 // Structure-matching placeholder. The old author screen's skeleton put six
 // `flex: 1/3` cells in a wrapping row, so they all shrank into a single row of

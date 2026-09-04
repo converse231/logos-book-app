@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
@@ -22,6 +21,7 @@ import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StreakCalendar } from '@/components/profile/StreakCalendar';
 import { MonthlyChart } from '@/components/profile/MonthlyChart';
+import { Reveal } from '@/components/shared/Reveal';
 import {
   Scope, finishedBooks, topAuthor, topGenre, finishedChart,
   coverByUserBook, coversByDate, bestStreak, sessionDates,
@@ -36,7 +36,6 @@ export default function Profile() {
   const router = useRouter();
   const api = useApi();
   const insets = useSafeAreaInsets();
-  const reduce = useReducedMotion();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [home, setHome] = useState<HomeData | null>(null);
@@ -131,7 +130,7 @@ export default function Profile() {
         </View>
 
         {/* Identity — social-style header: avatar left, identity beside it */}
-        <Reveal i={0} reduce={reduce}>
+        <Reveal index={0}>
           <View style={styles.identityRow}>
             <View style={[styles.avatar, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
               {profile.avatarUrl ? (
@@ -149,14 +148,14 @@ export default function Profile() {
         </Reveal>
 
         {profile.bio ? (
-          <Reveal i={1} reduce={reduce}>
+          <Reveal index={1}>
             <Text style={[styles.bio, { color: t.textSec }]}>{profile.bio}</Text>
           </Reveal>
         ) : null}
 
         {/* Currently reading — shelf of in-progress books */}
         {currentlyReading.length > 0 ? (
-          <Reveal i={1} reduce={reduce}>
+          <Reveal index={1}>
             <View style={styles.block}>
               <Text style={[styles.blockLabel, { color: t.textSec }]}>CURRENTLY READING</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.currentRow}>
@@ -178,7 +177,7 @@ export default function Profile() {
         ) : null}
 
         {/* XP progress — compact strip (replaces the heavy level card) */}
-        <Reveal i={2} reduce={reduce}>
+        <Reveal index={2}>
           <View style={[styles.xpStrip, { backgroundColor: t.bgSec, borderColor: t.border }]}>
             <View style={styles.xpTop}>
               <Text style={[styles.xpNum, { color: t.text }]}>
@@ -198,7 +197,7 @@ export default function Profile() {
         </Reveal>
 
         {/* Lifetime stats — all-time */}
-        <Reveal i={2} reduce={reduce}>
+        <Reveal index={2}>
           <View style={[styles.statsRow, { backgroundColor: t.bgSec, borderColor: t.border }]}>
             <BigStat value={stats.lifetimePages.toLocaleString()} label="Pages read" t={t} />
             <View style={[styles.statDivider, { backgroundColor: t.border }]} />
@@ -210,7 +209,7 @@ export default function Profile() {
 
         {/* Reading goal */}
         {goal ? (
-          <Reveal i={3} reduce={reduce}>
+          <Reveal index={3}>
             <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/(modals)/goal-edit' as Href); }} accessibilityRole="button" accessibilityLabel="Edit your reading goal">
               <Card padded style={styles.goalCard}>
                 <View style={styles.goalHead}>
@@ -233,7 +232,7 @@ export default function Profile() {
             </Pressable>
           </Reveal>
         ) : (
-          <Reveal i={3} reduce={reduce}>
+          <Reveal index={3}>
             <Pressable onPress={() => router.push('/(modals)/goal-edit' as Href)} accessibilityRole="button" accessibilityLabel="Set a reading goal" style={({ pressed }) => [styles.emptyGoal, { borderColor: t.border, backgroundColor: t.bgSec }, pressed && { opacity: 0.7 }]}>
               <AppIcon name="flag" tint="gold" size={22} color={t.accent} />
               <Text style={[styles.emptyGoalText, { color: t.text }]}>Set a reading goal for {new Date().getFullYear()}</Text>
@@ -243,7 +242,7 @@ export default function Profile() {
         )}
 
         {/* ── Scoped reading dashboard ─────────────────────────────────────── */}
-        <Reveal i={4} reduce={reduce}>
+        <Reveal index={4}>
           <View style={styles.dashHead}>
             <Text style={[styles.sectionTitle, { color: t.text }]}>Your reading</Text>
             <View style={[styles.toggle, { borderColor: t.border, backgroundColor: t.bgSec }]}>
@@ -268,7 +267,7 @@ export default function Profile() {
         </Reveal>
 
         {/* Most-read author + genre */}
-        <Reveal i={5} reduce={reduce}>
+        <Reveal index={5}>
           <View style={styles.twoUp}>
             <InfoCard
               icon="person"
@@ -288,7 +287,7 @@ export default function Profile() {
         </Reveal>
 
         {/* Books finished chart */}
-        <Reveal i={6} reduce={reduce}>
+        <Reveal index={6}>
           <View style={styles.block}>
             <Text style={[styles.blockLabel, { color: t.textSec }]}>BOOKS FINISHED · {scope === 'year' ? 'BY MONTH' : 'BY YEAR'}</Text>
             <MonthlyChart bars={chart} />
@@ -296,7 +295,7 @@ export default function Profile() {
         </Reveal>
 
         {/* Reading streak calendar */}
-        <Reveal i={7} reduce={reduce}>
+        <Reveal index={7}>
           <View style={styles.block}>
             <View style={styles.calHead}>
               <Text style={[styles.blockLabel, { color: t.textSec }]}>READING STREAK</Text>
@@ -313,7 +312,7 @@ export default function Profile() {
 
         {/* Achievement stickers */}
         {earnedBadges.length > 0 ? (
-          <Reveal i={8} reduce={reduce}>
+          <Reveal index={8}>
             <Card padded style={styles.badgeSection}>
               <View style={styles.badgeHead}>
                 <Text style={[styles.sectionTitle, { color: t.text }]}>Achievements</Text>
@@ -328,7 +327,7 @@ export default function Profile() {
 
         {/* Your reviews — a compilation of the reviews you've written */}
         {writtenReviews.length > 0 ? (
-          <Reveal i={9} reduce={reduce}>
+          <Reveal index={9}>
             <View style={styles.block}>
               <Text style={[styles.sectionTitle, { color: t.text }]}>Your reviews</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reviewsRow}>
@@ -353,10 +352,6 @@ export default function Profile() {
   );
 }
 
-function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(i * 55).duration(420)}>{children}</Animated.View>;
-}
 
 function ProfileSkeleton({ topInset }: { topInset: number }) {
   return (

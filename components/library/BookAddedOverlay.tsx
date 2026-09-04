@@ -107,7 +107,7 @@ const overlay = StyleSheet.create({
   coverWrap: { alignItems: 'center', justifyContent: 'center' },
   // Sits behind the (opaque) cover frame; the animation translates it out to the
   // bottom-right so only the offset L-shape shows — a hard neubrutalist shadow.
-  shadowBlock: { ...StyleSheet.absoluteFillObject, backgroundColor: PALETTE.ink, borderRadius: 14 },
+  shadowBlock: { ...StyleSheet.absoluteFill, backgroundColor: PALETTE.ink, borderRadius: 14 },
   coverFrame: {
     borderWidth: BORDER_WIDTH_THICK, borderColor: PALETTE.ink, backgroundColor: PALETTE.paper,
     borderRadius: 14,

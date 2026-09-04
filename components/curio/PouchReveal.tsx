@@ -476,19 +476,19 @@ const INK = '#F7EFE0';
 const styles = StyleSheet.create({
   // Scrim, never a blur — house rule.
   scrimAnim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(3,4,6,0.72)',
   },
   scrimStatic: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(3,4,6,0.62)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 26,
   },
-  fill: { ...StyleSheet.absoluteFillObject },
+  fill: { ...StyleSheet.absoluteFill },
   sheet: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   slot: { position: 'absolute', width: 152, height: 152 },
   moteLayer: { position: 'absolute', width: 1, height: 1, alignItems: 'center', justifyContent: 'center' },
   mote: { position: 'absolute' },
-  flash: { ...StyleSheet.absoluteFillObject, backgroundColor: '#FFF6E2', borderRadius: 130 },
+  flash: { ...StyleSheet.absoluteFill, backgroundColor: '#FFF6E2', borderRadius: 130 },
   refund: { position: 'absolute', bottom: 34 },
   refundText: {
     fontFamily: FONTS.monoBold, fontSize: 22, color: '#F3C24C',

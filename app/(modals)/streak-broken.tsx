@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   FadeIn,
-  FadeInUp,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -19,6 +18,7 @@ import { FONTS, INK, BORDER_WIDTH_THICK, RADIUS, NO_FONT_PAD, LIGHT_TOKENS } fro
 import { CENTER_COLUMN } from '@/theme/layout';
 import { BROKEN_FLAME, flameLayout } from '@/lib/streakCelebration';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { Reveal } from '@/components/shared/Reveal';
 import { useApi } from '@/services/ApiContext';
 
 // Streak broken — the mirror of streak-unlocked, and deliberately its opposite in
@@ -101,16 +101,16 @@ export default function StreakBroken() {
 
       <View style={[styles.body, { paddingTop: insets.top + 28, paddingBottom: insets.bottom + 20 }]} pointerEvents="box-none">
         <View style={styles.copy} pointerEvents="none">
-          <Reveal d={d(520)} reduce={reduce}>
+          <Reveal delay={d(520)}>
             <Text style={styles.kicker}>STREAK ENDED</Text>
           </Reveal>
-          <Reveal d={d(600)} reduce={reduce}>
+          <Reveal delay={d(600)}>
             <Text style={styles.count} allowFontScaling={false}>{days}</Text>
           </Reveal>
-          <Reveal d={d(660)} reduce={reduce}>
+          <Reveal delay={d(660)}>
             <Text style={styles.unit}>{days === 1 ? 'DAY LOST' : 'DAYS LOST'}</Text>
           </Reveal>
-          <Reveal d={d(740)} reduce={reduce}>
+          <Reveal delay={d(740)}>
             <Text style={styles.blurb}>
               {canRestore
                 ? 'You missed a day. Use a restore to pick it back up exactly where you left off.'
@@ -177,16 +177,12 @@ const REASONS: Record<string, string> = {
   no_streak: 'Nothing to restore yet.',
 };
 
-function Reveal({ d, reduce, children }: { d: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(d).duration(460)}>{children}</Animated.View>;
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
   // Colder and heavier than the celebration's warm near-black — there's no fire
   // here for a warm scrim to agree with.
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,9,11,0.92)' },
+  scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(8,9,11,0.92)' },
   body: { ...CENTER_COLUMN, flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 28 },
 
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },

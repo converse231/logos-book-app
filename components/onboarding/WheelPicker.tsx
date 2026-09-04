@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   // to a thin vertical sliver over the digits.
   wrap: { height: PICKER_HEIGHT, alignSelf: 'stretch', justifyContent: 'center' },
   bandOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'stretch',
     justifyContent: 'center',
   },

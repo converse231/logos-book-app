@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.quire.app"
@@ -15,7 +14,6 @@
     "android": {
       "package": "com.quire.app",
       "googleServicesFile": "./google-services.json",
-      "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "backgroundColor": "#F6EEDF",
         "foregroundImage": "./assets/android-icon.png"
@@ -75,7 +73,9 @@
       ],
       "expo-notifications",
       "./plugins/withReadingActivity",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {},
     "extra": {

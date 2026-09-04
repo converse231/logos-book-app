@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
@@ -24,6 +23,7 @@ import { coverByUserBook, coversByDate } from '@/lib/profileStats';
 import { BadgeGrid } from '@/components/stats/BadgeGrid';
 import { AlmostThereBanner } from '@/components/gamification/AlmostThereBanner';
 import { RefreshingOverlay, HIDDEN_SPINNER } from '@/components/shared/RefreshingOverlay';
+import { Reveal } from '@/components/shared/Reveal';
 
 type Tile = { icon: keyof typeof Ionicons.glyphMap; value: string; label: string; color: string; tint: IconTint };
 
@@ -32,7 +32,6 @@ export default function Stats() {
   const api = useApi();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const reduce = useReducedMotion();
 
   const [home, setHome] = useState<HomeData | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -140,7 +139,7 @@ export default function Stats() {
       >
         <Text style={[styles.title, { color: t.text }]}>Stats</Text>
 
-        <Reveal i={0} reduce={reduce}>
+        <Reveal index={0}>
           <XpLevelCard
             levelName={home.user.levelName}
             level={home.user.level}
@@ -151,12 +150,12 @@ export default function Stats() {
         </Reveal>
 
         {noActivity ? (
-          <Reveal i={1} reduce={reduce}>
+          <Reveal index={1}>
             <EmptyStats t={t} onStart={() => router.push('/(tabs)/library' as Href)} />
           </Reveal>
         ) : (
           <>
-            <Reveal i={1} reduce={reduce}>
+            <Reveal index={1}>
               <View style={styles.bento}>
                 {rows.map((row, ri) => (
                   <View key={ri} style={styles.statRow}>
@@ -168,14 +167,14 @@ export default function Stats() {
               </View>
             </Reveal>
 
-            <Reveal i={2} reduce={reduce}>
+            <Reveal index={2}>
               <View style={styles.calendarSection}>
                 <Text style={[styles.calendarLabel, { color: t.textSec }]}>READING ACTIVITY · TAP A DAY</Text>
                 <StreakCalendar covers={coverDates} onSelectDate={setDayDate} />
               </View>
             </Reveal>
 
-            <Reveal i={3} reduce={reduce}>
+            <Reveal index={3}>
               <Pressable
                 onPress={() => router.push('/session/history' as Href)}
                 accessibilityRole="button"
@@ -196,7 +195,7 @@ export default function Stats() {
         )}
 
         {closest ? (
-          <Reveal i={4} reduce={reduce}>
+          <Reveal index={4}>
             <AlmostThereBanner
               label={`${closest.name} · ${closest.progressValue}/${closest.unlockThreshold}`}
               progress={closest.progressValue / closest.unlockThreshold}
@@ -207,7 +206,7 @@ export default function Stats() {
           </Reveal>
         ) : null}
 
-        <Reveal i={5} reduce={reduce}>
+        <Reveal index={5}>
           <Card padded style={styles.sectionCard}>
             <View style={styles.cardHead}>
               <Text style={[styles.cardTitle, { color: t.text }]}>Achievements</Text>
@@ -306,10 +305,6 @@ function longDayLabel(ymd: string): string {
 }
 
 // Module-level so cards don't remount and replay on any re-render.
-function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(i * 70).duration(440)}>{children}</Animated.View>;
-}
 
 // First-run state: no sessions yet. Aspirational nudge into the core loop.
 function EmptyStats({ t, onStart }: { t: ReturnType<typeof useTheme>; onStart: () => void }) {

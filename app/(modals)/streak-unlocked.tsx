@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   FadeIn,
-  FadeInUp,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -25,6 +24,7 @@ import { flameForDay, flameLayout } from '@/lib/streakCelebration';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { StreakRays } from '@/components/gamification/StreakRays';
+import { Reveal } from '@/components/shared/Reveal';
 
 // Streak unlocked — the moment a reader lands back on Home having just hit a streak
 // tier (1, 7, 14, 30, 50, 67, 100, 150, 200, 250, 365).
@@ -120,16 +120,16 @@ export default function StreakUnlocked() {
             the flame the text was crowded against the buttons — and the reference
             we're chasing reads top-down too. */}
         <View style={styles.copy} pointerEvents="none">
-          <Reveal d={d(760)} reduce={reduce}>
+          <Reveal delay={d(760)}>
             <Text style={[styles.kicker, { color: tier.ray }]}>STREAK UNLOCKED</Text>
           </Reveal>
-          <Reveal d={d(860)} reduce={reduce}>
+          <Reveal delay={d(860)}>
             <Text style={styles.count} allowFontScaling={false}>{day}</Text>
           </Reveal>
-          <Reveal d={d(920)} reduce={reduce}>
+          <Reveal delay={d(920)}>
             <Text style={styles.unit}>{day === 1 ? 'DAY' : 'DAY STREAK'}</Text>
           </Reveal>
-          <Reveal d={d(1010)} reduce={reduce}>
+          <Reveal delay={d(1010)}>
             <Text style={styles.blurb}>{blurbFor(day)}</Text>
           </Reveal>
         </View>
@@ -176,10 +176,6 @@ export default function StreakUnlocked() {
   );
 }
 
-function Reveal({ d, reduce, children }: { d: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(d).duration(460)}>{children}</Animated.View>;
-}
 
 // Each tier gets its own line. Generic praise on day 250 would undo the whole point
 // of having drawn a different flame for it.
@@ -203,7 +199,7 @@ function blurbFor(day: number): string {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   // Deep warm near-black — cold grey would fight the flames' amber glow.
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(14,9,5,0.90)' },
+  scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(14,9,5,0.90)' },
   body: { ...CENTER_COLUMN, flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 28 },
 
   // The flame absorbs the slack between the copy and the actions, so it stays

@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   AppState,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -34,10 +32,12 @@ import { startReadingActivity, updateReadingActivity, endReadingActivity } from 
 import { loadActiveSession, saveActiveSession, clearActiveSession } from '@/lib/activeSession';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { LoadingIndicator } from '@/components/shared/LoadingIndicator';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { SessionTimer } from '@/components/session/SessionTimer';
 import { SessionControlBar } from '@/components/session/SessionControlBar';
 import { ReadingCarousel } from '@/components/session/ReadingCarousel';
 import { ProgressBar } from '@/components/shared/ProgressBar';
+import { KeyboardLift } from '@/components/shared/KeyboardLift';
 
 const FOCUS_DURATIONS = [10, 15, 25, 45, 60]; // minutes the reader can commit to in focus mode
 const DEFAULT_FOCUS_MIN = 15;
@@ -74,6 +74,13 @@ export default function SessionTracker() {
 
   const [phase, setPhase] = useState<Phase>('ready');
   const [restoring, setRestoring] = useState(true); // checking for a killed-session snapshot
+  // The shelf fetch used to have no failure path: one rejected request (offline,
+  // a dropped auth token) left readingBooks null forever and the loading guard
+  // below rendered a spinner with no close button — on a ROOT stack route above
+  // the tabs, so the only way out was the OS back gesture. Offline is a supported
+  // state here (sessions queue), so it has to fail visibly and recoverably.
+  const [loadError, setLoadError] = useState(false);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [focusMode, setFocusMode] = useState(false);
   const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MIN); // committed focus length
   const [paused, setPaused] = useState(false);
@@ -216,13 +223,20 @@ export default function SessionTracker() {
       if (phase === 'running') return;
       let alive = true;
       (async () => {
-        const reading = await api.getUserBooks('reading');
-        let list = reading;
-        if (!reading.some((b) => b.id === userBookId)) {
-          const pb = await api.getUserBook(userBookId);
-          if (pb && !reading.some((b) => b.id === pb.id)) list = [pb, ...reading];
+        let list: UserBook[];
+        try {
+          const reading = await api.getUserBooks('reading');
+          list = reading;
+          if (!reading.some((b) => b.id === userBookId)) {
+            const pb = await api.getUserBook(userBookId);
+            if (pb && !reading.some((b) => b.id === pb.id)) list = [pb, ...reading];
+          }
+        } catch {
+          if (alive) setLoadError(true);
+          return;
         }
         if (!alive) return;
+        setLoadError(false);
         setReadingBooks(list);
         if (!didCenter.current) {
           const idx = Math.max(0, list.findIndex((b) => b.id === userBookId));
@@ -235,14 +249,14 @@ export default function SessionTracker() {
           setSelectedIndex(0);
           setInitialIndex(0);
         } else {
-          setSelectedIndex((prev) => Math.min(prev, list.length));
+          setSelectedIndex((prev) => Math.min(prev, Math.max(0, list.length - 1)));
         }
         prevLenRef.current = list.length;
       })();
       return () => {
         alive = false;
       };
-    }, [api, userBookId, phase])
+    }, [api, userBookId, phase, reloadNonce])
   );
 
   // --- reveal-on-tap (invisible UI) ---
@@ -396,6 +410,32 @@ export default function SessionTracker() {
 
   // Wait until the kill-recovery check is done; a restored running session renders
   // from `sessionBook` and doesn't need the reading-shelf to have loaded.
+  if (loadError && !readingBooks && phase !== 'running') {
+    return (
+      <View style={[styles.root, { backgroundColor: t.bg }]}>
+        <View style={[styles.readyTopBar, { paddingTop: insets.top + 8 }]}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Close without starting"
+            style={[styles.closeBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
+          >
+            <Ionicons name="close" size={22} color={t.text} />
+          </Pressable>
+        </View>
+        <ErrorState
+          onRetry={() => {
+            setLoadError(false);
+            setReloadNonce((n) => n + 1);
+          }}
+          title="Can't load your shelf"
+          message="We couldn't reach your books just now. Check your connection and try again."
+        />
+      </View>
+    );
+  }
+
   if (restoring || (!readingBooks && phase !== 'running')) {
     return (
       <View style={[styles.loading, { backgroundColor: t.bg }]}>
@@ -558,10 +598,7 @@ export default function SessionTracker() {
         {/* Starting-page dialog — a keyboard-aware bottom sheet so the input is
             never hidden behind the keyboard and the prompt can't be missed. */}
         {editingStart && selectedBook ? (
-          <KeyboardAvoidingView
-            style={styles.entryOverlay}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          >
+          <KeyboardLift style={styles.entryOverlay}>
             <Pressable style={styles.entryBackdrop} onPress={() => setEditingStart(false)} accessibilityLabel="Dismiss" />
             <View style={[styles.entrySheet, { backgroundColor: t.bgSec, paddingBottom: insets.bottom + 20 }]}>
               <Text style={[styles.entryTitle, { color: t.text }]}>What page are you starting on?</Text>
@@ -588,7 +625,7 @@ export default function SessionTracker() {
                 <Text style={styles.entryBtnText}>Set page</Text>
               </PressBlock>
             </View>
-          </KeyboardAvoidingView>
+          </KeyboardLift>
         ) : null}
       </View>
     );
@@ -773,8 +810,8 @@ const styles = StyleSheet.create({
   controls: { ...CENTER_COLUMN, paddingHorizontal: 20 },
 
   // End-page entry
-  entryOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
-  entryBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: PALETTE.overlay },
+  entryOverlay: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
+  entryBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: PALETTE.overlay },
   entrySheet: { ...CENTER_COLUMN, borderTopLeftRadius: 0, borderTopRightRadius: 0, padding: 24, gap: 12 },
   entryTitle: { fontFamily: FONTS.uiBold, fontSize: 20 },
   entryHint: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },

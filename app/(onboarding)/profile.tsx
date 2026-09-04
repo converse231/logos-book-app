@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -19,6 +17,7 @@ import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
 import { TOTAL_STEPS, useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
+import { KeyboardLift } from '@/components/shared/KeyboardLift';
 
 const NAME_RE = /^[A-Za-z0-9 _'-]{2,24}$/;
 
@@ -69,10 +68,7 @@ export default function Profile() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardLift style={styles.flex}>
       <OnboardingScaffold
         step={4}
         totalSteps={TOTAL_STEPS}
@@ -148,7 +144,7 @@ export default function Profile() {
           ) : null}
         </View>
       </OnboardingScaffold>
-    </KeyboardAvoidingView>
+    </KeyboardLift>
   );
 }
 

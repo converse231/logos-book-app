@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
@@ -21,6 +21,7 @@ import { PressBlock } from '@/components/shared/PressBlock';
 import { Q } from '@/components/shared/Q';
 import { FinishedDatePicker } from '@/components/library/FinishedDatePicker';
 import { BookAddedOverlay } from '@/components/library/BookAddedOverlay';
+import { Reveal } from '@/components/shared/Reveal';
 
 const SHELVES: { key: ReadingStatus; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'want', label: 'Want', icon: 'bookmark-outline' },
@@ -235,7 +236,7 @@ export default function BookPage() {
         {/* Hero — the same centred cover / meta / title / author stack as the
             library book detail, so an un-owned book and an owned one read as the
             same kind of page. */}
-        <Reveal i={0} reduce={reduce}>
+        <Reveal index={0}>
           <View style={styles.hero}>
             <View style={[styles.coverShadow, hardShadow(t.mode === 'dark' ? '#000000' : t.border, 4)]}>
               <BookCover url={book.coverUrl} title={book.title} width={COVER_W} />
@@ -243,7 +244,7 @@ export default function BookPage() {
           </View>
         </Reveal>
 
-        <Reveal i={1} reduce={reduce}>
+        <Reveal index={1}>
           <View style={styles.titleBlock}>
             {meta.length > 0 ? (
               <View style={styles.metaRow}>
@@ -277,7 +278,7 @@ export default function BookPage() {
         </Reveal>
 
         {book.genres.length > 0 ? (
-          <Reveal i={2} reduce={reduce}>
+          <Reveal index={2}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -297,7 +298,7 @@ export default function BookPage() {
         ) : null}
 
         {description ? (
-          <Reveal i={3} reduce={reduce}>
+          <Reveal index={3}>
             <View style={styles.aboutBlock}>
               <Text style={[styles.label, { color: t.textSec }]}>ABOUT</Text>
               <Text style={[styles.about, { color: t.text }]} numberOfLines={descOpen ? undefined : 8}>
@@ -324,7 +325,7 @@ export default function BookPage() {
         {/* Add to shelf, or a way into the copy you already have. Deliberately
             BELOW the blurb: this is the decision, and it needs the description
             above it to be an informed one. */}
-        <Reveal i={4} reduce={reduce}>
+        <Reveal index={4}>
           {ownedBook ? (
             <View style={styles.ownedBlock}>
               <View style={[styles.ownedBanner, { backgroundColor: t.bgSec, borderColor: OWNED_GREEN }]}>
@@ -456,10 +457,6 @@ function Pill({
   );
 }
 
-function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(i * 60).duration(420)}>{children}</Animated.View>;
-}
 
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingBottom: 2 },

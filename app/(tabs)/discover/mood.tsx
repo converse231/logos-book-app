@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,6 +21,7 @@ import { BookCover } from '@/components/shared/BookCover';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { LoadingIndicator } from '@/components/shared/LoadingIndicator';
 import { SwipeDeck, type DeckCard } from '@/components/discover/SwipeDeck';
+import { KeyboardLift } from '@/components/shared/KeyboardLift';
 import { track } from '@/lib/analytics';
 
 const MOODS = ['Cozy', 'Mind-bending', 'Fast-paced', 'Light & funny', 'Epic', 'Dark', 'Hopeful', 'Romantic'];
@@ -158,7 +157,7 @@ export default function MoodReader() {
   // ── Setup + loading phase ─────────────────────────────────────────────────────
   return (
     <ScreenBackground>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardLift style={styles.flex}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 28 }]}
           keyboardShouldPersistTaps="handled"
@@ -249,7 +248,7 @@ export default function MoodReader() {
             </>
           )}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardLift>
     </ScreenBackground>
   );
 }

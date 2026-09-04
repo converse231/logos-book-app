@@ -44,8 +44,8 @@ export default function Review() {
           setBody(own.body ?? '');
           setSpoiler(own.containsSpoilers);
         }
-      });
-    });
+      }).catch(() => {});
+    }).catch(() => {});
     return () => {
       alive = false;
     };

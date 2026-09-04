@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +17,7 @@ import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { GoogleButton } from '@/components/auth/GoogleButton';
+import { KeyboardLift } from '@/components/shared/KeyboardLift';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -82,7 +81,7 @@ export default function SignIn() {
 
   return (
     <ScreenBackground>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardLift style={styles.flex}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}
           keyboardShouldPersistTaps="handled"
@@ -179,7 +178,7 @@ export default function SignIn() {
             </Pressable>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardLift>
     </ScreenBackground>
   );
 }

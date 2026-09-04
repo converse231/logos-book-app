@@ -11,6 +11,8 @@ import { useApi } from '@/services/ApiContext';
 import { BookSearchResult, ReadingStatus, UserBook } from '@/services/types';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { BookCover } from '@/components/shared/BookCover';
+import { OfflineNotice } from '@/components/shared/OfflineNotice';
+import { isSearchUnavailable } from '@/lib/bookSearch';
 import { buildOwnedLookup, findOwned } from '@/lib/ownedBooks';
 
 // Friendly shelf names for the "already on your shelf" flag on search rows.
@@ -59,12 +61,15 @@ export default function AddBook() {
   const [page, setPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [exhausted, setExhausted] = useState(false);
+  // Distinct from "no results": the catalog never answered.
+  const [offline, setOffline] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
   const reqId = useRef(0);
 
   // Recommendations fill the screen before any query. Static enough to fetch once.
   useEffect(() => {
     let alive = true;
-    api.getRecommendedBooks().then((r) => alive && setRecommended(r));
+    api.getRecommendedBooks().then((r) => alive && setRecommended(r)).catch(() => {});
     return () => {
       alive = false;
     };
@@ -98,16 +103,26 @@ export default function AddBook() {
     setExhausted(false);
     const id = ++reqId.current;
     const handle = setTimeout(() => {
-      api.searchBooks(q).then((r) => {
-        if (id !== reqId.current) return;
-        setResults(r);
-        setSearching(false);
-        setExhausted(r.length === 0);
-        prefetchCovers(r);
-      });
+      api.searchBooks(q)
+        .then((r) => {
+          if (id !== reqId.current) return;
+          setResults(r);
+          setOffline(false);
+          setSearching(false);
+          setExhausted(r.length === 0);
+          prefetchCovers(r);
+        })
+        // Without this the spinner ran forever on a rejected search.
+        .catch((e) => {
+          if (id !== reqId.current) return;
+          setResults([]);
+          setOffline(isSearchUnavailable(e));
+          setSearching(false);
+          setExhausted(true);
+        });
     }, 350);
     return () => clearTimeout(handle);
-  }, [query, api]);
+  }, [query, api, retryNonce]);
 
   // Pull the next page when the list nears its end. Guarded on every axis that
   // could otherwise fire a duplicate request: a search already in flight, a page
@@ -234,6 +249,8 @@ export default function AddBook() {
             <View style={styles.searchState}>
               <ActivityIndicator color={t.accent} />
             </View>
+          ) : showingResults && offline ? (
+            <OfflineNotice variant="block" onRetry={() => setRetryNonce((n) => n + 1)} />
           ) : showingResults && results.length === 0 ? (
             <Text style={[styles.searchEmpty, { color: t.textSec }]}>No results for &ldquo;{query.trim()}&rdquo;.</Text>
           ) : (

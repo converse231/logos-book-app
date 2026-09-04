@@ -34,7 +34,7 @@ export default function Comeback() {
         if (!alive) return;
         setComeback(h.comeback);
         setActiveBook(h.activeBook);
-      });
+      }).catch(() => alive && setComeback(null));
       return () => {
         alive = false;
       };

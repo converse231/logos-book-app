@@ -358,6 +358,25 @@ export const SEARCH_PAGE_SIZE = 20;
 const PROVIDER_TIMEOUT_MS = 3500;
 
 /**
+ * Thrown when EVERY catalog provider errored or timed out — as opposed to
+ * answering with nothing. The two used to be indistinguishable: both collapsed to
+ * `[]`, so a reader with no connection was told "No results for 'Dune'", which is
+ * both wrong and unactionable. Callers that only want a best-effort list keep
+ * catching this into `[]`; surfaces where the reader is actively searching show
+ * an offline notice instead.
+ *
+ * Matched on `name`, not `instanceof`, so it survives module duplication.
+ */
+export class SearchUnavailableError extends Error {
+  constructor() {
+    super('Search is unavailable right now.');
+    this.name = 'SearchUnavailableError';
+  }
+}
+export const isSearchUnavailable = (e: unknown): boolean =>
+  e instanceof Error && e.name === 'SearchUnavailableError';
+
+/**
  * Search the public catalog.
  *
  * Both providers are queried IN PARALLEL and merged, rather than Google-then-
@@ -390,10 +409,19 @@ export async function searchBooks(query: string, page = 0): Promise<BookSearchRe
   // keeps the cheap single-provider path (with Open Library still there if Google
   // comes back empty), and the merge is reserved for actual searches.
   if (/^subject:/i.test(q)) {
-    const g = await googleSearch(built.google, SEARCH_PAGE_SIZE, offset).catch(() => [] as EnsureBookInput[]);
+    let gFailed = false;
+    const g = await googleSearch(built.google, SEARCH_PAGE_SIZE, offset).catch(() => {
+      gFailed = true;
+      return [] as EnsureBookInput[];
+    });
+    let oFailed = false;
     const list = g.length
       ? g
-      : await openLibrarySearch(built.openLibrary, SEARCH_PAGE_SIZE, offset).catch(() => [] as EnsureBookInput[]);
+      : await openLibrarySearch(built.openLibrary, SEARCH_PAGE_SIZE, offset).catch(() => {
+          oFailed = true;
+          return [] as EnsureBookInput[];
+        });
+    if (gFailed && oFailed) throw new SearchUnavailableError();
     const out = list.map(toSearchResult);
     cacheSet(key, out);
     return out;
@@ -401,10 +429,17 @@ export async function searchBooks(query: string, page = 0): Promise<BookSearchRe
 
   // One provider failing — or merely being slow — must never take the other down
   // with it. Open Library regularly runs 2s+; past the budget we ship what we have.
-  const budget = <T,>(p: Promise<T[]>) =>
-    Promise.race([p.catch(() => [] as T[]), new Promise<T[]>((r) => setTimeout(() => r([]), PROVIDER_TIMEOUT_MS))]);
+  // Carries WHY the list is empty: a provider that answered "nothing" is a real
+  // (cacheable) result; one that threw or ran out of budget is not.
+  const budget = <T,>(p: Promise<T[]>): Promise<{ list: T[]; failed: boolean }> =>
+    Promise.race([
+      p.then((list) => ({ list, failed: false })).catch(() => ({ list: [] as T[], failed: true })),
+      new Promise<{ list: T[]; failed: boolean }>((r) =>
+        setTimeout(() => r({ list: [] as T[], failed: true }), PROVIDER_TIMEOUT_MS)
+      ),
+    ]);
 
-  const [g, o] = await Promise.all([
+  const [gRes, oRes] = await Promise.all([
     budget(isbn
       ? googleSearch(`isbn:${isbn}`, SEARCH_PAGE_SIZE, offset)
       : googleSearch(built.google, SEARCH_PAGE_SIZE, offset)),
@@ -412,6 +447,12 @@ export async function searchBooks(query: string, page = 0): Promise<BookSearchRe
       ? openLibraryByIsbn(isbn)
       : openLibrarySearch(built.openLibrary, SEARCH_PAGE_SIZE, offset)),
   ]);
+
+  // Neither catalog answered. Don't cache it, and don't let it read as "no such
+  // book" — the reader is almost certainly offline.
+  if (gRes.failed && oRes.failed) throw new SearchUnavailableError();
+  const g = gRes.list;
+  const o = oRes.list;
 
   const merged = new Map<string, { book: BookSearchResult; rank: number; both: boolean }>();
   const absorb = (list: EnsureBookInput[], fromGoogle: boolean) => {

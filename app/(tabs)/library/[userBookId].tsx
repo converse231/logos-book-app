@@ -4,7 +4,6 @@ import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeInDown,
-  FadeInUp,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -31,6 +30,7 @@ import { StarRating } from '@/components/library/StarRating';
 import { plainText } from '@/lib/bookSearch';
 import { getBookProgress } from '@/components/library/bookProgress';
 import { FinishedDatePicker } from '@/components/library/FinishedDatePicker';
+import { Reveal } from '@/components/shared/Reveal';
 import { extremeRatingPrompt } from '@/lib/ratingPrompt';
 
 // A curated set of tinted genre pill colours (bg + fg). Rotates by index so
@@ -92,7 +92,9 @@ export default function BookDetail() {
           if (!alive) return;
           setUb(b);
           setFavorite(b.isFavorite);
-          api.getReviews(b.book.id).then((r) => alive && setReviews(r));
+          // Outside the outer .catch (it isn't returned into that chain), so it
+          // needs its own — otherwise a failed read left the reviews skeleton up.
+          api.getReviews(b.book.id).then((r) => alive && setReviews(r)).catch(() => alive && setReviews([]));
         })
         .catch(() => alive && setError(true));
       return () => {
@@ -338,7 +340,7 @@ export default function BookDetail() {
         </View>
 
         {/* Hero */}
-        <Reveal i={0} reduce={reduce}>
+        <Reveal index={0}>
           <View style={styles.hero}>
             <View style={[styles.heroArc, { backgroundColor: t.bgSec }]} pointerEvents="none" />
             <View style={[styles.heroGlow, { backgroundColor: PALETTE.accentAlpha10 }]} pointerEvents="none" />
@@ -349,7 +351,7 @@ export default function BookDetail() {
         </Reveal>
 
         {/* Primary action */}
-        <Reveal i={1} reduce={reduce}>
+        <Reveal index={1}>
           {status !== 'finished' ? (
             <CTAButton
               label={status === 'reading' ? 'Continue reading' : 'Start a session'}
@@ -379,7 +381,7 @@ export default function BookDetail() {
         </Reveal>
 
         {/* Identity */}
-        <Reveal i={2} reduce={reduce}>
+        <Reveal index={2}>
           <View style={styles.identity}>
             {meta.length > 0 ? (
               <View style={styles.metaRow}>
@@ -424,7 +426,7 @@ export default function BookDetail() {
         </Reveal>
 
         {/* Chips: rating + genres */}
-        <Reveal i={3} reduce={reduce}>
+        <Reveal index={3}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -460,7 +462,7 @@ export default function BookDetail() {
             and a small link right left a dead gutter down the middle. Centred and
             full-width, the stars are the widest thing on the row and the button
             below actually reads as the next step. */}
-        <Reveal i={3} reduce={reduce}>
+        <Reveal index={3}>
           <View style={styles.rateBlock}>
             <Text style={[styles.sectionLabel, { color: t.textSec }]}>YOUR RATING</Text>
             <StarRating value={myRating} onChange={rateBook} allowHalf size={34} />
@@ -508,7 +510,7 @@ export default function BookDetail() {
 
         {/* Loved it — surface more by the same author on a high rating. */}
         {myRating >= 4.5 && book.authors[0] && !ratingPrompt ? (
-          <Reveal i={3} reduce={reduce}>
+          <Reveal index={3}>
             <PressRow
               onPress={() => router.push(`/author?name=${encodeURIComponent(book.authors[0])}` as Href)}
               accessibilityLabel={`See more books by ${book.authors[0]}`}
@@ -528,7 +530,7 @@ export default function BookDetail() {
         {/* Shelf status. Five pills across a phone gave every one of them about
             60dp and clipped "Finished" — so they wrap to a three-column grid, with
             maxWidth stopping the second row's two from stretching to double width. */}
-        <Reveal i={4} reduce={reduce}>
+        <Reveal index={4}>
           <Text style={[styles.sectionLabel, styles.shelfLabel, { color: t.textSec }]}>SHELF</Text>
           <View style={styles.statusRow}>
             {STATUSES.map((s) => {
@@ -558,7 +560,7 @@ export default function BookDetail() {
 
         {/* Progress */}
         {(status === 'reading' || status === 'dnf') && prog.max > 0 ? (
-          <Reveal i={5} reduce={reduce}>
+          <Reveal index={5}>
             <View style={styles.progressBlock}>
               <ProgressBar value={prog.pct} max={1} height={8} />
               <Text style={[styles.progressText, { color: t.textTer }]}>
@@ -571,7 +573,7 @@ export default function BookDetail() {
         ) : null}
 
         {/* Tabs */}
-        <Reveal i={6} reduce={reduce}>
+        <Reveal index={6}>
           <View style={styles.tabs}>
             {(['about', 'reviews'] as Tab[]).map((key) => {
               const active = key === tab;
@@ -699,10 +701,6 @@ function monthYearLabel(iso: string): string {
 
 // ── Module-level pieces (stable identity → no remount/replay on re-render) ──
 
-function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(i * 60).duration(420)}>{children}</Animated.View>;
-}
 
 // Layout-shaped placeholder mirroring the detail hero, CTA, title, chips, tabs.
 function BookDetailSkeleton({ topInset, coverW }: { topInset: number; coverW: number }) {

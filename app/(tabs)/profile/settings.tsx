@@ -7,7 +7,6 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
-  FadeInUp,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -28,6 +27,7 @@ import { registerForPushNotifications } from '@/lib/notifications';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { Card } from '@/components/shared/Card';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
+import { Reveal } from '@/components/shared/Reveal';
 
 const THEME_OPTIONS: { key: ThemePref; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'dark', label: 'Dark', icon: 'moon-outline' },
@@ -63,7 +63,7 @@ export default function Settings() {
         setDisplayName(p.displayName ?? '');
         setUsername(p.username ?? '');
         setBio(p.bio ?? '');
-      });
+      }).catch(() => {});
       api.getNotificationSettings().then((n) => alive && setNotif(n)).catch(() => {});
       return () => { alive = false; };
     }, [api])
@@ -209,14 +209,14 @@ export default function Settings() {
           <View style={styles.topBarSpacer} />
         </View>
 
-        <Reveal i={0} reduce={reduce}>
+        <Reveal index={0}>
           <SectionTitle label="Appearance" t={t} />
           <Card padded={false}>
             <ThemeSegment value={themePref} onChange={setThemePref} t={t} />
           </Card>
         </Reveal>
 
-        <Reveal i={1} reduce={reduce}>
+        <Reveal index={1}>
           <SectionTitle label="Notifications" t={t} />
           <Card padded={false}>
             <NotifRow
@@ -304,7 +304,7 @@ export default function Settings() {
           </Card>
         </Reveal>
 
-        <Reveal i={2} reduce={reduce}>
+        <Reveal index={2}>
           <SectionTitle label="Profile" t={t} />
           <Card padded style={styles.profileInputs}>
             {/* Profile photo */}
@@ -383,7 +383,7 @@ export default function Settings() {
           </Card>
         </Reveal>
 
-        <Reveal i={3} reduce={reduce}>
+        <Reveal index={3}>
           <SectionTitle label="Goal" t={t} />
           <Card padded={false}>
             <Pressable
@@ -401,7 +401,7 @@ export default function Settings() {
           </Card>
         </Reveal>
 
-        <Reveal i={4} reduce={reduce}>
+        <Reveal index={4}>
           <SectionTitle label="Account" t={t} />
           <Card padded={false}>
             {profile?.email ? (
@@ -462,7 +462,7 @@ export default function Settings() {
           </Card>
         </Reveal>
 
-        <Reveal i={5} reduce={reduce}>
+        <Reveal index={5}>
           <Text style={[styles.version, { color: t.textTer }]}>Quire · Frontend build</Text>
         </Reveal>
       </ScrollView>
@@ -470,10 +470,6 @@ export default function Settings() {
   );
 }
 
-function Reveal({ i, reduce, children }: { i: number; reduce: boolean; children: React.ReactNode }) {
-  if (reduce) return <View>{children}</View>;
-  return <Animated.View entering={FadeInUp.delay(i * 60).duration(420)}>{children}</Animated.View>;
-}
 
 function SectionTitle({ label, t }: { label: string; t: ReturnType<typeof useTheme> }) {
   return <Text style={[styles.sectionTitle, { color: t.textSec }]}>{label.toUpperCase()}</Text>;
