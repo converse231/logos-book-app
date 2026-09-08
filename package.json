@@ -3,18 +3,14 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@expo-google-fonts/cormorant-garamond": "^0.4.1",
     "@expo-google-fonts/fraunces": "^0.4.1",
-    "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@expo-google-fonts/schibsted-grotesk": "^0.4.2",
-    "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@expo/vector-icons": "^15.0.3",
-    "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.107.0",
     "base64-arraybuffer": "^1.0.2",
-    "expo": "^57.0.0",
+    "expo": "~57.0.20",
     "expo-apple-authentication": "~57.0.1",
     "expo-application": "~57.0.2",
     "expo-asset": "~57.0.16",
@@ -25,13 +21,13 @@
     "expo-font": "~57.0.3",
     "expo-haptics": "~57.0.2",
     "expo-image": "~57.0.4",
-    "expo-image-picker": "~57.0.15",
+    "expo-image-picker": "~57.0.16",
     "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.9",
     "expo-localization": "~57.0.1",
     "expo-media-library": "~57.0.4",
-    "expo-notifications": "~57.0.16",
-    "expo-router": "~57.0.18",
+    "expo-notifications": "~57.0.17",
+    "expo-router": "~57.0.19",
     "expo-splash-screen": "~57.0.8",
     "expo-status-bar": "~57.0.1",
     "expo-web-browser": "~57.0.2",
@@ -46,7 +42,6 @@
     "react-native-url-polyfill": "^3.0.0",
     "react-native-view-shot": "5.1.0",
     "react-native-worklets": "0.10.1",
-    "supabase": "^2.109.0",
     "zustand": "^5.0.14"
   },
   "scripts": {
@@ -60,6 +55,7 @@
     "@types/react": "^19.2.16",
     "babel-preset-expo": "~57.0.0",
     "sharp": "^0.35.3",
+    "supabase": "^2.116.0",
     "typescript": "^6.0.3"
   }
 }

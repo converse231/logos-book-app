@@ -75,7 +75,7 @@ export default function ShareCard() {
   // Off-screen, full-resolution target that the capture reads from.
   const shotRef = useRef<View>(null);
   const styleScrollRef = useRef<ScrollView>(null);
-  const [perm, requestPerm] = MediaLibrary.usePermissions();
+  const [perm, requestPerm] = MediaLibrary.usePermissions({ writeOnly: true, granularPermissions: ['photo'] });
 
   useEffect(() => {
     let alive = true;
@@ -219,6 +219,9 @@ export default function ShareCard() {
     if (status === 'working') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStatus('working');
+    // Two different native calls behind one message. Naming the step is the
+    // difference between "it failed" and knowing WHICH half failed.
+    let step: 'render' | 'save' = 'render';
     try {
       const granted = perm?.granted ? perm : await requestPerm();
       if (!granted.granted) {
@@ -226,10 +229,19 @@ export default function ShareCard() {
         return;
       }
       const uri = await capture();
-      await MediaLibrary.saveToLibraryAsync(uri);
+      step = 'save';
+      // SDK 57: `saveToLibraryAsync` imported from the package root is a stub that
+      // THROWS at runtime (expo-media-library/src/legacyWarnings.ts) — it still
+      // type-checks, so nothing caught this until a save failed on device.
+      // `Asset.create` is the class-based replacement.
+      await MediaLibrary.Asset.create(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setStatus('saved');
-    } catch {
+    } catch (err) {
+      // A bare `catch {}` here is what made the SDK 57 breakage undiagnosable:
+      // capture failure, a throwing deprecation stub and a full disk all showed
+      // the reader the same sentence and left nothing in the logs.
+      console.warn(`[share-card] ${step} failed:`, err);
       setStatus('error');
     }
   };

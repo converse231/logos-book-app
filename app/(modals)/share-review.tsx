@@ -50,7 +50,7 @@ export default function ShareReview() {
   const [status, setStatus] = useState<SaveStatus>('idle');
 
   const shotRef = useRef<View>(null);
-  const [perm, requestPerm] = MediaLibrary.usePermissions();
+  const [perm, requestPerm] = MediaLibrary.usePermissions({ writeOnly: true, granularPermissions: ['photo'] });
 
   useEffect(() => { setStatus('idle'); }, [layout, textColor]);
 
@@ -80,14 +80,19 @@ export default function ShareReview() {
     if (status === 'working') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStatus('working');
+    // See share-card.tsx — name the step so a failure says which half broke.
+    let step: 'render' | 'save' = 'render';
     try {
       const granted = perm?.granted ? perm : await requestPerm();
       if (!granted.granted) { setStatus('denied'); return; }
       const uri = await capture();
-      await MediaLibrary.saveToLibraryAsync(uri);
+      step = 'save';
+      // See share-card.tsx — the root `saveToLibraryAsync` throws on SDK 57.
+      await MediaLibrary.Asset.create(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setStatus('saved');
-    } catch {
+    } catch (err) {
+      console.warn(`[share-review] ${step} failed:`, err);
       setStatus('error');
     }
   };
