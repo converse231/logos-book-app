@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { PressChip } from '@/components/shared/PressChip';
@@ -55,7 +55,7 @@ export default function FilterSort() {
                 style={[styles.sortRow, { borderTopColor: t.border }]}
               >
                 <Text style={[styles.sortText, { color: selected ? t.text : t.textSec }]}>{SORT_LABELS[key]}</Text>
-                {selected ? <Ionicons name="checkmark" size={20} color={t.accent} /> : null}
+                {selected ? <Ionicons name="checkmark" size={20} color={t.accentText} /> : null}
               </PressRow>
             );
           })}
@@ -76,7 +76,7 @@ export default function FilterSort() {
                   { borderColor: selected ? t.accent : t.border, backgroundColor: selected ? t.accentMuted : 'transparent' },
                 ]}
               >
-                <Text style={[styles.chipText, { color: selected ? t.accent : t.textSec }]}>{FORMAT_LABELS[key]}</Text>
+                <Text style={[styles.chipText, { color: selected ? t.accentText : t.textSec }]}>{FORMAT_LABELS[key]}</Text>
               </PressChip>
             );
           })}
@@ -135,27 +135,27 @@ const styles = StyleSheet.create({
   },
   sortText: { fontFamily: FONTS.uiMedium, fontSize: 15 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 16, height: 40, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  chip: { paddingHorizontal: 16, height: 40, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   favRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     height: 56,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     paddingHorizontal: 16,
   },
   // The pressed fill lives on the wrapper, so the wrapper is what has to be round
   // — and carry the outer spacing, or the tint would bleed into the margin.
-  roundedWrap: { borderRadius: 14, overflow: 'hidden' },
-  favWrap: { borderRadius: 14, overflow: 'hidden', marginTop: 4 },
+  roundedWrap: { borderRadius: RADIUS.md, overflow: 'hidden' },
+  favWrap: { borderRadius: RADIUS.md, overflow: 'hidden', marginTop: 4 },
   favLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   favText: { fontFamily: FONTS.uiMedium, fontSize: 15 },
   switch: { width: 46, height: 28, borderRadius: 14, padding: 3, justifyContent: 'center' },
-  knob: { width: 22, height: 22, borderRadius: 14 },
+  knob: { width: 22, height: 22, borderRadius: RADIUS.md },
   footer: { flexDirection: 'row', gap: 12, marginTop: 8, alignItems: 'center' },
-  resetBtn: { height: 52, paddingHorizontal: 22, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  resetBtn: { height: 52, paddingHorizontal: 22, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   resetText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   doneBtn: { flex: 1 },
 });

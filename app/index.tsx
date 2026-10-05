@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Redirect, useRouter, type Href } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { hasPersistedSession, supabase } from '@/lib/supabase';
 import {
   ONBOARDING_STEPS,
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: FONTS.displayBold, fontSize: 26, textAlign: 'center' },
   body: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 22, textAlign: 'center' },
   retry: {
-    marginTop: 12, paddingHorizontal: 28, height: 52, borderRadius: 14, borderWidth: 2,
+    marginTop: 12, paddingHorizontal: 28, height: 52, borderRadius: RADIUS.md, borderWidth: 2,
     alignItems: 'center', justifyContent: 'center',
   },
   retryText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.6 },

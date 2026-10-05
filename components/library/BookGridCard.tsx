@@ -7,6 +7,7 @@ import { UserBook } from '@/services/types';
 import { BookCover } from '@/components/shared/BookCover';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { getBookProgress } from './bookProgress';
+import { STATUS_LABEL } from '@/lib/readingStatus';
 
 interface BookGridCardProps {
   userBook: UserBook;
@@ -44,13 +45,11 @@ function BookGridCardImpl({ userBook, width, onPress }: BookGridCardProps) {
           </View>
         ) : status === 'finished' ? (
           <View style={styles.statusRow}>
-            <Ionicons name="checkmark-circle" size={14} color={t.accent} />
-            <Text style={[styles.footMeta, { color: t.accent }]}>FINISHED</Text>
+            <Ionicons name="checkmark-circle" size={14} color={t.accentText} />
+            <Text style={[styles.footMeta, { color: t.accentText }]}>FINISHED</Text>
           </View>
-        ) : status === 'dnf' ? (
-          <Text style={[styles.footMeta, { color: t.textTer }]}>DID NOT FINISH</Text>
         ) : (
-          <Text style={[styles.footMeta, { color: t.textTer }]}>WANT TO READ</Text>
+          <Text style={[styles.footMeta, { color: t.textTer }]}>{STATUS_LABEL[status].toUpperCase()}</Text>
         )}
       </View>
     </Pressable>
@@ -67,5 +66,5 @@ const styles = StyleSheet.create({
   footer: { marginTop: 2, minHeight: 16, justifyContent: 'center' },
   progressWrap: { gap: 4 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  footMeta: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.4, fontVariant: ['tabular-nums'] },
+  footMeta: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.4, fontVariant: ['tabular-nums'] },
 });

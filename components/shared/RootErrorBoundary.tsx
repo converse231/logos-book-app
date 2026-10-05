@@ -77,5 +77,5 @@ const styles = StyleSheet.create({
   },
   ctaPressed: { transform: [{ translateX: 4 }, { translateY: 4 }], boxShadow: 'none' },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
-  detail: { fontFamily: FONTS.mono, fontSize: 10, lineHeight: 14, color: '#9A8E79', textAlign: 'center', marginTop: 14 },
+  detail: { fontFamily: FONTS.mono, fontSize: 11, lineHeight: 14, color: '#9A8E79', textAlign: 'center', marginTop: 14 },
 });

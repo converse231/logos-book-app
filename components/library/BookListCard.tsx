@@ -2,11 +2,12 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
 import { UserBook } from '@/services/types';
 import { BookCover } from '@/components/shared/BookCover';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { getBookProgress } from './bookProgress';
+import { STATUS_LABEL } from '@/lib/readingStatus';
 
 interface BookListCardProps {
   userBook: UserBook;
@@ -42,11 +43,11 @@ function BookListCardImpl({ userBook, onPress }: BookListCardProps) {
           </View>
         ) : status === 'finished' ? (
           <View style={styles.statusRow}>
-            <Ionicons name="checkmark-circle" size={13} color={t.accent} />
-            <Text style={[styles.meta, { color: t.accent }]}>FINISHED</Text>
+            <Ionicons name="checkmark-circle" size={13} color={t.accentText} />
+            <Text style={[styles.meta, { color: t.accentText }]}>FINISHED</Text>
           </View>
         ) : (
-          <Text style={[styles.meta, { color: t.textTer }]}>{status === 'dnf' ? 'DID NOT FINISH' : 'WANT TO READ'}</Text>
+          <Text style={[styles.meta, { color: t.textTer }]}>{STATUS_LABEL[status].toUpperCase()}</Text>
         )}
       </View>
       <Ionicons name="chevron-forward" size={18} color={t.textTer} />
@@ -57,13 +58,13 @@ function BookListCardImpl({ userBook, onPress }: BookListCardProps) {
 export const BookListCard = memo(BookListCardImpl);
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: BORDER_WIDTH },
-  coverFrame: { borderWidth: 1, borderRadius: 14 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
+  coverFrame: { borderWidth: 1, borderRadius: RADIUS.md },
   info: { flex: 1, gap: 2 },
   title: { fontFamily: FONTS.uiBold, fontSize: 15, lineHeight: 19 },
   author: { fontFamily: FONTS.uiRegular, fontSize: 12 },
   progressWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   progressFill: { flex: 1 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
-  meta: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.4, fontVariant: ['tabular-nums'] },
+  meta: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.4, fontVariant: ['tabular-nums'] },
 });

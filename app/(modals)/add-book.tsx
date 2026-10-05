@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { BookSearchResult, ReadingStatus, UserBook } from '@/services/types';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
@@ -14,15 +14,10 @@ import { BookCover } from '@/components/shared/BookCover';
 import { OfflineNotice } from '@/components/shared/OfflineNotice';
 import { isSearchUnavailable } from '@/lib/bookSearch';
 import { buildOwnedLookup, findOwned } from '@/lib/ownedBooks';
+import { STATUS_LABEL } from '@/lib/readingStatus';
 
 // Friendly shelf names for the "already on your shelf" flag on search rows.
-const SHELF_LABEL: Record<ReadingStatus, string> = {
-  want: 'Wishlist',
-  tbr: 'On your TBR',
-  reading: 'Reading',
-  finished: 'Finished',
-  dnf: 'Set aside',
-};
+const SHELF_LABEL = STATUS_LABEL;
 
 // "already owned" status green — a semantic done/owned colour, separate from the
 // reward accent palette.
@@ -241,13 +236,13 @@ export default function AddBook() {
           style={({ pressed }) => [styles.scanRow, pressed && { opacity: 0.7 }]}
         >
           <AppIcon name="barcode" tint="accent" size={18} />
-          <Text style={[styles.scanText, { color: t.accent }]}>Scan an ISBN instead</Text>
+          <Text style={[styles.scanText, { color: t.accentText }]}>Scan an ISBN instead</Text>
         </Pressable>
 
         <View style={styles.resultsArea}>
           {showingResults && searching ? (
             <View style={styles.searchState}>
-              <ActivityIndicator color={t.accent} />
+              <ActivityIndicator color={t.accentText} />
             </View>
           ) : showingResults && offline ? (
             <OfflineNotice variant="block" onRetry={() => setRetryNonce((n) => n + 1)} />
@@ -275,7 +270,7 @@ export default function AddBook() {
               ListFooterComponent={
                 loadingMore ? (
                   <View style={styles.moreRow}>
-                    <ActivityIndicator color={t.accent} />
+                    <ActivityIndicator color={t.accentText} />
                   </View>
                 ) : null
               }
@@ -294,7 +289,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     height: 50,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
   },

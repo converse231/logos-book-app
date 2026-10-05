@@ -5,6 +5,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeContext';
+import { RADIUS } from '@/theme/tokens';
 
 interface ProgressDotsProps {
   total: number;
@@ -52,5 +53,5 @@ function Dot({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { height: 8, borderRadius: 14 },
+  dot: { height: 8, borderRadius: RADIUS.md },
 });

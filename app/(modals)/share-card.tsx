@@ -20,9 +20,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { CENTER_COLUMN_FILL } from '@/theme/layout';
 import { CardTextColor } from '@/services/cardColors';
-import { CardColorPicker } from '@/components/shared/CardColorPicker';
+import { CardColorPicker, PreviewChecker } from '@/components/shared/CardColorPicker';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { useSessionStore } from '@/stores/sessionStore';
 import { CardVariant } from '@/services/types';
@@ -95,8 +95,12 @@ export default function ShareCard() {
     return (
       <View style={[styles.fallback, { backgroundColor: t.bg }]}>
         <Text style={[styles.fallbackText, { color: t.textSec }]}>Nothing to share yet.</Text>
-        <Pressable onPress={() => router.replace('/(tabs)/home' as Href)}>
-          <Text style={[styles.fallbackLink, { color: t.accent }]}>Back to Home</Text>
+        <Pressable
+          onPress={() => router.dismissTo('/(tabs)/home' as Href)}
+          hitSlop={12}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.fallbackLink, { color: t.accentText }]}>Back to Home</Text>
         </Pressable>
       </View>
     );
@@ -312,7 +316,7 @@ export default function ShareCard() {
             {LAYOUTS.map((l) => (
               <View key={l.key} style={[styles.page, { width: area.w }]}>
                 <View style={[styles.previewBox, { width: previewW + 20 }]}>
-                  {mode === 'transparent' ? <Checkerboard /> : null}
+                  {mode === 'transparent' ? <PreviewChecker textColor={textColor} /> : null}
                   <View style={styles.cardWrap}>
                     <ShareCardCanvas
                       variant={variant}
@@ -423,25 +427,6 @@ export default function ShareCard() {
   );
 }
 
-// Lightweight checkerboard so transparency reads in the preview.
-function Checkerboard() {
-  const cols = 7;
-  const rows = 9;
-  return (
-    <View style={styles.checker} pointerEvents="none">
-      {Array.from({ length: rows }).map((_, r) => (
-        <View key={r} style={styles.checkerRow}>
-          {Array.from({ length: cols }).map((_, c) => (
-            <View
-              key={c}
-              style={[styles.checkerCell, { backgroundColor: (r + c) % 2 === 0 ? '#E5E0D2' : '#F6EEDF' }]}
-            />
-          ))}
-        </View>
-      ))}
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -451,17 +436,14 @@ const styles = StyleSheet.create({
   fallbackLink: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
   title: { fontFamily: FONTS.uiBold, fontSize: 22 },
-  closeBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 40, height: 40, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 
   previewArea: { flex: 1, overflow: 'hidden', paddingVertical: 12, marginTop: 12 },
   carousel: { flex: 1 },
   carouselContent: { alignItems: 'center' },
   page: { alignItems: 'center', justifyContent: 'center' },
-  previewBox: { borderRadius: 14, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
+  previewBox: { borderRadius: RADIUS.md, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
   cardWrap: {},
-  checker: { ...StyleSheet.absoluteFill },
-  checkerRow: { flex: 1, flexDirection: 'row' },
-  checkerCell: { flex: 1 },
 
   controls: { paddingHorizontal: 20, paddingTop: 6, gap: 10, alignItems: 'center' },
   styleName: { fontFamily: FONTS.uiBold, fontSize: 16, ...NO_FONT_PAD },
@@ -472,7 +454,7 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: 24, paddingTop: 14, gap: 12 },
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,
-    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+    borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
   },
   saveText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.8, color: PALETTE.onAccent },
   btnBusy: { opacity: 0.7 },
@@ -482,7 +464,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     minHeight: 50,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH,
   },
   shareText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.5 },

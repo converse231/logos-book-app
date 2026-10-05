@@ -14,6 +14,7 @@ import { PressBlock } from '@/components/shared/PressBlock';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { StarRating } from '@/components/library/StarRating';
 import { Q } from '@/components/shared/Q';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
 
 // Moderation queue — the other half of review reporting.
 //
@@ -83,18 +84,7 @@ export default function Moderation() {
   return (
     <ScreenBackground>
       <View style={[styles.root, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}
-          >
-            <Ionicons name="chevron-back" size={22} color={t.text} />
-          </Pressable>
-          <Text style={[styles.headerTitle, { color: t.textSec }]}>REPORTED REVIEWS</Text>
-        </View>
+        <ScreenHeader title="Reported reviews" style={styles.header} />
 
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 28 }]}
@@ -190,8 +180,6 @@ export default function Moderation() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { ...CENTER_COLUMN, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 18, paddingBottom: 12 },
-  back: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },
-  headerTitle: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 1.6 },
 
   scroll: { ...CENTER_COLUMN, paddingHorizontal: 18, gap: 14 },
 
@@ -202,7 +190,7 @@ const styles = StyleSheet.create({
   reasonRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   reasonChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm, borderWidth: BORDER_WIDTH, flexShrink: 1 },
   reasonText: { fontFamily: FONTS.uiBold, fontSize: 11.5, letterSpacing: 0.2 },
-  meta: { fontFamily: FONTS.mono, fontSize: 10.5, flexShrink: 1 },
+  meta: { fontFamily: FONTS.mono, fontSize: 11, flexShrink: 1 },
 
   bookRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   body: { fontFamily: FONTS.serifMedium, fontSize: 16, lineHeight: 23 },

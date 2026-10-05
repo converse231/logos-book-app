@@ -6,15 +6,14 @@ import Animated, {
   Extrapolation,
   runOnJS,
   useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
+  useSharedValue,  withTiming,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, RADIUS } from '@/theme/tokens';
 import { CONTENT_MAX_WIDTH } from '@/theme/layout';
+import { glide, DURATION } from '@/theme/motion';
 import { BookCover } from '@/components/shared/BookCover';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { AiBookRec, BookSearchResult } from '@/services/types';
@@ -98,8 +97,8 @@ export function SwipeDeck({
       } else if (e.translationX < -SWIPE_THRESHOLD) {
         tx.value = withTiming(-FLING, { duration: 200 }, (fin) => { if (fin) runOnJS(commit)('left'); });
       } else {
-        tx.value = withSpring(0);
-        ty.value = withSpring(0);
+        tx.value = glide(0, DURATION.base);
+        ty.value = glide(0, DURATION.base);
       }
     });
   const tap = Gesture.Tap().maxDistance(12).onEnd((_e, success) => { if (success) runOnJS(handleTap)(); });
@@ -125,7 +124,7 @@ export function SwipeDeck({
     return (
       <View style={styles.empty}>
         <View style={[styles.emptyGlyph, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-          <Ionicons name="checkmark-done" size={34} color={t.accent} />
+          <Ionicons name="checkmark-done" size={34} color={t.accentText} />
         </View>
         <Text style={[styles.emptyTitle, { color: t.text }]}>That's the stack</Text>
         <Text style={[styles.emptyBody, { color: t.textSec }]}>
@@ -221,18 +220,18 @@ const styles = StyleSheet.create({
   stack: { width: DECK_W, height: DECK_H, alignItems: 'center', justifyContent: 'center' },
   cardAbs: { position: 'absolute', width: '100%', height: '100%' },
   card: {
-    flex: 1, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, padding: 18,
+    flex: 1, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, padding: 18,
     alignItems: 'center', gap: 8, ...SHADOW.card,
   },
-  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 14, marginBottom: 6 },
+  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: RADIUS.md, marginBottom: 6 },
   title: { fontFamily: FONTS.displayBold, fontSize: 20, lineHeight: 24, textAlign: 'center' },
   author: { fontFamily: FONTS.mono, fontSize: 12 },
   why: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 19, textAlign: 'center', marginTop: 2 },
-  tapHint: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1, marginTop: 'auto' },
+  tapHint: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1, marginTop: 'auto' },
 
   badge: {
     position: 'absolute', top: 22, paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK,
+    borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK,
   },
   likeBadge: { right: 18, borderColor: '#1F9D55', transform: [{ rotate: '12deg' }] },
   nopeBadge: { left: 18, borderColor: '#B81414', transform: [{ rotate: '-12deg' }] },
@@ -240,17 +239,17 @@ const styles = StyleSheet.create({
   nopeText: { fontFamily: FONTS.uiBold, fontSize: 18, letterSpacing: 1, color: '#B81414' },
 
   actions: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  actionBtn: { width: 58, height: 58, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center', ...SHADOW.sm },
+  actionBtn: { width: 58, height: 58, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center', ...SHADOW.sm },
   counter: { fontFamily: FONTS.mono, fontSize: 12, letterSpacing: 1 },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: 32 },
-  emptyGlyph: { width: 72, height: 72, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
+  emptyGlyph: { width: 72, height: 72, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontFamily: FONTS.displayBold, fontSize: 24, textAlign: 'center' },
   emptyBody: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, textAlign: 'center' },
   moreBtnWrap: { marginTop: 6 },
   moreBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingHorizontal: 20, height: 50, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK,
+    paddingHorizontal: 20, height: 50, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK,
   },
   moreText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1 },
 });

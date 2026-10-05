@@ -115,6 +115,27 @@ function mapInsight(r: any): ReadingInsight {
   };
 }
 
+// Lifetime pages/hours, the heatmap and the profile dashboard are all summed
+// from this list, so it has to be ALL of it. It used to stop at 400 — about a
+// year of daily reading — after which every lifetime total quietly undercounted.
+// PostgREST caps a response at 1000 rows, hence the pages.
+// ponytail: fetches every row; move the sums to an RPC if a reader ever has tens of thousands.
+async function allSessions(uid: string) {
+  const PAGE = 1000;
+  const rows: any[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const res = await supabase
+      .from('reading_sessions')
+      .select('*')
+      .eq('user_id', uid)
+      .order('started_at', { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (res.error) return { data: null, error: res.error };
+    rows.push(...(res.data ?? []));
+    if ((res.data ?? []).length < PAGE) return { data: rows, error: null };
+  }
+}
+
 async function requireUid(): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const uid = data.session?.user.id;
@@ -139,7 +160,20 @@ export const sessionApi: Partial<QuireApi> = {
       p_local_date: session.localDate,
       p_source: session.source,
     });
-    if (error) throw error;
+    if (error) {
+      // complete_session refuses impossible input with 22023 + a SESSION_* tag.
+      // Say it in words, but keep `code` — the offline queue reads it to tell a
+      // verdict (drop) from an outage (retry).
+      if (error.code === '22023') {
+        const msg = /TOO_OLD/.test(error.message)
+          ? 'This session is more than two weeks old, so it can no longer be synced.'
+          : /local_date|future/.test(error.message)
+            ? "Your phone's date or time looks off. Check it in Settings, then try again."
+            : 'The pages or time on this session look off. Adjust them and try again.';
+        throw Object.assign(new Error(msg), { code: error.code });
+      }
+      throw error;
+    }
     const result = data as CompleteSessionResult;
     // Level-up detection without a schema change: the RPC doesn't return level
     // fields, so read the fresh (trigger-maintained) level and derive the prior
@@ -236,7 +270,7 @@ export const sessionApi: Partial<QuireApi> = {
   async getStats(): Promise<StatsData> {
     const uid = await requireUid();
     const [sRes, stRes, bfRes, achRes, uaRes] = await Promise.all([
-      supabase.from('reading_sessions').select('*').eq('user_id', uid).order('started_at', { ascending: false }).limit(400),
+      allSessions(uid),
       supabase.from('streaks').select('*').eq('user_id', uid).maybeSingle(),
       supabase.from('user_books').select('id', { count: 'exact', head: true }).eq('user_id', uid).eq('status', 'finished'),
       supabase.from('achievements').select('*').eq('is_active', true).order('sort_order'),

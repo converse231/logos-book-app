@@ -5,13 +5,12 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withSequence,
-  withTiming,
-  Easing,
-  useReducedMotion,
+  withTiming,  useReducedMotion,
 } from 'react-native-reanimated';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, SHADOW, RADIUS } from '@/theme/tokens';
+import { EASE } from '@/theme/motion';
 import { CountUp } from './CountUp';
 
 // RULE 1: an animated mock stat card that shows, not tells, what a year of
@@ -28,8 +27,8 @@ export function WelcomeStatCard() {
     if (reduceMotion) return;
     flameScale.value = withRepeat(
       withSequence(
-        withTiming(1.12, { duration: 900, easing: Easing.inOut(Easing.quad) }),
-        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) })
+        withTiming(1.05, { duration: 1500, easing: EASE.breathe }),
+        withTiming(1, { duration: 1500, easing: EASE.breathe })
       ),
       -1,
       false
@@ -44,12 +43,12 @@ export function WelcomeStatCard() {
       <View style={styles.header}>
         <View style={styles.overlineRow}>
           <AppIcon name="sparkles" tint="accent" size={13} />
-          <Text style={[styles.overline, { color: t.accent }]} numberOfLines={1}>
+          <Text style={[styles.overline, { color: t.accentText }]} numberOfLines={1}>
             ONE YEAR FROM NOW
           </Text>
         </View>
         <View style={[styles.pill, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
-          <Text style={[styles.pillText, { color: t.accent }]}>LV 7 · BIBLIOPHILE</Text>
+          <Text style={[styles.pillText, { color: t.accentText }]}>LV 7 · BIBLIOPHILE</Text>
         </View>
       </View>
 
@@ -100,7 +99,7 @@ function Stat({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 18, gap: 14, ...SHADOW.card },
+  card: { borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, padding: 18, gap: 14, ...SHADOW.card },
   // Both labels are fixed-width mono and neither can shrink, so on a narrow
   // screen space-between let the pill ride over "…NOW". wrap + gap drops the
   // pill to its own line instead of overlapping.
@@ -110,8 +109,8 @@ const styles = StyleSheet.create({
   },
   overlineRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1 },
   overline: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1, flexShrink: 1 },
-  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, borderWidth: 1 },
-  pillText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 0.6 },
+  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.md, borderWidth: 1 },
+  pillText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 0.6 },
   flameRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   flameWrap: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
   flameText: { flex: 1 },

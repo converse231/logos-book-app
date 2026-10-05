@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
 import { BookFormat } from '@/services/types';
 
 interface BookCoverProps {
@@ -67,12 +67,15 @@ export function BookCover({
 }
 
 const styles = StyleSheet.create({
-  wrap: { overflow: 'hidden', borderRadius: 14, borderWidth: BORDER_WIDTH },
+  wrap: { overflow: 'hidden', borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
   image: { width: '100%', height: '100%' },
   placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 8, gap: 6 },
   placeholderTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 11, textAlign: 'center' },
   badge: {
-    position: 'absolute', bottom: 0, left: 0, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 14,
+    position: 'absolute', bottom: 0, left: 0, paddingHorizontal: 6, paddingVertical: 2, borderRadius: RADIUS.md,
   },
+  // The one exception to the 11pt type floor: this badge is drawn onto covers as
+  // small as 44dp wide, where 11pt overruns the cover. Keep it a secondary cue:
+  // nothing should depend on reading it.
   badgeText: { fontFamily: FONTS.monoBold, fontSize: 9, color: '#FFFFFF', letterSpacing: 0.4, textTransform: 'uppercase' },
 });

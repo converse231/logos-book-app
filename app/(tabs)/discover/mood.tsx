@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
@@ -125,7 +125,7 @@ export default function MoodReader() {
               <Ionicons name="chevron-back" size={22} color={t.text} />
             </Pressable>
             <View style={[styles.wishPill, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-              <Ionicons name="heart" size={14} color={t.accent} />
+              <Ionicons name="heart" size={14} color={t.accentText} />
               <Text style={[styles.wishPillText, { color: t.text }]}>{wishCount} WANTED</Text>
             </View>
           </View>
@@ -175,7 +175,7 @@ export default function MoodReader() {
             </Pressable>
             <View style={[styles.aiTag, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
               <AppIcon name="sparkles" tint="accent" size={13} />
-              <Text style={[styles.aiTagText, { color: t.accent }]}>MOOD READER</Text>
+              <Text style={[styles.aiTagText, { color: t.accentText }]}>MOOD READER</Text>
             </View>
           </View>
 
@@ -202,7 +202,7 @@ export default function MoodReader() {
                       accessibilityState={{ selected: active }}
                       style={[styles.chip, { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : t.bgSec }]}
                     >
-                      <Text style={[styles.chipText, { color: active ? t.accent : t.text }]}>{mo}</Text>
+                      <Text style={[styles.chipText, { color: active ? t.accentText : t.text }]}>{mo}</Text>
                     </Pressable>
                   );
                 })}
@@ -265,6 +265,7 @@ function PreviewSheet({
   onWishlist: (card: DeckCard) => void;
 }) {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   if (!card) return null;
   const b = card.book;
   const meta = [b?.publishedYear ? String(b.publishedYear) : null, b?.pageCount ? `${b.pageCount} pages` : null, b?.genres?.[0] ?? null]
@@ -273,8 +274,12 @@ function PreviewSheet({
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.sheetScrim} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button">
-        <Pressable style={[styles.sheet, { backgroundColor: t.bg, borderColor: t.border }]} onPress={() => {}}>
+      <View style={[styles.sheetScrim, { backgroundColor: t.scrim }]}>
+        {/* The scrim is a SIBLING of the sheet, not its parent. As a labelled
+          button wrapping the sheet it made VoiceOver read the whole thing as one
+          element, "Close", and every control inside was unreachable. */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
+        <View style={[styles.sheet, { backgroundColor: t.bg, borderColor: t.border, paddingBottom: insets.bottom }]}>
           <View style={[styles.sheetHandle, { backgroundColor: t.border }]} />
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetBody}>
             <View style={styles.sheetHead}>
@@ -289,7 +294,7 @@ function PreviewSheet({
             </View>
 
             <View style={[styles.whyBlock, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-              <Text style={[styles.whyLabel, { color: t.accent }]}>WHY THIS</Text>
+              <Text style={[styles.whyLabel, { color: t.accentText }]}>WHY THIS</Text>
               <Text style={[styles.whyText, { color: t.text }]}>{card.rec.why}</Text>
             </View>
 
@@ -319,8 +324,8 @@ function PreviewSheet({
               <Text style={styles.sheetAddText}>WANT</Text>
             </PressBlock>
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -329,18 +334,18 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingHorizontal: 20, gap: 16 },
   moodTopBar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  aiTag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, height: 30, borderRadius: 14, borderWidth: BORDER_WIDTH, alignSelf: 'flex-start' },
+  aiTag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, height: 30, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignSelf: 'flex-start' },
   aiTagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5 },
   title: { fontFamily: FONTS.displayBold, fontSize: 30, lineHeight: 34, letterSpacing: -0.5 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, marginTop: -6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  chip: { paddingHorizontal: 14, height: 42, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
-  input: { minHeight: 80, borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 14, fontFamily: FONTS.uiMedium, fontSize: 16, textAlignVertical: 'top' },
+  input: { minHeight: 80, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, padding: 14, fontFamily: FONTS.uiMedium, fontSize: 16, textAlignVertical: 'top' },
   cta: { marginTop: 2 },
-  ctaInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19' },
+  ctaInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19' },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1 },
-  browseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  browseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
   browseText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   loadingBox: { alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 60 },
   loadingText: { fontFamily: FONTS.uiMedium, fontSize: 15 },
@@ -348,34 +353,34 @@ const styles = StyleSheet.create({
   // Deck phase
   deckRoot: { flex: 1, paddingHorizontal: 20 },
   deckBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  wishPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  roundBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  wishPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
   wishPillText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
 
-  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, marginTop: 12 },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, marginTop: 12 },
   errorText: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 13, lineHeight: 18 },
 
   // Preview sheet
-  sheetScrim: { flex: 1, backgroundColor: 'rgba(3,4,6,0.62)', justifyContent: 'flex-end' },
+  sheetScrim: { flex: 1, justifyContent: 'flex-end' },
   // Uniform width — a per-side border plus a radius makes RN paint the corner
   // arcs into the top edge (a thick black cap above the sheet).
-  sheet: { maxHeight: '86%', borderWidth: BORDER_WIDTH_THICK, borderRadius: 14, paddingTop: 10 },
-  sheetHandle: { width: 44, height: 5, borderRadius: 14, alignSelf: 'center', marginBottom: 14 },
+  sheet: { maxHeight: '86%', borderWidth: BORDER_WIDTH_THICK, borderRadius: RADIUS.md, paddingTop: 10 },
+  sheetHandle: { width: 44, height: 5, borderRadius: RADIUS.md, alignSelf: 'center', marginBottom: 14 },
   sheetBody: { paddingHorizontal: 20, paddingBottom: 16, gap: 16 },
   sheetHead: { flexDirection: 'row', gap: 14 },
-  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 14 },
+  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: RADIUS.md },
   sheetHeadText: { flex: 1, gap: 4, justifyContent: 'center' },
   sheetTitle: { fontFamily: FONTS.displayBold, fontSize: 22, lineHeight: 26 },
   sheetAuthor: { fontFamily: FONTS.mono, fontSize: 13 },
   sheetMeta: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.4, marginTop: 2 },
-  whyBlock: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 14, gap: 4 },
-  whyLabel: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1.5 },
+  whyBlock: { borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, padding: 14, gap: 4 },
+  whyLabel: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5 },
   whyText: { fontFamily: FONTS.uiMedium, fontSize: 15, lineHeight: 21 },
   descText: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 21 },
   sheetActions: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderTopWidth: BORDER_WIDTH },
-  sheetCloseBtn: { flex: 1, height: 52, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  sheetCloseBtn: { flex: 1, height: 52, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   sheetCloseText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
   sheetAddWrap: { flex: 1 },
-  sheetAddBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19' },
+  sheetAddBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19' },
   sheetAddText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1, color: '#FFFFFF' },
 });

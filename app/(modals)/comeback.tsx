@@ -6,12 +6,13 @@ import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ComebackChallenge, UserBook } from '@/services/types';
 import { LoadingIndicator } from '@/components/shared/LoadingIndicator';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Q } from '@/components/shared/Q';
+import { EASE } from '@/theme/motion';
 
 // Comeback Challenge (blueprint Section 5). A streak broke; finish 3 sessions
 // before it expires to restore it. Loss-aversion framed in gold. Deep link:
@@ -22,7 +23,6 @@ export default function Comeback() {
   const api = useApi();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
-  const isDark = t.mode === 'dark';
 
   const [comeback, setComeback] = useState<ComebackChallenge | null | undefined>(undefined);
   const [activeBook, setActiveBook] = useState<UserBook | null>(null);
@@ -44,7 +44,8 @@ export default function Comeback() {
   const close = () => router.back();
   const startSession = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.replace((activeBook ? `/session/${activeBook.id}` : '/(tabs)/library') as Href);
+    if (activeBook) router.replace(`/session/${activeBook.id}` as Href);
+    else router.dismissTo('/(tabs)/library' as Href);
   };
 
   const daysLeft = comeback
@@ -55,7 +56,7 @@ export default function Comeback() {
   return (
     <View style={styles.root}>
       <Pressable
-        style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(3,4,6,0.72)' : 'rgba(17,19,24,0.5)' }]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim }]}
         accessibilityRole="button"
         accessibilityLabel="Close"
         onPress={close}
@@ -138,7 +139,7 @@ export default function Comeback() {
 
 function AnimatedPanel({ reduce, children }: { reduce: boolean; children: React.ReactNode }) {
   if (reduce) return <>{children}</>;
-  return <Animated.View entering={FadeInUp.duration(360)}>{children}</Animated.View>;
+  return <Animated.View entering={FadeInUp.duration(360).easing(EASE.out)}>{children}</Animated.View>;
 }
 
 const styles = StyleSheet.create({
@@ -147,25 +148,25 @@ const styles = StyleSheet.create({
   panel: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     padding: 24,
     alignItems: 'center',
     gap: 10,
     ...({ boxShadow: '4px 4px 0px #241E19' } as const),
   },
-  closeBtn: { position: 'absolute', top: 14, right: 14, width: 34, height: 34, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { position: 'absolute', top: 14, right: 14, width: 34, height: 34, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   glyphQ: { marginTop: 4, marginBottom: 2 },
   kicker: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 1.4 },
   title: { fontFamily: FONTS.displayBold, fontSize: 26, lineHeight: 30, textAlign: 'center' },
   body: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', paddingHorizontal: 4 },
   sessions: { flexDirection: 'row', gap: 12, marginTop: 14 },
-  session: { width: 74, height: 74, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  session: { width: 74, height: 74, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
   sessionLabel: { fontFamily: FONTS.uiBold, fontSize: 12 },
   countdownRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
   countdown: { fontFamily: FONTS.uiMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
   ctaWrap: { alignSelf: 'stretch', marginTop: 16 },
-  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
+  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 16, color: PALETTE.onAccent },
   later: { minHeight: 40, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   laterText: { fontFamily: FONTS.uiMedium, fontSize: 14 },

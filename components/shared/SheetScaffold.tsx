@@ -10,6 +10,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { CENTER_COLUMN, useIsWideScreen } from '@/theme/layout';
 import { useKeyboardLift } from '@/components/shared/KeyboardLift';
+import { DURATION, EASE } from '@/theme/motion';
 
 interface SheetScaffoldProps {
   title: string;
@@ -21,6 +22,9 @@ interface SheetScaffoldProps {
    *  fully reachable and scrollable above the keyboard. Leave off for sheets that
    *  manage their own list/scroll (add-book, filter-sort). */
   scroll?: boolean;
+  /** Pinned under the (scrolling) body: the primary action stays on screen however
+   *  tall the content gets, and rides above the keyboard with the sheet. */
+  footer?: React.ReactNode;
 }
 
 // Bottom-sheet chrome shared by the library modals (add-book, review,
@@ -32,11 +36,10 @@ interface SheetScaffoldProps {
 // (and never resizes a transparent modal window anyway). With `scroll`, content
 // also scrolls inside the height-capped sheet so a long form never strands its
 // submit button under the keyboard.
-export function SheetScaffold({ title, onClose, children, hideHeader = false, scroll = false }: SheetScaffoldProps) {
+export function SheetScaffold({ title, onClose, children, hideHeader = false, scroll = false, footer }: SheetScaffoldProps) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
-  const isDark = t.mode === 'dark';
   const wide = useIsWideScreen();
 
   // Lift the whole (flex-end) sheet by the keyboard height. Padding on the root
@@ -60,13 +63,13 @@ export function SheetScaffold({ title, onClose, children, hideHeader = false, sc
   return (
     <Animated.View style={[styles.root, liftStyle]}>
       <Pressable
-        style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(3,4,6,0.62)' : 'rgba(17,19,24,0.4)' }]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim }]}
         accessibilityRole="button"
         accessibilityLabel="Close"
         onPress={onClose}
       />
       <Animated.View
-        entering={reduce ? undefined : SlideInDown.duration(300)}
+        entering={reduce ? undefined : SlideInDown.duration(DURATION.base).easing(EASE.out)}
         style={[
           styles.sheet,
           { backgroundColor: t.bgSec, borderColor: t.border, paddingBottom: insets.bottom + 16 },
@@ -93,6 +96,7 @@ export function SheetScaffold({ title, onClose, children, hideHeader = false, sc
           </View>
         ) : null}
         {body}
+        {footer ? <View style={styles.footer}>{footer}</View> : null}
       </Animated.View>
     </Animated.View>
   );
@@ -125,8 +129,9 @@ const styles = StyleSheet.create({
   scrollBody: { flexShrink: 1 },
   // (No shadow slack needed here any more — the buttons now carry their own.)
   scrollContent: {},
-  handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: 14, marginBottom: 12 },
+  footer: { paddingTop: 16 },
+  handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: RADIUS.md, marginBottom: 12 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   title: { fontFamily: FONTS.uiBold, fontSize: 20, textTransform: 'uppercase', letterSpacing: 0.5 },
-  closeBtn: { width: 34, height: 34, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 34, height: 34, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 });

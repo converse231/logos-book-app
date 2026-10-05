@@ -1,8 +1,9 @@
-import { Redirect, type Href } from 'expo-router';
+import { type Href } from 'expo-router';
+import { ReturnTo } from '@/components/navigation/ReturnTo';
 
-// The variable-reward insight is rendered inline on the session-complete screen,
-// not as its own route. Kept as a redirect so quire://reading-insight (blueprint
-// §19) can't surface the old "F2 — to be built" placeholder.
-export default function ReadingInsightRedirect() {
-  return <Redirect href={'/(tabs)/home' as Href} />;
+// The variable-reward insight renders inline on session-complete, not as its own
+// route. Kept so quire://reading-insight (blueprint §19) lands somewhere sensible.
+// A pop, not a <Redirect> (a replace): see components/navigation/ReturnTo.tsx.
+export default function Route() {
+  return <ReturnTo href={'/(tabs)/home' as Href} />;
 }

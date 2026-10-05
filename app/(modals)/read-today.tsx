@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -98,9 +98,11 @@ export default function ReadToday() {
     <ScreenBackground>
       <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.topBar}>
-          <View style={[styles.tag, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-            <Ionicons name="flame" size={13} color={t.accent} />
-            <Text style={[styles.tagText, { color: t.accent }]}>I READ TODAY</Text>
+          {/* A kicker, not a chip: bordered and filled beside the close button, it
+              read as a second control. */}
+          <View style={styles.tag}>
+            <Ionicons name="flame" size={13} color={t.accentText} />
+            <Text style={[styles.tagText, { color: t.accentText }]}>I READ TODAY</Text>
           </View>
           <Pressable onPress={close} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close" style={[styles.closeBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}>
             <Ionicons name="close" size={22} color={t.text} />
@@ -112,7 +114,7 @@ export default function ReadToday() {
         ) : alreadyRead ? (
           <View style={styles.center}>
             <View style={[styles.doneIcon, { backgroundColor: t.accentMuted, borderColor: t.accent }]}>
-              <Ionicons name="checkmark" size={34} color={t.accent} />
+              <Ionicons name="checkmark" size={34} color={t.accentText} />
             </View>
             <Text style={[styles.title, { color: t.text }]}>You’ve already read today</Text>
             <Text style={[styles.subtitle, { color: t.textSec }]}>Your streak is safe — see you tomorrow.</Text>
@@ -184,12 +186,12 @@ export default function ReadToday() {
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 20 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, height: 30, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5 },
-  closeBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 16 },
-  doneIcon: { width: 72, height: 72, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  doneIcon: { width: 72, height: 72, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   heading: { alignItems: 'center', gap: 6, marginTop: 24 },
   title: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 32, textAlign: 'center', letterSpacing: -0.5 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, textAlign: 'center', maxWidth: 300 },
@@ -200,9 +202,9 @@ const styles = StyleSheet.create({
   selAuthor: { fontFamily: FONTS.mono, fontSize: 13, textAlign: 'center' },
 
   footer: { gap: 12 },
-  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK },
   errorText: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 13, lineHeight: 18 },
   emptyBtnWrap: { marginTop: 8 },
-  logBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, paddingHorizontal: 20, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19' },
+  logBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, paddingHorizontal: 20, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: '#241E19' },
   logBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: '#FFFFFF' },
 });

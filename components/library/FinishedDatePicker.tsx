@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, INK, PALETTE, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, INK, PALETTE, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { PressChip } from '@/components/shared/PressChip';
 import { PressRow } from '@/components/shared/PressRow';
@@ -38,8 +38,12 @@ export function FinishedDatePicker({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close">
-        <Pressable style={[styles.panel, { backgroundColor: t.bg, borderColor: t.border }]} onPress={() => {}}>
+      <View style={[styles.scrim, { backgroundColor: t.scrim }]}>
+        {/* The scrim is a SIBLING of the sheet, not its parent. As a labelled
+          button wrapping the sheet it made VoiceOver read the whole thing as one
+          element, "Close", and every control inside was unreachable. */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
+        <View style={[styles.panel, { backgroundColor: t.bg, borderColor: t.border }]}>
           <Text style={[styles.title, { color: t.text }]}>When did you finish it?</Text>
 
           <Text style={[styles.label, { color: t.textSec }]}>YEAR</Text>
@@ -54,7 +58,7 @@ export function FinishedDatePicker({
                   accessibilityLabel={String(y)}
                   style={[styles.yearChip, { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : t.bgSec }]}
                 >
-                  <Text style={[styles.yearText, { color: active ? t.accent : t.text }]}>{y}</Text>
+                  <Text style={[styles.yearText, { color: active ? t.accentText : t.text }]}>{y}</Text>
                 </PressChip>
               );
             })}
@@ -81,7 +85,7 @@ export function FinishedDatePicker({
                     disabled && { opacity: 0.3 },
                   ]}
                 >
-                  <Text style={[styles.monthText, { color: active ? t.accent : t.text }]}>{m}</Text>
+                  <Text style={[styles.monthText, { color: active ? t.accentText : t.text }]}>{m}</Text>
                 </PressChip>
               );
             })}
@@ -112,35 +116,35 @@ export function FinishedDatePicker({
               </Text>
             </PressBlock>
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: 'rgba(3,4,6,0.62)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  panel: { width: '100%', maxWidth: 380, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, padding: 20, gap: 10, ...({ boxShadow: '6px 6px 0px #241E19' } as const) },
+  scrim: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  panel: { width: '100%', maxWidth: 380, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, padding: 20, gap: 10, ...({ boxShadow: '6px 6px 0px #241E19' } as const) },
   title: { fontFamily: FONTS.displayBold, fontSize: 22, letterSpacing: -0.3, marginBottom: 2 },
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginTop: 6 },
   yearRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  yearChip: { paddingHorizontal: 12, height: 38, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  yearChip: { paddingHorizontal: 12, height: 38, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   yearText: { fontFamily: FONTS.monoBold, fontSize: 14 },
   monthGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   monthCell: { width: '22%', flexGrow: 1 },
-  monthChip: { height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  monthChip: { height: 42, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   monthText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   // flex-start, not center: the confirm block reserves 4px below itself for its
   // hard shadow, so centering the two made the faces sit at different heights.
   // Aligned at the top with equal 52dp faces, they read as a matched pair.
   actions: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 12 },
   // flex on the wrapper (it's the row's child); the face keeps the border.
-  cancelWrap: { flex: 1, borderRadius: 14, overflow: 'hidden' },
-  cancelBtn: { height: 52, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  cancelWrap: { flex: 1, borderRadius: RADIUS.md, overflow: 'hidden' },
+  cancelBtn: { height: 52, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   cancelText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
   confirmWrap: { flex: 1 },
   confirmBtn: {
-    height: 52, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+    height: 52, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8,
   },
   // Ink on coral, not white — the house signature. This button was the one place

@@ -1,6 +1,7 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 import { View } from 'react-native';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
+import { DURATION, EASE } from '@/theme/motion';
 
 /*
  * The app's staged entrance: content lifts in from below, one block after the
@@ -22,7 +23,7 @@ import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
  */
 
 const STEP_MS = 65;
-const DURATION_MS = 430;
+const DURATION_MS = DURATION.entrance;
 
 interface RevealProps {
   /** Position in the stagger. Delay is `index * STEP_MS`. */
@@ -38,7 +39,7 @@ export function Reveal({ index, delay, style, children }: RevealProps) {
   if (reduce) return <View style={style}>{children}</View>;
   const ms = delay ?? (index ?? 0) * STEP_MS;
   return (
-    <Animated.View style={style} entering={FadeInUp.delay(ms).duration(DURATION_MS)}>
+    <Animated.View style={style} entering={FadeInUp.delay(ms).duration(DURATION_MS).easing(EASE.out)}>
       {children}
     </Animated.View>
   );

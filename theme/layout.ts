@@ -81,3 +81,17 @@ export function coverGrid(
   const columns = Math.max(phoneColumns, Math.floor((content - gutter + gap) / (designCell + gap)));
   return { columns, cellWidth: (content - gutter - (columns - 1) * gap) / columns };
 }
+
+/**
+ * Tab bar height above the home-indicator inset, and how far the record FAB rises
+ * above its top edge. Both screens of geometry derive from these two numbers, so
+ * the bar and the FAB can't drift apart.
+ *
+ * 66 (was 60) is what gives the labels room: 8 top + 6 bottom padding leaves 52,
+ * and a 30dp icon pill + 2 + an 11px label needs ~47 — about 5dp of slack, enough
+ * for Android at 1.3x font scale. At 60 there was zero slack, and one notch of
+ * system font size clipped every label to a sliver. (iOS disables tab-label
+ * scaling in favour of the Large Content Viewer, so this is Android's margin.)
+ */
+export const TAB_BAR_HEIGHT = 66;
+export const FAB_RISE = 16;

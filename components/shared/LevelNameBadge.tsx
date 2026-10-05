@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, PALETTE, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, PALETTE, NO_FONT_PAD, RADIUS } from '@/theme/tokens';
 import { LevelName } from '@/services/types';
 
 interface LevelNameBadgeProps {
@@ -60,8 +60,8 @@ export function LevelNameBadge({
 }
 
 const styles = StyleSheet.create({
-  pill: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14 },
+  pill: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.md },
   pillSm: { paddingHorizontal: 10, paddingVertical: 4 },
   text: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 1, ...NO_FONT_PAD },
-  textSm: { fontSize: 10, letterSpacing: 0.8 },
+  textSm: { fontSize: 11, letterSpacing: 0.8 },
 });

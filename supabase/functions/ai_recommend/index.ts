@@ -17,6 +17,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 // for higher quality, or claude-haiku-4-5 for lower cost — one line.
 const MODEL = 'claude-sonnet-4-6';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+// Uncached recommendation calls per reader per rolling 24h.
+const DAILY_LIMIT = 20;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -60,6 +62,7 @@ Deno.serve(async (req) => {
 
   const url = Deno.env.get('SUPABASE_URL')!;
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
   if (!anthropicKey) return json({ error: 'ANTHROPIC_API_KEY is not set on the function.' }, 500);
 
@@ -97,7 +100,12 @@ Deno.serve(async (req) => {
 
   // Cache key: same mood + taste reuses recs for 7 days (user_id is a separate column).
   const promptHash = await sha256Hex(`${mood}|${context}|${[...genres].sort().join(',')}`);
-  const { data: cached } = await db
+  // The cache is service-role territory: 20260826000002 revoked client writes on
+  // ai_rec_cache, and this function used to write it with the CALLER's JWT —
+  // the upsert failed silently, nothing had been cached since 2026-07-24, and
+  // every request (repeats included) was a paid Claude call.
+  const admin = createClient(url, serviceKey);
+  const { data: cached } = await admin
     .from('ai_rec_cache')
     .select('response_json')
     .eq('user_id', uid)
@@ -106,6 +114,18 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (cached?.response_json) {
     return json({ recs: cached.response_json, cached: true });
+  }
+
+  // Every cache miss writes one row, so rows created in the last day ARE this
+  // reader's paid calls. Without a cap, a loop over random moods is an open tab
+  // on the Anthropic key.
+  const { count: recent } = await admin
+    .from('ai_rec_cache')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', uid)
+    .gt('created_at', new Date(Date.now() - 86_400_000).toISOString());
+  if ((recent ?? 0) >= DAILY_LIMIT) {
+    return json({ error: "You've asked for a lot of recommendations today. Try again tomorrow." }, 429);
   }
 
   // Build the prompt and call Claude with structured output.
@@ -124,6 +144,9 @@ Deno.serve(async (req) => {
 
   const aiRes = await fetch(ANTHROPIC_URL, {
     method: 'POST',
+    // The client gives up long before the platform's wall clock would; don't
+    // hold a worker (and a billed request) open past that.
+    signal: AbortSignal.timeout(45_000),
     headers: {
       'x-api-key': anthropicKey,
       'anthropic-version': '2023-06-01',
@@ -136,11 +159,16 @@ Deno.serve(async (req) => {
       output_config: { format: { type: 'json_schema', schema: SCHEMA }, effort: 'low' },
       messages: [{ role: 'user', content: userPrompt }],
     }),
+  }).catch((e) => {
+    console.error('Claude API unreachable', e?.name, e?.message);
+    return null;
   });
 
+  if (!aiRes) return json({ error: 'Recommendations took too long. Try again in a moment.' }, 504);
   if (!aiRes.ok) {
-    const detail = await aiRes.text();
-    return json({ error: `Claude API ${aiRes.status}: ${detail.slice(0, 300)}` }, 502);
+    // Upstream detail goes to the function log, not to the phone.
+    console.error('Claude API error', aiRes.status, (await aiRes.text()).slice(0, 500));
+    return json({ error: 'Recommendations are unavailable right now. Try again in a moment.' }, 502);
   }
   const ai = await aiRes.json();
   if (ai.stop_reason === 'refusal') return json({ error: 'The model declined this request.' }, 422);
@@ -153,11 +181,18 @@ Deno.serve(async (req) => {
     return json({ error: 'Could not parse recommendations.' }, 502);
   }
 
-  // Store for 7 days (default expires_at on the column).
-  await db.from('ai_rec_cache').upsert(
-    { user_id: uid, prompt_hash: promptHash, mood, response_json: recs, model: MODEL },
+  // Store for 7 days (default expires_at on the column). created_at and
+  // expires_at are restamped so a refreshed entry counts toward today's cap
+  // and lives a full week again.
+  const { error: cacheErr } = await admin.from('ai_rec_cache').upsert(
+    {
+      user_id: uid, prompt_hash: promptHash, mood, response_json: recs, model: MODEL,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+    },
     { onConflict: 'user_id,prompt_hash' }
   );
+  if (cacheErr) console.error('ai_rec_cache upsert failed', cacheErr.message);
 
   return json({ recs, cached: false });
 });

@@ -22,7 +22,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
+import { ANIMATION, FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD, RADIUS } from '@/theme/tokens';
 import { CENTER_COLUMN } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { UserBook } from '@/services/types';
@@ -38,6 +38,7 @@ import { SessionControlBar } from '@/components/session/SessionControlBar';
 import { ReadingCarousel } from '@/components/session/ReadingCarousel';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { KeyboardLift } from '@/components/shared/KeyboardLift';
+import { EASE } from '@/theme/motion';
 
 const FOCUS_DURATIONS = [10, 15, 25, 45, 60]; // minutes the reader can commit to in focus mode
 const DEFAULT_FOCUS_MIN = 15;
@@ -82,6 +83,12 @@ export default function SessionTracker() {
   const [loadError, setLoadError] = useState(false);
   const [reloadNonce, setReloadNonce] = useState(0);
   const [focusMode, setFocusMode] = useState(false);
+  const readyScrollRef = useRef<ScrollView>(null);
+  const readyViewportH = useRef(0);
+  const readyContentH = useRef(0);
+  const hintIfClipped = () => {
+    if (readyViewportH.current > 0 && readyContentH.current > readyViewportH.current + 1) readyScrollRef.current?.flashScrollIndicators();
+  };
   const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MIN); // committed focus length
   const [paused, setPaused] = useState(false);
   const [elapsedWhole, setElapsedWhole] = useState(0); // whole seconds, drives the focus lock
@@ -471,12 +478,16 @@ export default function SessionTracker() {
             outgrew its flex space and spilled into the footer, which is why the
             start-page chip sat flush against the Focus mode card. flexGrow + centre
             keeps it exactly as designed when there's room. */}
+        {/* When it does overflow, the start-page chip is the part below the fold and
+            nothing said so — flash the indicator once so the reader knows to scroll. */}
         <ScrollView
+          ref={readyScrollRef}
           style={styles.readyScroll}
           contentContainerStyle={styles.readyScrollContent}
-          showsVerticalScrollIndicator={false}
+          onLayout={(e) => { readyViewportH.current = e.nativeEvent.layout.height; hintIfClipped(); }}
+          onContentSizeChange={(_, h) => { readyContentH.current = h; hintIfClipped(); }}
         >
-        <Body {...(reduce ? {} : { entering: FadeIn.duration(ANIMATION.durationNormal) })} style={styles.readyBody}>
+        <Body {...(reduce ? {} : { entering: FadeIn.duration(ANIMATION.durationNormal).easing(EASE.out) })} style={styles.readyBody}>
           <Text style={[styles.pickLabel, { color: t.textSec }]}>
             {readingBooks.length > 1 ? 'WHAT ARE YOU READING?' : 'TONIGHT’S READ'}
           </Text>
@@ -509,11 +520,11 @@ export default function SessionTracker() {
                   >
                     <Text style={[styles.readyStartPage, { color: t.textSec }]}>
                       Starting on page{' '}
-                      <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>
+                      <Text style={{ color: t.accentText, fontFamily: FONTS.uiBold }}>
                         {startOverride ?? selectedBook.currentPage}
                       </Text>
                     </Text>
-                    <Ionicons name="pencil" size={13} color={t.accent} />
+                    <Ionicons name="pencil" size={13} color={t.accentText} />
                   </Pressable>
                 )}
               </>
@@ -541,7 +552,7 @@ export default function SessionTracker() {
                   style={[styles.focusRow, { backgroundColor: t.bgSec, borderColor: focusMode ? t.accent : t.border }]}
                 >
                   <View style={[styles.focusIcon, { backgroundColor: t.accentMuted }]}>
-                    <Ionicons name="lock-closed" size={16} color={t.accent} />
+                    <Ionicons name="lock-closed" size={16} color={t.accentText} />
                   </View>
                   <View style={styles.focusTextWrap}>
                     <Text style={[styles.focusTitle, { color: t.text }]}>Focus mode</Text>
@@ -555,7 +566,10 @@ export default function SessionTracker() {
                     value={focusMode}
                     onValueChange={setFocusMode}
                     trackColor={{ false: t.bgTer, true: t.accent }}
-                    thumbColor={PALETTE.text}
+                    // Theme-aware, matching Settings. PALETTE.text is the DARK theme's cream:
+                    // in light mode it put a cream knob on the cream off-track (~1.1:1),
+                    // invisible on Android, where the thumb has no shadow.
+                    thumbColor={t.text}
                     ios_backgroundColor={t.bgTer}
                   />
                 </Pressable>
@@ -579,7 +593,7 @@ export default function SessionTracker() {
                             { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
                           ]}
                         >
-                          <Text style={[styles.durationText, { color: active ? t.accent : t.textSec }]}>{min}m</Text>
+                          <Text style={[styles.durationText, { color: active ? t.accentText : t.textSec }]}>{min}m</Text>
                         </Pressable>
                       );
                     })}
@@ -599,7 +613,7 @@ export default function SessionTracker() {
             never hidden behind the keyboard and the prompt can't be missed. */}
         {editingStart && selectedBook ? (
           <KeyboardLift style={styles.entryOverlay}>
-            <Pressable style={styles.entryBackdrop} onPress={() => setEditingStart(false)} accessibilityLabel="Dismiss" />
+            <Pressable style={styles.entryBackdrop} onPress={() => setEditingStart(false)} accessibilityRole="button" accessibilityLabel="Dismiss" />
             <View style={[styles.entrySheet, { backgroundColor: t.bgSec, paddingBottom: insets.bottom + 20 }]}>
               <Text style={[styles.entryTitle, { color: t.text }]}>What page are you starting on?</Text>
               <Text style={[styles.entryHint, { color: t.textSec }]}>
@@ -650,7 +664,7 @@ export default function SessionTracker() {
   return (
     <Animated.View
       style={[styles.root, { backgroundColor: t.bg }]}
-      entering={reduce ? undefined : FadeIn.duration(ANIMATION.durationNormal)}
+      entering={reduce ? undefined : FadeIn.duration(ANIMATION.durationNormal).easing(EASE.out)}
     >
       {/* Tap surface toggles detail reveal */}
       <Pressable style={styles.tapSurface} onPress={revealDetails} accessibilityRole="none">
@@ -660,7 +674,7 @@ export default function SessionTracker() {
             <Text style={[styles.bookTitle, { color: t.text }]} numberOfLines={1}>
               {book.book.title}
             </Text>
-            <Text style={[styles.readingLabel, { color: t.accent }]}>
+            <Text style={[styles.readingLabel, { color: t.accentText }]}>
               {paused ? 'Paused' : isAudio ? 'Listening' : 'Reading'}
             </Text>
           </Animated.View>
@@ -730,7 +744,7 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -747,7 +761,7 @@ const styles = StyleSheet.create({
   readyStartPage: { fontFamily: FONTS.uiMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
   startPageChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6,
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, borderWidth: BORDER_WIDTH,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH,
   },
   readyFooter: { ...CENTER_COLUMN, paddingHorizontal: 24, gap: 14, alignItems: 'center' },
   focusWrap: { width: '100%', gap: 10 },
@@ -757,10 +771,10 @@ const styles = StyleSheet.create({
     gap: 12,
     width: '100%',
     padding: 14,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
   },
-  focusIcon: { width: 32, height: 32, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  focusIcon: { width: 32, height: 32, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   focusTextWrap: { flex: 1, gap: 2 },
   focusTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   focusSub: { fontFamily: FONTS.uiRegular, fontSize: 12, lineHeight: 16 },
@@ -768,7 +782,7 @@ const styles = StyleSheet.create({
   durationChip: {
     flex: 1,
     height: 44,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
@@ -781,7 +795,7 @@ const styles = StyleSheet.create({
     right: 16,
     top: 10,
     bottom: -6,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     opacity: 0,
     backgroundColor: PALETTE.accent,
   },
@@ -791,7 +805,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     minHeight: 58,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH_THICK,
     borderColor: INK,
     backgroundColor: PALETTE.accent,
@@ -824,7 +838,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginVertical: 8,
   },
-  entryBtn: { minHeight: 52, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
+  entryBtn: { minHeight: 52, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
   btnBusy: { opacity: 0.7 },
   entryBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 16, color: PALETTE.onAccent },
 });

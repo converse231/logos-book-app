@@ -5,10 +5,10 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withDelay,
-  withSpring,
 } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
+import { glide, DURATION } from '@/theme/motion';
 import { shortDate, type RhythmBar } from '@/lib/bookReport';
 
 // The shape of a read: one bar per day across the whole span, empty days
@@ -79,7 +79,7 @@ function Bar({
   const grow = useSharedValue(reduce ? 1 : 0);
   useEffect(() => {
     if (reduce) return;
-    grow.value = withDelay(delay, withSpring(1, { damping: 14, stiffness: 170, mass: 0.7 }));
+    grow.value = withDelay(delay, glide(1, DURATION.entrance));
   }, [delay, reduce, grow]);
 
   // scaleY from the baseline, so bars rise out of the axis rather than
@@ -114,5 +114,5 @@ const styles = StyleSheet.create({
   slot: { flex: 1, height: '100%', justifyContent: 'flex-end' },
   bar: { width: '100%', borderRadius: 2, transformOrigin: 'bottom' },
   axis: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  tick: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.2 },
+  tick: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.2 },
 });

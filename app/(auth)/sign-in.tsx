@@ -11,13 +11,14 @@ import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { KeyboardLift } from '@/components/shared/KeyboardLift';
+import { useEnterApp } from '@/components/navigation/enterApp';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,6 +29,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function SignIn() {
   const t = useTheme();
   const router = useRouter();
+  const enterApp = useEnterApp();
   const api = useApi();
   const insets = useSafeAreaInsets();
 
@@ -71,7 +73,7 @@ export default function SignIn() {
     setError(null);
     try {
       await api.signIn(email, password);
-      router.replace('/(tabs)/home' as Href);
+      enterApp();
     } catch (e: any) {
       setError(e?.message ?? 'Could not sign in. Check your email and password.');
     } finally {
@@ -139,7 +141,7 @@ export default function SignIn() {
                 accessibilityLabel="Forgot your password?"
                 style={styles.forgot}
               >
-                <Text style={[styles.forgotText, { color: t.accent }]}>Forgot password?</Text>
+                <Text style={[styles.forgotText, { color: t.accentText }]}>Forgot password?</Text>
               </Pressable>
             </View>
 
@@ -173,7 +175,7 @@ export default function SignIn() {
               style={styles.altLink}
             >
               <Text style={[styles.altText, { color: t.textSec }]}>
-                New to Quire? <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>Create an account</Text>
+                New to Quire? <Text style={{ color: t.accentText, fontFamily: FONTS.uiBold }}>Create an account</Text>
               </Text>
             </Pressable>
           </View>
@@ -186,7 +188,7 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 24, gap: 28 },
-  backBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   header: { gap: 10 },
   title: { fontFamily: FONTS.displayBold, fontSize: 34, lineHeight: 38, letterSpacing: -0.5 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 16, lineHeight: 22 },
@@ -194,7 +196,7 @@ const styles = StyleSheet.create({
   field: { gap: 10 },
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2 },
   input: {
-    minHeight: 52, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16,
+    minHeight: 52, borderRadius: RADIUS.md, borderWidth: 1, paddingHorizontal: 16,
     fontFamily: FONTS.uiMedium, fontSize: 17,
   },
   error: { fontFamily: FONTS.uiMedium, fontSize: 13 },
@@ -203,7 +205,7 @@ const styles = StyleSheet.create({
   footer: { marginTop: 'auto', gap: 16 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
   dividerLine: { flex: 1, height: 1, opacity: 0.4 },
-  dividerText: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1.4 },
+  dividerText: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1.4 },
   altLink: { alignItems: 'center', paddingVertical: 4 },
   altText: { fontFamily: FONTS.uiRegular, fontSize: 14 },
 });

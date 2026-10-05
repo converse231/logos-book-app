@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BookCover } from './BookCover';
 import { CardWordmark } from './CardWordmark';
-import { FONTS, PALETTE } from '@/theme/tokens';
+import { FONTS, PALETTE, RADIUS } from '@/theme/tokens';
 import { BookFormat } from '@/services/types';
 import { CardTextColor, cardInk } from '@/services/cardColors';
 
@@ -130,17 +130,17 @@ const starShadow = {
 } as const;
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 14, overflow: 'hidden' },
+  card: { borderRadius: RADIUS.md, overflow: 'hidden' },
   darkBg: { backgroundColor: '#241E19' },
   transparentBg: { backgroundColor: 'transparent' },
   glow: {
     position: 'absolute', top: '20%', left: '15%', right: '15%', height: '50%',
-    borderRadius: 14, backgroundColor: 'rgba(255,61,31,0.10)',
+    borderRadius: RADIUS.md, backgroundColor: 'rgba(255,61,31,0.10)',
   },
   inner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   mark: { alignSelf: 'center' },
   coverWrap: {
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8,
   },
   starRow: { flexDirection: 'row', alignItems: 'center' },

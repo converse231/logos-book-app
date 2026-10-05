@@ -7,7 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 
 interface GenreChipProps {
   label: string;
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 44,
     paddingHorizontal: 18,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',

@@ -6,12 +6,12 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  Easing,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS } from '@/theme/tokens';
+import { EASE } from '@/theme/motion';
 
 interface StreakFlameProps {
   count: number;
@@ -33,11 +33,11 @@ export function StreakFlame({ count, isAtRisk = false, size = 96 }: StreakFlameP
 
   useEffect(() => {
     if (reduceMotion) return;
-    const dur = isAtRisk ? 600 : 1100; // faster, more urgent when at risk
+    const dur = isAtRisk ? 1000 : 1600; // quicker, more urgent when at risk
     scale.value = withRepeat(
       withSequence(
-        withTiming(1.08, { duration: dur, easing: Easing.inOut(Easing.quad) }),
-        withTiming(1, { duration: dur, easing: Easing.inOut(Easing.quad) })
+        withTiming(1.04, { duration: dur, easing: EASE.breathe }),
+        withTiming(1, { duration: dur, easing: EASE.breathe })
       ),
       -1,
       false

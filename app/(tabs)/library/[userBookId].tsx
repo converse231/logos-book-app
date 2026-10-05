@@ -7,15 +7,15 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD, GENRE_PALETTE } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD, genreChip, RADIUS } from '@/theme/tokens';
 import { useContentWidth } from '@/theme/layout';
+import { glide, tapPulse, DURATION, EASE } from '@/theme/motion';
 import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, Review, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -32,15 +32,16 @@ import { getBookProgress } from '@/components/library/bookProgress';
 import { FinishedDatePicker } from '@/components/library/FinishedDatePicker';
 import { Reveal } from '@/components/shared/Reveal';
 import { extremeRatingPrompt } from '@/lib/ratingPrompt';
+import { STATUS_SHORT } from '@/lib/readingStatus';
 
 // A curated set of tinted genre pill colours (bg + fg). Rotates by index so
 // consecutive genres always get different hues without needing a genre→colour map.
 const STATUSES: { key: ReadingStatus; label: string }[] = [
-  { key: 'want', label: 'Want' },
-  { key: 'tbr', label: 'TBR' },
-  { key: 'reading', label: 'Reading' },
-  { key: 'finished', label: 'Finished' },
-  { key: 'dnf', label: 'DNF' },
+  { key: 'want', label: STATUS_SHORT.want },
+  { key: 'tbr', label: STATUS_SHORT.tbr },
+  { key: 'reading', label: STATUS_SHORT.reading },
+  { key: 'finished', label: STATUS_SHORT.finished },
+  { key: 'dnf', label: STATUS_SHORT.dnf },
 ];
 
 const RATING_WORDS: Record<number, string> = {
@@ -342,8 +343,6 @@ export default function BookDetail() {
         {/* Hero */}
         <Reveal index={0}>
           <View style={styles.hero}>
-            <View style={[styles.heroArc, { backgroundColor: t.bgSec }]} pointerEvents="none" />
-            <View style={[styles.heroGlow, { backgroundColor: PALETTE.accentAlpha10 }]} pointerEvents="none" />
             <View style={styles.coverShadow}>
               <BookCover url={book.coverUrl} title={book.title} format={format} showFormatBadge width={coverW} />
             </View>
@@ -370,11 +369,11 @@ export default function BookDetail() {
               containerStyle={styles.bannerWrap}
               style={styles.finishedRow}
             >
-              <Ionicons name="checkmark-circle" size={20} color={t.accent} />
-              <Text style={[styles.finishedText, { color: t.accent }]}>
+              <Ionicons name="checkmark-circle" size={20} color={t.accentText} />
+              <Text style={[styles.finishedText, { color: t.accentText }]}>
                 Finished{ub.finishedAt ? ` ${monthYearLabel(ub.finishedAt)}` : ''}
               </Text>
-              <Ionicons name="pencil" size={14} color={t.accent} />
+              <Ionicons name="pencil" size={14} color={t.accentText} />
             </PressRow>
           )}
 
@@ -387,8 +386,8 @@ export default function BookDetail() {
               <View style={styles.metaRow}>
                 {meta.map((m, i) => (
                   <View key={m} style={styles.metaItem}>
-                    {i > 0 ? <View style={[styles.metaDot, { backgroundColor: t.textTer }]} /> : null}
                     <Text style={[styles.metaText, { color: t.textSec }]}>{m}</Text>
+                    {i < meta.length - 1 ? <View style={[styles.metaDot, { backgroundColor: t.textTer }]} /> : null}
                   </View>
                 ))}
               </View>
@@ -410,10 +409,10 @@ export default function BookDetail() {
                 accessibilityLabel={`About ${book.authors[0]} and their other books`}
                 style={({ pressed }) => [styles.authorLink, pressed && { opacity: 0.6 }]}
               >
-                <Text style={[styles.author, { color: t.accent }]} numberOfLines={2}>
+                <Text style={[styles.author, { color: t.accentText }]} numberOfLines={2}>
                   {book.authors.join(', ')}
                 </Text>
-                <Ionicons name="chevron-forward" size={14} color={t.accent} />
+                <Ionicons name="chevron-forward" size={14} color={t.accentText} />
               </Pressable>
             ) : null}
             {ub.seriesName ? (
@@ -447,7 +446,7 @@ export default function BookDetail() {
               </Pressable>
             ) : null}
             {book.genres.map((g, i) => {
-              const { bg, fg } = GENRE_PALETTE[i % GENRE_PALETTE.length];
+              const { bg, fg } = genreChip(i, t.mode);
               return (
                 <View key={g} style={[styles.chip, { backgroundColor: bg }]}>
                   <Text style={[styles.chipText, { color: fg }]}>{g}</Text>
@@ -473,15 +472,16 @@ export default function BookDetail() {
                 ? `${formatStars(myRating)} · ${RATING_WORDS[Math.ceil(myRating)]}`
                 : 'Tap a star to rate'}
             </Text>
+            {/* Secondary on purpose: 'Continue reading' is this screen's one primary.
+                Two identical coral blocks stacked read as two equal choices. */}
             <PressBlock
               onPress={writeReview}
-              emphasis="primary"
               accessibilityLabel={myReview?.body ? 'Edit your written review' : 'Write a review'}
               containerStyle={styles.reviewBtnWrap}
-              style={[styles.reviewBtn, { backgroundColor: t.accent }]}
+              style={[styles.reviewBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
             >
-              <Ionicons name="create" size={18} color={PALETTE.onAccent} />
-              <Text style={styles.reviewBtnText}>{myReview?.body ? 'EDIT REVIEW' : 'WRITE A REVIEW'}</Text>
+              <Ionicons name="create-outline" size={18} color={t.text} />
+              <Text style={[styles.reviewBtnText, { color: t.text }]}>{myReview?.body ? 'EDIT REVIEW' : 'WRITE A REVIEW'}</Text>
             </PressBlock>
           </View>
         </Reveal>
@@ -490,7 +490,7 @@ export default function BookDetail() {
             the only ones where someone wants to explain it. Slides in rather than
             pops — the stars already celebrated. */}
         {ratingPrompt ? (
-          <Animated.View key={ratingPrompt.title} entering={reduce ? undefined : FadeInDown.duration(280)}>
+          <Animated.View key={ratingPrompt.title} entering={reduce ? undefined : FadeInDown.duration(280).easing(EASE.out)}>
             <PressRow
               onPress={writeReview}
               accessibilityLabel={ratingPrompt.title}
@@ -498,12 +498,12 @@ export default function BookDetail() {
               containerStyle={styles.bannerWrap}
               style={styles.promptRow}
             >
-              <Ionicons name="chatbubble-ellipses" size={18} color={t.accent} />
+              <Ionicons name="chatbubble-ellipses" size={18} color={t.accentText} />
               <View style={styles.promptCopy}>
-                <Text style={[styles.promptTitle, { color: t.accent }]}>{ratingPrompt.title}</Text>
+                <Text style={[styles.promptTitle, { color: t.accentText }]}>{ratingPrompt.title}</Text>
                 <Text style={[styles.promptBody, { color: t.textSec }]}>{ratingPrompt.body}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={t.accent} />
+              <Ionicons name="chevron-forward" size={16} color={t.accentText} />
             </PressRow>
           </Animated.View>
         ) : null}
@@ -519,10 +519,10 @@ export default function BookDetail() {
               style={styles.authorBanner}
             >
               <AppIcon name="sparkles" tint="accent" size={18} />
-              <Text style={[styles.authorBannerText, { color: t.accent }]} numberOfLines={1}>
+              <Text style={[styles.authorBannerText, { color: t.accentText }]} numberOfLines={1}>
                 Loved it? More by {book.authors[0]}
               </Text>
-              <Ionicons name="chevron-forward" size={16} color={t.accent} />
+              <Ionicons name="chevron-forward" size={16} color={t.accentText} />
             </PressRow>
           </Reveal>
         ) : null}
@@ -548,9 +548,9 @@ export default function BookDetail() {
                   ]}
                 >
                   {savingStatus === s.key ? (
-                    <ActivityIndicator size="small" color={t.accent} />
+                    <ActivityIndicator size="small" color={t.accentText} />
                   ) : (
-                    <Text style={[styles.statusText, { color: active ? t.accent : t.textSec }]} numberOfLines={1}>{s.label}</Text>
+                    <Text style={[styles.statusText, { color: active ? t.accentText : t.textSec }]} numberOfLines={1}>{s.label}</Text>
                   )}
                 </PressChip>
               );
@@ -604,7 +604,7 @@ export default function BookDetail() {
                 </Text>
                 {blurb.length > 220 ? (
                   <Pressable onPress={() => setDescExpanded((v) => !v)} hitSlop={6} accessibilityRole="button">
-                    <Text style={[styles.moreLink, { color: t.accent }]}>{descExpanded ? 'Show less' : 'Show more'}</Text>
+                    <Text style={[styles.moreLink, { color: t.accentText }]}>{descExpanded ? 'Show less' : 'Show more'}</Text>
                   </Pressable>
                 ) : null}
               </>
@@ -768,9 +768,7 @@ function RoundBtn({
     const first = !mounted.current;
     mounted.current = true;
     if (first || reduce || !active) return;
-    pop.value = withSpring(1.22, { damping: 9, stiffness: 340, mass: 0.5 }, () => {
-      pop.value = withSpring(1, { damping: 14, stiffness: 340, mass: 0.5 });
-    });
+    pop.value = tapPulse(1.14);
   }, [active, reduce, pop]);
 
   // 10%, not the 3% a full-width row gets: on a 42dp target a subtle dent is no
@@ -784,7 +782,7 @@ function RoundBtn({
           if (!reduce) p.value = withTiming(1, { duration: 70 });
         }}
         onPressOut={() => {
-          if (!reduce) p.value = withSpring(0, { damping: 14, stiffness: 300, mass: 0.6 });
+          if (!reduce) p.value = glide(0, DURATION.release);
         }}
         onPress={onPress}
         hitSlop={12}
@@ -834,7 +832,7 @@ function DetailTile({
         {/* Every About row is coral at 16px, so one tint covers the lot. Rows whose
             glyph has no art yet (audiobook length's clock, say) fall through to the
             font on their own. */}
-        <AppIcon name={icon} tint="accent" size={16} color={t.accent} />
+        <AppIcon name={icon} tint="accent" size={16} color={t.accentText} />
       </View>
       <View style={styles.dText}>
         <Text style={[styles.dValue, { color: t.text }]} numberOfLines={wide ? 1 : 2}>
@@ -873,7 +871,7 @@ function ReviewRow({
         </Text>
         <Text style={[styles.reviewDate, { color: t.textTer }]}>{relativeDate(review.createdAt)}</Text>
         <Pressable onPress={onShare} hitSlop={10} accessibilityRole="button" accessibilityLabel="Share this review">
-          <Ionicons name="share-social-outline" size={16} color={t.accent} />
+          <Ionicons name="share-social-outline" size={16} color={t.accentText} />
         </Pressable>
         {/* Reporting your own review would only hide it from yourself. */}
         {!isMine ? (
@@ -937,20 +935,18 @@ const styles = StyleSheet.create({
   skelChips: { flexDirection: 'row', gap: 8 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   topRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
   hero: { alignItems: 'center', justifyContent: 'flex-end', paddingTop: 8, marginBottom: 2 },
-  heroArc: { position: 'absolute', bottom: 0, left: 28, right: 28, height: 150, borderTopLeftRadius: 0, borderTopRightRadius: 0 },
-  heroGlow: { position: 'absolute', top: 0, left: 44, right: 44, height: 220, borderRadius: 14, opacity: 0 },
   coverShadow: {
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     ...({ boxShadow: '4px 4px 0px #241E19' } as const),
   },
 
   ctaWrap: { position: 'relative' },
   cta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56,
-    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK, backgroundColor: PALETTE.accent,
+    borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: INK, backgroundColor: PALETTE.accent,
   },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 16, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
   finishedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, paddingHorizontal: 16 },
@@ -959,7 +955,7 @@ const styles = StyleSheet.create({
   identity: { alignItems: 'center', gap: 5, paddingHorizontal: 8 },
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metaDot: { width: 3, height: 3, borderRadius: 14 },
+  metaDot: { width: 3, height: 3, borderRadius: RADIUS.md },
   metaText: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   title: { fontFamily: FONTS.displayBold, fontSize: 28, lineHeight: 32, textAlign: 'center', marginTop: 4 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 14, textAlign: 'center', lineHeight: 19 },
@@ -969,10 +965,10 @@ const styles = StyleSheet.create({
 
   chipScroll: { marginHorizontal: -18 },
   chipRow: { paddingHorizontal: 18, gap: 8, alignItems: 'center' },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 14 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 14, borderRadius: RADIUS.md },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
 
-  sectionLabel: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1 },
+  sectionLabel: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
   rateBlock: { alignItems: 'center', gap: 9 },
   rateHint: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   // alignSelf/margins belong on the wrapper — on the face they'd shear the block
@@ -980,13 +976,13 @@ const styles = StyleSheet.create({
   reviewBtnWrap: { alignSelf: 'stretch', marginTop: 3 },
   reviewBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, minHeight: 50,
-    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+    borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
   },
   reviewBtnText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
 
   // The rounded fill lives on the wrapper (it's what animates); the row inside
   // only carries layout.
-  bannerWrap: { borderRadius: 14, overflow: 'hidden' },
+  bannerWrap: { borderRadius: RADIUS.md, overflow: 'hidden' },
   authorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 14 },
   authorBannerText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 13.5 },
 
@@ -1000,7 +996,7 @@ const styles = StyleSheet.create({
   // basis 31% fits three per row; maxWidth keeps the last row's two from growing
   // to fill the whole width and breaking the grid.
   statusCell: { flexBasis: '31%', flexGrow: 1, maxWidth: '32%' },
-  statusPill: { height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  statusPill: { height: 42, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   statusText: { fontFamily: FONTS.uiSemiBold, fontSize: 13, ...NO_FONT_PAD },
 
   progressBlock: { gap: 8 },
@@ -1015,10 +1011,10 @@ const styles = StyleSheet.create({
   moreLink: { fontFamily: FONTS.uiSemiBold, fontSize: 13, marginTop: -6 },
   detailWrap: { gap: 10 },
   detailGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
-  dTile: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth },
+  dTile: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth },
   dTileHalf: { width: '48.5%' },
   dTileWide: { width: '100%' },
-  dIcon: { width: 32, height: 32, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  dIcon: { width: 32, height: 32, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   dText: { flex: 1, gap: 1 },
   dValue: { fontFamily: FONTS.uiBold, fontSize: 15 },
   dLabel: { fontFamily: FONTS.uiMedium, fontSize: 11.5 },
@@ -1034,8 +1030,8 @@ const styles = StyleSheet.create({
   reviewDate: { fontFamily: FONTS.uiRegular, fontSize: 12 },
   reviewBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },
   spoiler: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
-  writeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, borderWidth: 1, marginTop: 4 },
+  writeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: RADIUS.md, borderWidth: 1, marginTop: 4 },
   writeText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
-  removeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: BORDER_WIDTH, marginTop: 20 },
+  removeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, marginTop: 20 },
   removeText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 });

@@ -5,7 +5,7 @@ import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
 import { PressBlock } from '@/components/shared/PressBlock';
 
 interface StepperProps {
@@ -109,6 +109,7 @@ export function Stepper({
         <GestureDetector gesture={pan}>
           <Pressable
             onPress={startEditing}
+            accessibilityRole="button"
             accessibilityLabel={`Current value ${value}. Tap to type a number.`}
             style={styles.valueWrap}
           >
@@ -124,7 +125,7 @@ export function Stepper({
                 autoFocus
                 selectTextOnFocus
                 maxLength={3}
-                style={[styles.valueInput, { color: t.accent, borderBottomColor: t.accent }]}
+                style={[styles.valueInput, { color: t.accentText, borderBottomColor: t.accent }]}
                 accessibilityLabel="Type number of books"
               />
             ) : (
@@ -148,7 +149,7 @@ export function Stepper({
       {/* contextual hint — swipe hint when not editing, keyboard hint when not editing */}
       <View style={styles.hintRow} pointerEvents="none">
         {editing ? (
-          <Text style={[styles.hint, { color: t.accent }]}>TYPE A NUMBER, THEN TAP DONE</Text>
+          <Text style={[styles.hint, { color: t.accentText }]}>TYPE A NUMBER, THEN TAP DONE</Text>
         ) : (
           <>
             <Ionicons name="chevron-back" size={14} color={t.textTer} />
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
   container: { gap: 10 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
   btn: {
-    width: 56, height: 56, borderRadius: 14, borderWidth: BORDER_WIDTH,
+    width: 56, height: 56, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH,
     alignItems: 'center', justifyContent: 'center',
   },
   disabled: { opacity: 0.4 },

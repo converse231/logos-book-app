@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -11,6 +10,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { PALETTE } from '@/theme/tokens';
+import { DURATION, EASE } from '@/theme/motion';
 import { Sparkle } from './Sparkle';
 
 // Q — the Quire fox (formerly "Fable"). A cast of hand-drawn expressions in the
@@ -136,15 +136,15 @@ export function Q({
     if (!animated || reduce) return;
     bob.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 1700, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 1700, easing: Easing.inOut(Easing.quad) })
+        withTiming(1, { duration: DURATION.breathe, easing: EASE.breathe }),
+        withTiming(0, { duration: DURATION.breathe, easing: EASE.breathe })
       ),
       -1,
       false
     );
   }, [animated, reduce, bob]);
 
-  const aStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -bob.value * 4 }] }));
+  const aStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -bob.value * 2 }] }));
 
   const a11y = decorative
     ? { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const }

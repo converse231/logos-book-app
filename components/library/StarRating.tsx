@@ -5,8 +5,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withSequence,
-  withSpring,
   withTiming,
   useReducedMotion,
   type SharedValue,
@@ -15,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { PALETTE } from '@/theme/tokens';
+import { tapPulse } from '@/theme/motion';
 
 interface StarRatingProps {
   value: number;
@@ -141,10 +140,7 @@ function Star({
     if (lit) {
       pop.value = withDelay(
         (index - 1) * STAGGER,
-        withSequence(
-          withTiming(1.3, { duration: 110, easing: Easing.out(Easing.quad) }),
-          withSpring(1, { damping: 11, stiffness: 320, mass: 0.5 })
-        )
+        tapPulse(1.18)
       );
     }
     if (burst) {

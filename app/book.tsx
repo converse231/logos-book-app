@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import {
   FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS, NO_FONT_PAD,
-  GENRE_PALETTE, hardShadow,
+  genreChip, hardShadow,
 } from '@/theme/tokens';
 import { CENTER_COLUMN } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
@@ -22,12 +22,13 @@ import { Q } from '@/components/shared/Q';
 import { FinishedDatePicker } from '@/components/library/FinishedDatePicker';
 import { BookAddedOverlay } from '@/components/library/BookAddedOverlay';
 import { Reveal } from '@/components/shared/Reveal';
+import { STATUS_LABEL, STATUS_SHORT } from '@/lib/readingStatus';
 
 const SHELVES: { key: ReadingStatus; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'want', label: 'Want', icon: 'bookmark-outline' },
-  { key: 'tbr', label: 'TBR', icon: 'time-outline' },
-  { key: 'reading', label: 'Reading', icon: 'book-outline' },
-  { key: 'finished', label: 'Finished', icon: 'checkmark-circle-outline' },
+  { key: 'want', label: STATUS_SHORT.want, icon: 'bookmark-outline' },
+  { key: 'tbr', label: STATUS_SHORT.tbr, icon: 'time-outline' },
+  { key: 'reading', label: STATUS_SHORT.reading, icon: 'book-outline' },
+  { key: 'finished', label: STATUS_SHORT.finished, icon: 'checkmark-circle-outline' },
 ];
 
 const FORMATS: { key: BookFormat; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -36,13 +37,7 @@ const FORMATS: { key: BookFormat; label: string; icon: keyof typeof Ionicons.gly
   { key: 'audiobook', label: 'Audiobook', icon: 'headset-outline' },
 ];
 
-const SHELF_LABEL: Record<ReadingStatus, string> = {
-  want: 'Wishlist',
-  tbr: 'On your TBR',
-  reading: 'Reading',
-  finished: 'Finished',
-  dnf: 'Set aside',
-};
+const SHELF_LABEL = STATUS_LABEL;
 
 /** "already owned" status green — a semantic done/owned colour, deliberately
  *  outside the reward accent palette. */
@@ -250,8 +245,8 @@ export default function BookPage() {
               <View style={styles.metaRow}>
                 {meta.map((m, i) => (
                   <View key={m} style={styles.metaItem}>
-                    {i > 0 ? <View style={[styles.metaDot, { backgroundColor: t.textTer }]} /> : null}
                     <Text style={[styles.metaText, { color: t.textSec }]}>{m}</Text>
+                    {i < meta.length - 1 ? <View style={[styles.metaDot, { backgroundColor: t.textTer }]} /> : null}
                   </View>
                 ))}
               </View>
@@ -268,10 +263,10 @@ export default function BookPage() {
                 accessibilityLabel={`About ${author} and their other books`}
                 style={({ pressed }) => [styles.authorLink, pressed && { opacity: 0.6 }]}
               >
-                <Text style={[styles.author, { color: t.accent }]} numberOfLines={2}>
+                <Text style={[styles.author, { color: t.accentText }]} numberOfLines={2}>
                   {book.authors.join(', ')}
                 </Text>
-                <Ionicons name="chevron-forward" size={14} color={t.accent} />
+                <Ionicons name="chevron-forward" size={14} color={t.accentText} />
               </Pressable>
             ) : null}
           </View>
@@ -286,7 +281,7 @@ export default function BookPage() {
               contentContainerStyle={styles.chipRow}
             >
               {book.genres.slice(0, 5).map((g, i) => {
-                const { bg, fg } = GENRE_PALETTE[i % GENRE_PALETTE.length];
+                const { bg, fg } = genreChip(i, t.mode);
                 return (
                   <View key={g} style={[styles.chip, { backgroundColor: bg }]}>
                     <Text style={[styles.chipText, { color: fg }]} numberOfLines={1}>{g}</Text>
@@ -315,8 +310,8 @@ export default function BookPage() {
                   accessibilityLabel={descOpen ? 'Show less of the description' : 'Read the full description'}
                   style={styles.moreRow}
                 >
-                  <Text style={[styles.moreText, { color: t.accent }]}>{descOpen ? 'READ LESS' : 'READ MORE'}</Text>
-                  <Ionicons name={descOpen ? 'chevron-up' : 'chevron-down'} size={13} color={t.accent} />
+                  <Text style={[styles.moreText, { color: t.accentText }]}>{descOpen ? 'READ LESS' : 'READ MORE'}</Text>
+                  <Ionicons name={descOpen ? 'chevron-up' : 'chevron-down'} size={13} color={t.accentText} />
                 </Pressable>
               ) : null}
             </View>
@@ -335,7 +330,7 @@ export default function BookPage() {
                 </Text>
               </View>
               <PressBlock
-                onPress={() => router.push(`/(tabs)/library/${ownedBook.id}` as Href)}
+                onPress={() => router.dismissTo(`/(tabs)/library/${ownedBook.id}` as Href)}
                 accessibilityLabel="Open in your library"
                 style={[styles.cta, { backgroundColor: t.accent, borderColor: INK }]}
               >
@@ -449,8 +444,8 @@ function Pill({
         { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
       ]}
     >
-      <Ionicons name={icon} size={18} color={active ? t.accent : t.textSec} />
-      <Text style={[styles.pillText, { color: active ? t.accent : t.textSec }]} numberOfLines={1}>
+      <Ionicons name={icon} size={18} color={active ? t.accentText : t.textSec} />
+      <Text style={[styles.pillText, { color: active ? t.accentText : t.textSec }]} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>

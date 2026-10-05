@@ -43,7 +43,7 @@ export default function Welcome() {
           >
             <Text style={[styles.signInText, { color: t.textSec }]}>
               Already have an account?{' '}
-              <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>Sign in</Text>
+              <Text style={{ color: t.accentText, fontFamily: FONTS.uiBold }}>Sign in</Text>
             </Text>
           </Pressable>
         </View>

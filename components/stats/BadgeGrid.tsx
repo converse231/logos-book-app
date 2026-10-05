@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
+import { FONTS, PALETTE, BORDER_WIDTH, SHADOW, RADIUS } from '@/theme/tokens';
 import { Badge } from '@/services/types';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 
@@ -91,15 +91,15 @@ const styles = StyleSheet.create({
   medallion: {
     width: 60,
     height: 60,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOW.sm,
   },
-  lock: { position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  lock: { position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   name: { fontFamily: FONTS.uiBold, fontSize: 12, textAlign: 'center' },
-  status: { fontFamily: FONTS.monoMedium, fontSize: 10, letterSpacing: 0.5 },
+  status: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 0.5 },
   progress: { width: '90%', alignItems: 'center', gap: 3 },
-  progressText: { fontFamily: FONTS.mono, fontSize: 10, fontVariant: ['tabular-nums'] },
+  progressText: { fontFamily: FONTS.mono, fontSize: 11, fontVariant: ['tabular-nums'] },
 });

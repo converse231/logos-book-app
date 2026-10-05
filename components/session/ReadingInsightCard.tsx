@@ -4,16 +4,15 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
+  useSharedValue,  withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH_THICK, SHADOW, RADIUS } from '@/theme/tokens';
+import { glide, DURATION } from '@/theme/motion';
 import { InsightType } from '@/services/types';
 
 interface ReadingInsightCardProps {
@@ -64,7 +63,7 @@ export function ReadingInsightCard({ insight, onShare, onSave, onAutoDismiss }: 
   };
 
   useEffect(() => {
-    translateY.value = withSpring(0, { damping: 18, stiffness: 140 });
+    translateY.value = glide(0, DURATION.base);
     autoTimer.current = setTimeout(() => dismiss(false), AUTO_MS);
     return () => {
       if (autoTimer.current) clearTimeout(autoTimer.current);
@@ -83,7 +82,7 @@ export function ReadingInsightCard({ insight, onShare, onSave, onAutoDismiss }: 
       } else if (e.translationY > 60) {
         runOnJS(dismiss)(false); // swipe down → dismiss
       } else {
-        translateY.value = withSpring(0, { damping: 18, stiffness: 160 });
+        translateY.value = glide(0, DURATION.base);
       }
     });
 
@@ -135,14 +134,14 @@ const styles = StyleSheet.create({
     right: 12,
     bottom: 24,
     minHeight: CARD_H,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH_THICK,
     padding: 18,
     gap: 10,
     ...SHADOW.card,
   },
   grabber: { alignItems: 'center', marginTop: -6, marginBottom: 2 },
-  grabberBar: { width: 40, height: 4, borderRadius: 14 },
+  grabberBar: { width: 40, height: 4, borderRadius: RADIUS.md },
   header: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.2 },
   body: { fontFamily: FONTS.displaySemiBold, fontSize: 22, lineHeight: 28, flex: 1 },
@@ -150,7 +149,7 @@ const styles = StyleSheet.create({
   hint: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.5 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 16, minHeight: 40, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK,
+    paddingHorizontal: 16, minHeight: 40, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK,
   },
   shareText: { fontFamily: FONTS.uiBold, fontSize: 14, color: '#FFFFFF', letterSpacing: 0.5 },
 });

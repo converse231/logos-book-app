@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Keyboard, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { CENTER_COLUMN } from '@/theme/layout';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 
 const FRAME = 248;
@@ -164,17 +164,17 @@ export default function Scanner() {
                 ? 'Camera access is off. Enable it in Settings to scan barcodes.'
                 : 'Allow camera access to scan a book’s barcode.'}
             </Text>
-            {permission?.canAskAgain !== false ? (
-              <Pressable
-                onPress={() => requestPermission()}
-                accessibilityRole="button"
-                accessibilityLabel="Allow camera access"
-                style={({ pressed }) => [styles.permBtn, { borderColor: t.accent }, pressed && { opacity: 0.7 }]}
-              >
-                <Ionicons name="camera" size={18} color={t.accent} />
-                <Text style={[styles.permBtnText, { color: t.accent }]}>Allow camera</Text>
-              </Pressable>
-            ) : null}
+            {/* The thing this screen exists for is the primary action. It used to be a
+                small outline button under a full-width "Search the catalog instead" —
+                the escape hatch outranked the reason you came. A permanent denial now
+                gets a real way out instead of a sentence telling you where to go. */}
+            <View style={styles.permCta}>
+              {permission?.canAskAgain !== false ? (
+                <PrimaryButton label="Allow camera" onPress={() => requestPermission()} />
+              ) : (
+                <PrimaryButton label="Open Settings" onPress={() => Linking.openSettings()} />
+              )}
+            </View>
           </View>
         )}
       </View>
@@ -208,7 +208,15 @@ export default function Scanner() {
             <Text style={styles.typeLinkText}>Type the ISBN instead</Text>
           </Pressable>
         )}
-        <PrimaryButton label="Search the catalog instead" onPress={() => router.replace('/(modals)/add-book' as Href)} />
+        <Pressable
+          onPress={() => router.replace('/(modals)/add-book' as Href)}
+          accessibilityRole="button"
+          accessibilityLabel="Search the catalog instead"
+          style={({ pressed }) => [styles.typeLink, pressed && { opacity: 0.7 }]}
+        >
+          <Ionicons name="search" size={17} color="#FFFFFF" />
+          <Text style={styles.typeLinkText}>Search the catalog instead</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -225,7 +233,7 @@ const styles = StyleSheet.create({
   frame: {
     width: FRAME,
     height: FRAME,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     backgroundColor: 'rgba(255,255,255,0.03)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -237,14 +245,10 @@ const styles = StyleSheet.create({
   tr: { top: 10, right: 10, borderTopWidth: 3, borderRightWidth: 3 },
   bl: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3 },
   br: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3 },
-  scanLine: { position: 'absolute', top: 12, left: 18, right: 18, height: 2, borderRadius: 14, opacity: 0.85 },
+  scanLine: { position: 'absolute', top: 12, left: 18, right: 18, height: 2, borderRadius: RADIUS.md, opacity: 0.85 },
   hint: { fontFamily: FONTS.uiMedium, fontSize: 15, color: 'rgba(255,255,255,0.85)', textAlign: 'center', maxWidth: 280 },
   permWrap: { alignItems: 'center', gap: 18 },
-  permBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, height: 48,
-    borderRadius: 14, borderWidth: 2,
-  },
-  permBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
+  permCta: { alignSelf: 'stretch', paddingHorizontal: 24, marginTop: 4 },
   actions: { ...CENTER_COLUMN, gap: 12 },
   typeWrap: { gap: 12 },
   typeInput: {

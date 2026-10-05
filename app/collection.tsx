@@ -12,15 +12,15 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withRepeat,
-  withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { FONTS, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, NO_FONT_PAD, RADIUS } from '@/theme/tokens';
 import { useContentWidth } from '@/theme/layout';
+import { glide, DURATION, EASE } from '@/theme/motion';
 import { useApi } from '@/services/ApiContext';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { PouchReveal } from '@/components/curio/PouchReveal';
@@ -307,7 +307,7 @@ export default function CollectionScreen() {
           A darkened ledge rather than a blur — house rule — so the button never
           has to compete with a curio passing behind it. */}
       <Animated.View
-        entering={reduce ? undefined : FadeInUp.delay(240).duration(420)}
+        entering={reduce ? undefined : FadeInUp.delay(240).duration(420).easing(EASE.out)}
         style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}
       >
         <PressBlock
@@ -434,7 +434,7 @@ function SetPage({
       ]}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View entering={reduce ? undefined : FadeIn.duration(420)} style={styles.head}>
+      <Animated.View entering={reduce ? undefined : FadeIn.duration(420).easing(EASE.out)} style={styles.head}>
         <Text style={styles.title}>{set.name}</Text>
         <Text style={styles.sub}>{found === total ? set.done : set.sub}</Text>
       </Animated.View>
@@ -457,7 +457,7 @@ function SetPage({
         {shownDef ? (
           <Animated.View
             key={shown}
-            entering={reduce ? undefined : FadeInDown.duration(340)}
+            entering={reduce ? undefined : FadeInDown.duration(340).easing(EASE.out)}
             style={[
               styles.heroSlot,
               { bottom: plinthH * (1 - PLINTH_BASE), width: hero, height: hero },
@@ -684,7 +684,7 @@ function ShelfItem({
       ? selected
         ? 1
         : 0
-      : withSpring(selected ? 1 : 0, { damping: 13, stiffness: 190, mass: 0.6 });
+      : glide(selected ? 1 : 0, DURATION.base);
   }, [selected, reduce, lift]);
 
   // Pressing dips the curio immediately; the selection spring then lifts it.
@@ -717,7 +717,7 @@ function ShelfItem({
 
   return (
     <Animated.View
-      entering={reduce ? undefined : FadeInDown.delay(delay).duration(380)}
+      entering={reduce ? undefined : FadeInDown.delay(delay).duration(380).easing(EASE.out)}
       style={{ position: 'absolute', left, bottom, width: slot, height: size }}
     >
       <Pressable
@@ -726,7 +726,7 @@ function ShelfItem({
           if (!reduce) press.value = withTiming(1, { duration: 70 });
         }}
         onPressOut={() => {
-          if (!reduce) press.value = withSpring(0, { damping: 15, stiffness: 240 });
+          if (!reduce) press.value = glide(0, DURATION.release);
         }}
         hitSlop={6}
         accessibilityRole="button"
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'space-between',
   },
   roundBtn: {
-    width: 42, height: 42, borderRadius: 14, borderWidth: 1,
+    width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: 1,
     borderColor: 'rgba(247,239,224,0.34)', backgroundColor: 'rgba(20,14,10,0.4)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
   stripGap: { height: 30, marginTop: -4 },
   stripSeal: { width: 22, height: 22 },
   stripName: {
-    fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1.8, color: '#F3C24C',
+    fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.8, color: '#F3C24C',
   },
   stripNameTop: { color: '#FFE9AE' },
   stripTrack: {
@@ -841,14 +841,14 @@ const styles = StyleSheet.create({
   },
   stripFill: { height: 4, borderRadius: 999, backgroundColor: '#F3C24C' },
   stripCount: {
-    fontFamily: FONTS.mono, fontSize: 10.5, letterSpacing: 0.4,
+    fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.4,
     color: 'rgba(247,239,224,0.66)', fontVariant: ['tabular-nums'],
   },
   dupe: {
     position: 'absolute', right: 2, bottom: -4,
     paddingHorizontal: 5, borderRadius: 8, backgroundColor: 'rgba(20,14,10,0.72)',
   },
-  dupeText: { fontFamily: FONTS.monoMedium, fontSize: 10, color: INK },
+  dupeText: { fontFamily: FONTS.monoMedium, fontSize: 11, color: INK },
   footer: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
     paddingTop: 14, paddingHorizontal: 20, alignItems: 'center', gap: 8,
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
   },
   ctaText: { fontFamily: FONTS.monoBold, fontSize: 13, letterSpacing: 1.4 },
   footerNote: {
-    fontFamily: FONTS.mono, fontSize: 10.5, letterSpacing: 0.4,
+    fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.4,
     color: 'rgba(247,239,224,0.55)', textAlign: 'center',
   },
 });

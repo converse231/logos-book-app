@@ -157,7 +157,7 @@ export async function enrichFromOpenLibrary(meta: EnsureBookInput): Promise<Ensu
     }
 
     if (!out.description && desc) out.description = desc;
-    if ((!out.genres || out.genres.length === 0) && subjects.length) out.genres = subjects.slice(0, 5);
+    if ((!out.genres || out.genres.length === 0) && subjects.length) out.genres = olGenres(subjects);
     if (!out.publishedYear && typeof ed.publish_date === 'string') out.publishedYear = yearFrom(ed.publish_date);
     return out;
   } catch {
@@ -187,7 +187,7 @@ function mapOlDoc(d: any): EnsureBookInput {
     pageCount: typeof d.number_of_pages_median === 'number' ? d.number_of_pages_median : null,
     durationMinutes: null,
     publishedYear: typeof d.first_publish_year === 'number' ? d.first_publish_year : null,
-    genres: Array.isArray(d.subject) ? d.subject.slice(0, 5) : [],
+    genres: olGenres(d.subject),
     description: null,
   };
 }
@@ -532,6 +532,25 @@ function cleanBio(raw: unknown): { bio: string | null; source: { title: string; 
   return { bio: s.length > 0 ? s : null, source };
 }
 
+// Open Library's subject lists mix genres with catalogue housekeeping: lending
+// flags ("Accessible book", "Protected DAISY", "In library"), machine tags
+// ("nyt:hardcover-fiction=2012-01-01") and French facets ("Romans" = novels).
+// Rendered as genre chips they read as nonsense. The human-written "New York
+// Times bestseller" facet is NOT a machine tag and is kept.
+const JUNK_SUBJECT = new Set([
+  'accessible book', 'protected daisy', 'in library', 'lending library', 'overdrive',
+  'large type books', 'open library staff picks', 'internet archive wishlist',
+  'roman', 'romans', 'fiction, general',
+]);
+export function isJunkSubject(s: string): boolean {
+  const head = s.split(',')[0].trim().toLowerCase();
+  return JUNK_SUBJECT.has(head) || JUNK_SUBJECT.has(s.trim().toLowerCase()) || head.startsWith('nyt:') || head.startsWith('reading level');
+}
+/** An OL subject array as genres: strings only, housekeeping dropped. */
+function olGenres(raw: unknown, n = 5): string[] {
+  return Array.isArray(raw) ? raw.filter((s): s is string => typeof s === 'string' && !isJunkSubject(s)).slice(0, n) : [];
+}
+
 // top_subjects arrive as comma-packed index facets — "Man-woman relationships,
 // fiction", "Fiction, fantasy, epic", "Dublin (Ireland)". Keep only the leading
 // facet, drop the parenthetical qualifier, and de-duplicate case-insensitively so
@@ -543,11 +562,13 @@ function cleanSubjects(raw: unknown): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const s of raw) {
-    if (typeof s !== 'string') continue;
+    if (typeof s !== 'string' || isJunkSubject(s)) continue;
     const head = s.split(',')[0].replace(/\s*\([^)]*\)\s*$/, '').trim();
     if (head.length < 3 || head.length > 26) continue;
     const label = head.charAt(0).toUpperCase() + head.slice(1);
-    const key = label.toLowerCase();
+    // Fold hyphens and spacing too: OL lists "Science-Fiction" and "Science fiction"
+    // as separate facets, and both used to render side by side.
+    const key = label.toLowerCase().replace(/[-\s]+/g, ' ');
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(label);
@@ -734,7 +755,7 @@ export async function fetchBookForId(id: string): Promise<EnsureBookInput | null
           ? `https://covers.openlibrary.org/b/id/${w.covers[0]}-L.jpg`
           : null,
         description: typeof w.description === 'string' ? w.description : w.description?.value ?? null,
-        genres: Array.isArray(w.subjects) ? w.subjects.slice(0, 5) : [],
+        genres: olGenres(w.subjects),
       };
     } catch {
       return null;

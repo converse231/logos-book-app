@@ -35,8 +35,22 @@ Deno.serve(async (req) => {
   const { data: { user }, error: authErr } = await authed.auth.getUser();
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
 
-  // Service-role delete of the auth user → cascades the whole account.
   const admin = createClient(url, serviceKey);
+
+  // Storage is outside the FK cascade. The avatar lives in a PUBLIC bucket, so
+  // without this a "deleted" reader's photo stayed reachable at its URL forever.
+  // Done first: if it fails we stop, rather than orphaning a file we can no
+  // longer attribute to anyone.
+  const { data: files, error: listErr } = await admin.storage.from('avatars').list(user.id);
+  if (listErr) return json({ error: `Could not clear your files: ${listErr.message}` }, 500);
+  if (files && files.length) {
+    const { error: rmErr } = await admin.storage
+      .from('avatars')
+      .remove(files.map((f) => `${user.id}/${f.name}`));
+    if (rmErr) return json({ error: `Could not clear your files: ${rmErr.message}` }, 500);
+  }
+
+  // Service-role delete of the auth user → cascades the whole account.
   const { error } = await admin.auth.admin.deleteUser(user.id);
   if (error) return json({ error: error.message }, 500);
 

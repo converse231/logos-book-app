@@ -13,6 +13,7 @@ import Animated, {
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { POUCH_COST } from '@/components/curio/curios';
+import { EASE } from '@/theme/motion';
 
 const ICON = require('@/assets/jar/jar-icon.webp');
 
@@ -49,16 +50,13 @@ export function JarButton({ balance, unseen, onPress }: Props) {
       shake.value = 0;
       return;
     }
-    // A quick wobble, then a long pause — repeated. The pause is what keeps it
-    // from reading as a broken animation loop.
+    // One slow lean and back, then a long pause. The old decaying wobble read as
+    // a toy; a single unhurried tilt still says "something's in here".
     shake.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 70, easing: Easing.out(Easing.quad) }),
-        withTiming(-1, { duration: 110 }),
-        withTiming(0.7, { duration: 100 }),
-        withTiming(-0.4, { duration: 90 }),
-        withTiming(0, { duration: 80 }),
-        withDelay(3400, withTiming(0, { duration: 0 }))
+        withTiming(1, { duration: 700, easing: EASE.breathe }),
+        withTiming(0, { duration: 900, easing: EASE.breathe }),
+        withDelay(3000, withTiming(0, { duration: 0 }))
       ),
       -1,
       false
@@ -82,7 +80,7 @@ export function JarButton({ balance, unseen, onPress }: Props) {
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [
-      { rotate: `${shake.value * 9}deg` },
+      { rotate: `${shake.value * 5}deg` },
       { scale: (1 + shake.value * 0.04) * (1 - press.value * 0.1) },
     ],
   }));

@@ -18,8 +18,8 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
       <Text style={[styles.title, { color: t.text }]}>{title}</Text>
       {actionLabel && onAction ? (
         <Pressable onPress={onAction} hitSlop={8} accessibilityRole="button" accessibilityLabel={actionLabel} style={styles.action}>
-          <Text style={[styles.actionText, { color: t.accent }]}>{actionLabel}</Text>
-          <Ionicons name="chevron-forward" size={14} color={t.accent} />
+          <Text style={[styles.actionText, { color: t.accentText }]}>{actionLabel}</Text>
+          <Ionicons name="chevron-forward" size={14} color={t.accentText} />
         </Pressable>
       ) : null}
     </View>

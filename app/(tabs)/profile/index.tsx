@@ -7,7 +7,7 @@ import { AppIcon } from '@/components/shared/AppIcon';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { Badge, HomeData, ReadingGoal, Review, StatsData, UserBook, UserProfile } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -136,7 +136,7 @@ export default function Profile() {
               {profile.avatarUrl ? (
                 <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
               ) : (
-                <Text style={[styles.avatarText, { color: t.accent }]}>{initials}</Text>
+                <Text style={[styles.avatarText, { color: t.accentText }]}>{initials}</Text>
               )}
             </View>
             <View style={styles.identityCol}>
@@ -234,7 +234,7 @@ export default function Profile() {
         ) : (
           <Reveal index={3}>
             <Pressable onPress={() => router.push('/(modals)/goal-edit' as Href)} accessibilityRole="button" accessibilityLabel="Set a reading goal" style={({ pressed }) => [styles.emptyGoal, { borderColor: t.border, backgroundColor: t.bgSec }, pressed && { opacity: 0.7 }]}>
-              <AppIcon name="flag" tint="gold" size={22} color={t.accent} />
+              <AppIcon name="flag" tint="gold" size={22} color={t.accentText} />
               <Text style={[styles.emptyGoalText, { color: t.text }]}>Set a reading goal for {new Date().getFullYear()}</Text>
               <Ionicons name="chevron-forward" size={18} color={t.textTer} />
             </Pressable>
@@ -317,7 +317,7 @@ export default function Profile() {
               <View style={styles.badgeHead}>
                 <Text style={[styles.sectionTitle, { color: t.text }]}>Achievements</Text>
                 <Pressable onPress={() => router.push('/(tabs)/stats' as Href)} hitSlop={8} accessibilityRole="button" accessibilityLabel="See all achievements">
-                  <Text style={[styles.seeAll, { color: t.accent }]}>See all</Text>
+                  <Text style={[styles.seeAll, { color: t.accentText }]}>See all</Text>
                 </Pressable>
               </View>
               <BadgeGrid badges={earnedBadges} />
@@ -385,7 +385,7 @@ function BigStat({ value, label, t }: { value: string; label: string; t: ReturnT
 function InfoCard({ icon, label, value, sub, t }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; sub: string; t: ReturnType<typeof useTheme> }) {
   return (
     <View style={[styles.infoCard, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-      <AppIcon name={icon} tint="accent" size={18} color={t.accent} />
+      <AppIcon name={icon} tint="accent" size={18} color={t.accentText} />
       <Text style={[styles.infoLabel, { color: t.textTer }]}>{label}</Text>
       <Text style={[styles.infoValue, { color: t.text }]} numberOfLines={2}>{value}</Text>
       <Text style={[styles.infoSub, { color: t.textSec }]} numberOfLines={1}>{sub}</Text>
@@ -397,23 +397,23 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 16 },
   skelIdentity: { alignItems: 'center', gap: 10, paddingTop: 4, paddingBottom: 8 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  roundBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
   identityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 4 },
   identityCol: { flex: 1, gap: 5, alignItems: 'flex-start' },
-  avatar: { width: 76, height: 76, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatar: { width: 76, height: 76, borderRadius: RADIUS.md, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImg: { width: '100%', height: '100%' },
   avatarText: { fontFamily: FONTS.uiBold, fontSize: 30 },
   name: { fontFamily: FONTS.displayBold, fontSize: 26, lineHeight: 30 },
   handle: { fontFamily: FONTS.uiMedium, fontSize: 14 },
   bio: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20 },
-  xpStrip: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 14, gap: 10, ...({ boxShadow: '4px 4px 0px #241E19' } as const) },
+  xpStrip: { borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, padding: 14, gap: 10, ...({ boxShadow: '4px 4px 0px #241E19' } as const) },
   xpTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   xpNum: { fontFamily: FONTS.monoBold, fontSize: 24, fontVariant: ['tabular-nums'] },
   xpUnit: { fontFamily: FONTS.monoMedium, fontSize: 14 },
   xpTo: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.3 },
 
-  statsRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: BORDER_WIDTH, paddingVertical: 18, paddingHorizontal: 12, ...({ boxShadow: '4px 4px 0px #241E19' } as const) },
+  statsRow: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, paddingVertical: 18, paddingHorizontal: 12, ...({ boxShadow: '4px 4px 0px #241E19' } as const) },
   bigStat: { flex: 1, alignItems: 'center', gap: 3 },
   bigValue: { fontFamily: FONTS.uiBold, fontSize: 26, fontVariant: ['tabular-nums'] },
   bigLabel: { fontFamily: FONTS.uiMedium, fontSize: 12 },
@@ -425,20 +425,20 @@ const styles = StyleSheet.create({
   goalLabel: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   goalCount: { flex: 1, fontFamily: FONTS.uiBold, fontSize: 22, fontVariant: ['tabular-nums'], textAlign: 'right' },
   goalTotal: { fontFamily: FONTS.uiSemiBold, fontSize: 16 },
-  editChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 14 },
+  editChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.md },
   editLabel: { fontFamily: FONTS.uiMedium, fontSize: 11 },
   goalCaption: { fontFamily: FONTS.uiRegular, fontSize: 13 },
-  emptyGoal: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth },
+  emptyGoal: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth },
   emptyGoalText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   dashHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toggle: { flexDirection: 'row', borderRadius: 14, borderWidth: BORDER_WIDTH, overflow: 'hidden' },
+  toggle: { flexDirection: 'row', borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, overflow: 'hidden' },
   toggleBtn: { paddingHorizontal: 12, paddingVertical: 7 },
   toggleText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 0.5 },
 
   twoUp: { flexDirection: 'row', gap: 12 },
-  infoCard: { flex: 1, borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 14, gap: 4, minHeight: 110 },
-  infoLabel: { fontFamily: FONTS.mono, fontSize: 9, letterSpacing: 0.8, marginTop: 2 },
+  infoCard: { flex: 1, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, padding: 14, gap: 4, minHeight: 110 },
+  infoLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.8, marginTop: 2 },
   infoValue: { fontFamily: FONTS.displayBold, fontSize: 18, lineHeight: 22 },
   infoSub: { fontFamily: FONTS.mono, fontSize: 11, marginTop: 'auto' },
 

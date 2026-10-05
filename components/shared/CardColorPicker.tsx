@@ -47,7 +47,7 @@ export function CardColorPicker({
               ]}
             >
               <View style={[styles.swatch, { backgroundColor: cardInk(o.key).primary, borderColor: t.border }]} />
-              <Text style={[styles.chipText, { color: active ? t.accent : t.textSec }]} numberOfLines={1}>
+              <Text style={[styles.chipText, { color: active ? t.accentText : t.textSec }]} numberOfLines={1}>
                 {o.label}
               </Text>
             </Pressable>
@@ -58,7 +58,27 @@ export function CardColorPicker({
   );
 }
 
+// The transparency checkerboard behind both composers' previews. It follows the
+// chosen text colour: white text — the default — on the light cream checks was
+// close to invisible, so the reader was previewing a card they could not read.
+export function PreviewChecker({ textColor }: { textColor: CardTextColor }) {
+  const [a, b] = textColor === 'white' ? ['#3A332B', '#2B2520'] : ['#E5E0D2', '#F6EEDF'];
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {Array.from({ length: 9 }).map((_, r) => (
+        <View key={r} style={styles.checkerRow}>
+          {Array.from({ length: 7 }).map((_, c) => (
+            <View key={c} style={[styles.checkerCell, { backgroundColor: (r + c) % 2 === 0 ? a : b }]} />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  checkerRow: { flex: 1, flexDirection: 'row' },
+  checkerCell: { flex: 1 },
   row: { gap: 8 },
   label: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
   options: { flexDirection: 'row', gap: 8 },

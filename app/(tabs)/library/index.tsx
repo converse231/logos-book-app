@@ -21,7 +21,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH_THICK, NO_FONT_PAD, RADIUS } from '@/theme/tokens';
 import { coverGrid } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { ReadingStatus, UserBook } from '@/services/types';
@@ -36,16 +36,18 @@ import { BookListCard } from '@/components/library/BookListCard';
 import { RefreshingOverlay, HIDDEN_SPINNER } from '@/components/shared/RefreshingOverlay';
 import { getBookProgress } from '@/components/library/bookProgress';
 import { useLibraryStore, isLibraryFilterActive } from '@/stores/libraryStore';
+import { EASE } from '@/theme/motion';
+import { STATUS_SHORT } from '@/lib/readingStatus';
 
 type StatusTab = 'all' | ReadingStatus;
 
 const STATUS_TABS: { key: StatusTab; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'reading', label: 'Reading' },
-  { key: 'tbr', label: 'TBR' },
-  { key: 'finished', label: 'Finished' },
-  { key: 'want', label: 'Want' },
-  { key: 'dnf', label: 'DNF' },
+  { key: 'reading', label: STATUS_SHORT.reading },
+  { key: 'tbr', label: STATUS_SHORT.tbr },
+  { key: 'finished', label: STATUS_SHORT.finished },
+  { key: 'want', label: STATUS_SHORT.want },
+  { key: 'dnf', label: STATUS_SHORT.dnf },
 ];
 
 // Library shelf (blueprint Section 3). Two-column grid of the user's books with
@@ -180,7 +182,7 @@ export default function Library() {
                 { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
               ]}
             >
-              <Text style={[styles.tabText, { color: active ? t.accent : t.textSec }]}>{tab.label}</Text>
+              <Text style={[styles.tabText, { color: active ? t.accentText : t.textSec }]}>{tab.label}</Text>
             </PressChip>
           );
         })}
@@ -195,7 +197,7 @@ export default function Library() {
       ) : books === null ? (
         <SkeletonGrid cellWidth={cellWidth} topInset={insets.top + 8} />
       ) : (
-        <Animated.View style={styles.flex} entering={reduce ? undefined : FadeIn.duration(300)}>
+        <Animated.View style={styles.flex} entering={reduce ? undefined : FadeIn.duration(300).easing(EASE.out)}>
           <FlatList
             key={`${view}-${columns}`}
             data={visible}
@@ -263,7 +265,7 @@ export default function Library() {
             accessibilityLabel="Filter and sort"
             style={[styles.filterBtn, { backgroundColor: t.bgSec, borderColor: filterActive ? t.accent : t.border }]}
           >
-            <Ionicons name="options-outline" size={20} color={filterActive ? t.accent : t.text} />
+            <Ionicons name="options-outline" size={20} color={filterActive ? t.accentText : t.text} />
             {filterActive ? <View style={[styles.filterDot, { backgroundColor: t.accent, borderColor: t.bgSec }]} /> : null}
           </Pressable>
         </Animated.View>
@@ -424,14 +426,14 @@ const styles = StyleSheet.create({
   title: { fontFamily: FONTS.serifBold, fontSize: 38, lineHeight: 40 },
   count: { fontFamily: FONTS.uiMedium, fontSize: 13 },
   headerActions: { flexDirection: 'row', gap: 10, marginBottom: 2 },
-  iconBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     height: 42,
     paddingHorizontal: 14,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
   },
   addBtnText: { fontFamily: FONTS.uiBold, fontSize: 14, ...NO_FONT_PAD },
@@ -447,7 +449,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     height: 52,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
     ...({ boxShadow: '4px 4px 0px #241E19' } as const),
@@ -456,20 +458,20 @@ const styles = StyleSheet.create({
   filterBtn: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     ...({ boxShadow: '4px 4px 0px #241E19' } as const),
   },
-  filterDot: { position: 'absolute', top: 9, right: 9, width: 9, height: 9, borderRadius: 14, borderWidth: 1.5 },
+  filterDot: { position: 'absolute', top: 9, right: 9, width: 9, height: 9, borderRadius: RADIUS.md, borderWidth: 1.5 },
 
   empty: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 56, gap: 12 },
-  emptyIcon: { width: 64, height: 64, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: { width: 64, height: 64, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontFamily: FONTS.uiBold, fontSize: 19 },
   emptyBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   emptyCtaWrap: { marginTop: 6 },
-  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 48, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 48, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK },
   emptyCtaText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },

@@ -3,14 +3,14 @@ import Animated, {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, RADIUS } from '@/theme/tokens';
+import { glide, DURATION } from '@/theme/motion';
 
 interface SessionControlBarProps {
   isPaused: boolean;
@@ -92,9 +92,7 @@ function BarButton({
         }}
         onPressOut={() => {
           if (reduce || disabled) return;
-          p.value = isPrimary
-            ? withSpring(0, { damping: 13, stiffness: 240, mass: 1 })
-            : withTiming(0, { duration: 130 });
+          p.value = glide(0, isPrimary ? DURATION.release + 120 : DURATION.release - 100);
         }}
         onPress={onPress}
         onLongPress={onLongPress}
@@ -240,13 +238,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH_THICK,
     ...SHADOW.card,
   },
   // The animated wrapper carries the fill, border and flex; the Pressable inside
   // it carries the row layout so the whole face stays the touch target.
-  btnWrap: { flex: 1, borderRadius: 14, borderWidth: BORDER_WIDTH, overflow: 'hidden' },
+  btnWrap: { flex: 1, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, overflow: 'hidden' },
   btnInner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -258,5 +256,5 @@ const styles = StyleSheet.create({
   locked: { opacity: 0.7 },
   lockedCol: { alignItems: 'center', justifyContent: 'center', gap: 2 },
   lockedText: { fontFamily: FONTS.monoMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
-  holdHint: { fontFamily: FONTS.mono, fontSize: 9, letterSpacing: 0.8 },
+  holdHint: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.8 },
 });

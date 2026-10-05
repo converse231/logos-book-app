@@ -2,13 +2,13 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, BORDER_WIDTH_THICK, RADIUS, NO_FONT_PAD } from '@/theme/tokens';
+import { glide, DURATION, EASE } from '@/theme/motion';
 
 interface PrimaryButtonProps {
   label: string;
@@ -56,13 +56,13 @@ export function PrimaryButton({
   const shadowStyle = useAnimatedStyle(() => ({ opacity: 1 - pressed.value }));
 
   const onPressIn = () => {
-    if (!reduceMotion) pressed.value = withTiming(1, { duration: 70 });
+    if (!reduceMotion) pressed.value = withTiming(1, { duration: DURATION.press, easing: EASE.press });
   };
   const onPressOut = () => {
-    // PrimaryButton IS the primary action, so it always gets the spring-back
-    // release — matching PressBlock's emphasis="primary". Kept in sync by hand
-    // because this component predates PressBlock and re-implements the mechanic.
-    if (!reduceMotion) pressed.value = withSpring(0, { damping: 15, stiffness: 220, mass: 1 });
+    // PrimaryButton IS the primary action, so it gets the long primary release —
+    // matching PressBlock's emphasis="primary". Kept in sync by hand because this
+    // component predates PressBlock and re-implements the mechanic.
+    if (!reduceMotion) pressed.value = glide(0, DURATION.release + 120);
   };
   const handlePress = () => {
     if (isDisabled) return;
@@ -78,7 +78,7 @@ export function PrimaryButton({
       {showShadow ? (
         <Animated.View
           pointerEvents="none"
-          style={[styles.shadowBlock, { backgroundColor: t.ink }, shadowStyle]}
+          style={[styles.shadowBlock, { backgroundColor: t.shadow }, shadowStyle]}
         />
       ) : null}
       <Animated.View style={moveStyle}>

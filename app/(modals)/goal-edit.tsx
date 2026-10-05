@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ReadingGoal } from '@/services/types';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
@@ -58,8 +58,13 @@ export default function GoalEdit() {
   const close = () => router.back();
 
   return (
-    <SheetScaffold title={`${year} Reading Goal`} onClose={close} scroll>
-      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <SheetScaffold
+      title={`${year} Reading Goal`}
+      onClose={close}
+      scroll
+      // Pinned: at 375x667 the projection card pushed Save below the fold.
+      footer={<PrimaryButton label={saving ? 'Saving…' : 'Save goal'} onPress={save} loading={saving} />}
+    >
         <View style={styles.wrap}>
           <View style={styles.stepperWrap}>
             <Stepper value={books} onChange={setBooks} min={1} max={365} unit="books" />
@@ -82,8 +87,8 @@ export default function GoalEdit() {
                       { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' },
                     ]}
                   >
-                    <Text style={[styles.presetValue, { color: active ? t.accent : t.text }]}>{p}</Text>
-                    <Text style={[styles.presetLabel, { color: active ? t.accent : t.textSec }]}>
+                    <Text style={[styles.presetValue, { color: active ? t.accentText : t.text }]}>{p}</Text>
+                    <Text style={[styles.presetLabel, { color: active ? t.accentText : t.textSec }]}>
                       {p === 52 ? 'one/wk' : p === 24 ? 'two/mo' : p === 12 ? 'one/mo' : 'every 2m'}
                     </Text>
                   </Pressable>
@@ -115,10 +120,7 @@ export default function GoalEdit() {
               Current goal: {goal.goalBooks} books
             </Text>
           ) : null}
-
-          <PrimaryButton label={saving ? 'Saving…' : 'Save goal'} onPress={save} loading={saving} />
         </View>
-      </ScrollView>
     </SheetScaffold>
   );
 }
@@ -128,7 +130,7 @@ function ProjRow({ icon, label, value, t }: { icon: keyof typeof Ionicons.glyphM
     <View style={styles.projRow}>
       {/* AppIcon falls back to the font glyph when the art for this tint does
           not exist, so each row upgrades on its own as files land. */}
-      <AppIcon name={icon} tint="accent" size={16} color={t.accent} />
+      <AppIcon name={icon} tint="accent" size={16} color={t.accentText} />
       <Text style={[styles.projLabel, { color: t.textSec }]}>{label}</Text>
       <Text style={[styles.projValue, { color: t.text }]}>{value}</Text>
     </View>
@@ -141,16 +143,16 @@ const styles = StyleSheet.create({
   presetsWrap: { gap: 10 },
   presetsLabel: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1 },
   presets: { flexDirection: 'row', gap: 10 },
-  preset: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 14, borderWidth: 1, gap: 2 },
+  preset: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: RADIUS.md, borderWidth: 1, gap: 2 },
   presetValue: { fontFamily: FONTS.uiBold, fontSize: 22, fontVariant: ['tabular-nums'] },
   presetLabel: { fontFamily: FONTS.uiMedium, fontSize: 11 },
-  projCard: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 16, gap: 12 },
+  projCard: { borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth, padding: 16, gap: 12 },
   projTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   projRows: { gap: 10 },
   projRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   projLabel: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 13 },
   projValue: { fontFamily: FONTS.uiSemiBold, fontSize: 14, fontVariant: ['tabular-nums'] },
-  crunch: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: 14 },
+  crunch: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 10, borderRadius: RADIUS.md },
   crunchText: { flex: 1, fontFamily: FONTS.uiMedium, fontSize: 12, lineHeight: 17 },
   estimate: { fontFamily: FONTS.uiRegular, fontSize: 12 },
   prev: { fontFamily: FONTS.uiRegular, fontSize: 13, textAlign: 'center', marginTop: -6 },

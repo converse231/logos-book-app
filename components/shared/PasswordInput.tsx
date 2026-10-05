@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 
 type PasswordInputProps = Omit<TextInputProps, 'style'> & { containerStyle?: StyleProp<ViewStyle> };
 
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     paddingLeft: 16,
     paddingRight: 6,

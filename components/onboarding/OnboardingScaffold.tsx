@@ -28,6 +28,8 @@ interface OnboardingScaffoldProps {
   footer: React.ReactNode;
   titleFont?: 'display' | 'ui';
   scroll?: boolean;
+  /** Lets a step scroll a focused field into view above the keyboard. */
+  scrollRef?: React.Ref<ScrollView>;
 }
 
 // Shared one-question-per-screen layout: safe-area top bar (back + progress),
@@ -44,6 +46,7 @@ export function OnboardingScaffold({
   footer,
   titleFont = 'ui',
   scroll = false,
+  scrollRef,
 }: OnboardingScaffoldProps) {
   const t = useTheme();
   const router = useRouter();
@@ -125,6 +128,7 @@ export function OnboardingScaffold({
       <Animated.View style={[styles.flex, contentStyle]}>
         {scroll ? (
           <ScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"

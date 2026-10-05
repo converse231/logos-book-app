@@ -55,7 +55,7 @@ export function ReviewQuoteCard({ bookTitle, coverUrl, format, rating, body, aut
     >
       {/* The beat: a mark to open a quote, or the rating itself when there isn't one. */}
       {quote ? (
-        <Text style={[styles.mark, { color: t.accent }]} allowFontScaling={false}>
+        <Text style={[styles.mark, { color: t.accentText }]} allowFontScaling={false}>
           &ldquo;
         </Text>
       ) : (
@@ -129,5 +129,5 @@ const styles = StyleSheet.create({
   initialText: { fontFamily: FONTS.monoBold, fontSize: 12, ...NO_FONT_PAD },
   footText: { flex: 1, minWidth: 0 },
   name: { fontFamily: FONTS.uiBold, fontSize: 13 },
-  book: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.4, marginTop: 1 },
+  book: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.4, marginTop: 1 },
 });

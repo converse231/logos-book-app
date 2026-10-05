@@ -8,7 +8,6 @@ import Animated, {
   withDelay,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -17,6 +16,7 @@ import Svg, { Circle, Defs, G, Polygon, RadialGradient, Stop } from 'react-nativ
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, NO_FONT_PAD } from '@/theme/tokens';
+import { glide, DURATION } from '@/theme/motion';
 import {
   CURIOS,
   DUPLICATE_REFUND,
@@ -115,7 +115,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
 
     scrim.value = withTiming(1, { duration: 240 });
     // Lands with weight: overshoot, then a squash resolved in the style below.
-    drop.value = withDelay(T.pouch, withSpring(1, { damping: 12, stiffness: 140, mass: 0.9 }));
+    drop.value = withDelay(T.pouch, glide(1, DURATION.hero));
     shake.value = withDelay(T.shake, withTiming(1, { duration: SHAKE_MS, easing: Easing.linear }));
     flash.value = withDelay(
       T.flash,
@@ -125,7 +125,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
       )
     );
     vanish.value = withDelay(T.vanish, withTiming(1, { duration: 170, easing: Easing.out(Easing.quad) }));
-    item.value = withDelay(T.item, withSpring(1, { damping: 9, stiffness: 150, mass: 0.8 }));
+    item.value = withDelay(T.item, glide(1, DURATION.hero));
     burst.value = withDelay(T.burst, withTiming(1, { duration: 560, easing: Easing.out(Easing.cubic) }));
     // Slow, continuous — a still starburst reads as a decal, a turning one reads
     // as light.
@@ -172,7 +172,7 @@ export function PouchReveal({ result, onDone }: { result: PouchResult; onDone: (
     shake.value = 1;
     flash.value = 0;
     vanish.value = 1;
-    item.value = withSpring(1, { damping: 12, stiffness: 220 });
+    item.value = glide(1, DURATION.base);
     burst.value = withTiming(1, { duration: 160 });
     motes.value = 1;
     name.value = withTiming(1, { duration: 160 });
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 34, marginTop: 8, maxWidth: 360,
   },
   hintLight: {
-    fontFamily: FONTS.mono, fontSize: 10.5, letterSpacing: 2,
+    fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 2,
     color: 'rgba(247,239,224,0.72)', textAlign: 'center', marginTop: 26,
   },
   // the refusal / unknown-key cards keep the plain themed look
@@ -532,5 +532,5 @@ const styles = StyleSheet.create({
   },
   title: { fontFamily: FONTS.serifBold, fontSize: 24, textAlign: 'center' },
   blurb: { fontFamily: FONTS.uiRegular, fontSize: 14.5, lineHeight: 20, textAlign: 'center' },
-  hint: { fontFamily: FONTS.mono, fontSize: 10.5, letterSpacing: 2, marginTop: 10 },
+  hint: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 2, marginTop: 10 },
 });

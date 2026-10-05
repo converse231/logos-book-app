@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, SHADOW, RADIUS } from '@/theme/tokens';
 import { ReadingProjection } from '@/hooks/useReadingProjection';
 
 interface GoalProjectionCardProps {
@@ -19,12 +19,12 @@ export function GoalProjectionCard({ projection }: GoalProjectionCardProps) {
   return (
     <View style={[styles.card, { backgroundColor: t.bgSec, borderColor: t.border }]}>
       <View style={styles.headerRow}>
-        <Ionicons name="trending-up" size={18} color={t.accent} />
-        <Text style={[styles.headerText, { color: t.accent }]}>YOUR PLAN</Text>
+        <Ionicons name="trending-up" size={18} color={t.accentText} />
+        <Text style={[styles.headerText, { color: t.accentText }]}>YOUR PLAN</Text>
       </View>
 
       <Text style={[styles.headline, { color: t.text }]}>
-        <Text style={{ color: t.accent }}>{minPerDay} min</Text>
+        <Text style={{ color: t.accentText }}>{minPerDay} min</Text>
         <Text style={{ color: t.textSec }}> / day</Text>
       </Text>
 
@@ -57,7 +57,7 @@ function Stat({ value, label, color, sub }: { value: string; label: string; colo
 const fmt = (n: number) => n.toLocaleString('en-US');
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 20, gap: 14, ...SHADOW.card },
+  card: { borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, padding: 20, gap: 14, ...SHADOW.card },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.2 },
   headline: { fontFamily: FONTS.monoBold, fontSize: 32, fontVariant: ['tabular-nums'] },

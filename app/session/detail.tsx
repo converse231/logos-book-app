@@ -6,12 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, NO_FONT_PAD, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Reveal } from '@/components/shared/Reveal';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
 
 // Per-session detail (Strava activity view). Reads the session's stats from nav
 // params (the history list already has them — no refetch) and offers a re-share
@@ -110,36 +111,28 @@ export default function SessionDetail() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 6, paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topBar}>
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
-          >
-            <Ionicons name="chevron-back" size={22} color={t.text} />
-          </Pressable>
-          <Text style={[styles.topTitle, { color: t.text }]}>Session</Text>
-          {p.sessionId ? (
-            <Pressable
-              onPress={del}
-              disabled={deleting}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Delete this session"
-              style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.danger }]}
-            >
-              {deleting ? (
-                <ActivityIndicator size="small" color={t.danger} />
-              ) : (
-                <AppIcon name="trash" tint="danger" size={20} />
-              )}
-            </Pressable>
-          ) : (
-            <View style={styles.spacer} />
-          )}
-        </View>
+        <ScreenHeader
+          title="Session"
+          style={styles.topBar}
+          right={
+            p.sessionId ? (
+              <Pressable
+                onPress={del}
+                disabled={deleting}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Delete this session"
+                style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.danger }]}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color={t.danger} />
+                ) : (
+                  <AppIcon name="trash" tint="danger" size={20} />
+                )}
+              </Pressable>
+            ) : undefined
+          }
+        />
 
         {/* Book + date */}
         <Reveal index={0}>
@@ -151,7 +144,7 @@ export default function SessionDetail() {
               <Text style={[styles.bookTitle, { color: t.text }]} numberOfLines={2}>{p.title}</Text>
               <Text style={[styles.date, { color: t.textSec }]}>{longDate(p.startedAt)}</Text>
               {isPB ? (
-                <View style={[styles.pbBadge, { backgroundColor: t.gold }]}>
+                <View style={[styles.pbBadge, { backgroundColor: PALETTE.gold }]}>
                   <Ionicons name="trophy" size={13} color={INK} />
                   <Text style={styles.pbText}>PERSONAL BEST</Text>
                 </View>
@@ -164,7 +157,7 @@ export default function SessionDetail() {
           {isCheckIn ? (
             /* Check-in — no pages/duration to show; explain what it is */
             <View style={[styles.checkInCard, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
-              <Ionicons name="flame" size={44} color={t.accent} />
+              <Ionicons name="flame" size={44} color={t.accentText} />
               <Text style={[styles.checkInTitle, { color: t.text }]}>READING CHECK-IN</Text>
               <Text style={[styles.checkInSub, { color: t.textSec }]}>
                 You checked in to keep your streak going{xp > 0 ? ` · +${xp} XP` : ''}.
@@ -224,23 +217,21 @@ function longDate(iso?: string): string {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 18 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  spacer: { width: 42, height: 42 },
-  topTitle: { fontFamily: FONTS.uiBold, fontSize: 18 },
+  roundBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 
   bookRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 14 },
+  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: RADIUS.md },
   bookInfo: { flex: 1, gap: 6 },
   bookTitle: { fontFamily: FONTS.displayBold, fontSize: 20, lineHeight: 24 },
   date: { fontFamily: FONTS.mono, fontSize: 12 },
-  pbBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 8, height: 24, borderRadius: 14 },
-  pbText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 0.8, color: INK },
+  pbBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 8, height: 24, borderRadius: RADIUS.md },
+  pbText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 0.8, color: INK },
 
-  heroCard: { alignItems: 'center', paddingVertical: 28, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
+  heroCard: { alignItems: 'center', paddingVertical: 28, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK },
   hero: { fontFamily: FONTS.uiBold, fontSize: 76, lineHeight: 80, fontVariant: ['tabular-nums'] },
   heroUnit: { fontFamily: FONTS.mono, fontSize: 13, letterSpacing: 1.5, marginTop: 2 },
 
-  checkInCard: { alignItems: 'center', gap: 10, paddingVertical: 30, paddingHorizontal: 24, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
+  checkInCard: { alignItems: 'center', gap: 10, paddingVertical: 30, paddingHorizontal: 24, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK },
   checkInTitle: { fontFamily: FONTS.uiBold, fontSize: 22, letterSpacing: 1 },
   checkInSub: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 300 },
 
@@ -248,15 +239,15 @@ const styles = StyleSheet.create({
   statTile: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
     paddingVertical: 18, paddingHorizontal: 8, minHeight: 92,
-    borderRadius: 14, borderWidth: BORDER_WIDTH,
+    borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH,
   },
   statValue: { fontFamily: FONTS.uiBold, fontSize: 26, fontVariant: ['tabular-nums'], ...NO_FONT_PAD },
-  statLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1, marginTop: 4, ...NO_FONT_PAD },
+  statLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1, marginTop: 4, ...NO_FONT_PAD },
 
   shareWrap: { marginTop: 4 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56,
-    borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
+    borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: INK,
   },
   shareText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent },
 });

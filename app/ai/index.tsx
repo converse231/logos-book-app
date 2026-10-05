@@ -1,7 +1,9 @@
-import { Redirect, type Href } from 'expo-router';
+import { type Href } from 'expo-router';
+import { ReturnTo } from '@/components/navigation/ReturnTo';
 
-// Mood Reader lives on the Discover tab now. Keep this route as a redirect so the
-// quire://ai deep link (blueprint §19) still lands somewhere sensible.
-export default function AiRedirect() {
-  return <Redirect href={'/(tabs)/discover' as Href} />;
+// Mood Reader lives on the Discover tab now. Keep this route so the quire://ai
+// deep link (blueprint §19) still lands somewhere sensible.
+// A pop, not a <Redirect> (a replace): see components/navigation/ReturnTo.tsx.
+export default function Route() {
+  return <ReturnTo href={'/(tabs)/discover' as Href} />;
 }

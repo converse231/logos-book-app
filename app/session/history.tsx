@@ -6,13 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { ReadingSession, UserBook } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
 
 interface Row {
   session: ReadingSession;
@@ -77,19 +78,7 @@ export default function SessionHistory() {
 
   return (
     <ScreenBackground>
-      <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
-        >
-          <Ionicons name="chevron-back" size={22} color={t.text} />
-        </Pressable>
-        <Text style={[styles.title, { color: t.text }]}>Session history</Text>
-        <View style={styles.spacer} />
-      </View>
+      <ScreenHeader title="Session history" style={[styles.topBar, { paddingTop: insets.top + 6 }]} />
 
       {error && !rows ? (
         <ErrorState onRetry={() => setNonce((n) => n + 1)} />
@@ -164,12 +153,9 @@ function shortDate(iso: string): string {
 
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingBottom: 10 },
-  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  spacer: { width: 42, height: 42 },
-  title: { fontFamily: FONTS.uiBold, fontSize: 18 },
   list: { paddingHorizontal: 18, gap: 10, paddingTop: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: BORDER_WIDTH },
-  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 14 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
+  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: RADIUS.md },
   rowInfo: { flex: 1, gap: 3 },
   rowTitle: { fontFamily: FONTS.uiBold, fontSize: 15 },
   rowStats: { fontFamily: FONTS.mono, fontSize: 12 },

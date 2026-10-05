@@ -3,11 +3,11 @@ import { Pressable, StyleProp, ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { tapPulse } from '@/theme/motion';
 
 interface PressChipProps {
   onPress: () => void;
@@ -50,11 +50,8 @@ export function PressChip({
 
   useEffect(() => {
     if (reduce || !selected) return;
-    // Underdamped: up ~6% and back. Snappier than the button release because a
-    // chip is small and a slow settle on something this size reads as sluggish.
-    pop.value = withSpring(1.06, { damping: 9, stiffness: 320, mass: 0.5 }, () => {
-      pop.value = withSpring(1, { damping: 14, stiffness: 320, mass: 0.5 });
-    });
+    // A small rise and a long settle — acknowledged, not bounced.
+    pop.value = tapPulse(1.05);
   }, [selected, reduce, pop]);
 
   const animStyle = useAnimatedStyle(() => ({

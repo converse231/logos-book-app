@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { FeedbackKind } from '@/services/types';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
@@ -61,7 +61,7 @@ export default function Feedback() {
       <SheetScaffold title="Thank you" onClose={close}>
         <View style={styles.sentWrap}>
           <View style={[styles.sentIcon, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
-            <Ionicons name="checkmark" size={34} color={t.accent} />
+            <Ionicons name="checkmark" size={34} color={t.accentText} />
           </View>
           <Text style={[styles.sentTitle, { color: t.text }]}>Feedback sent</Text>
           <Text style={[styles.sentBody, { color: t.textSec }]}>
@@ -74,8 +74,19 @@ export default function Feedback() {
   }
 
   return (
-    <SheetScaffold title="Send feedback" onClose={close} scroll>
-      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <SheetScaffold
+      title="Send feedback"
+      onClose={close}
+      scroll
+      footer={
+        <PrimaryButton
+          label={sending ? 'Sending…' : 'Send'}
+          onPress={submit}
+          loading={sending}
+          disabled={message.trim().length === 0}
+        />
+      }
+    >
         <View style={styles.wrap}>
           <View style={styles.seg}>
             {KINDS.map((k) => {
@@ -89,8 +100,8 @@ export default function Feedback() {
                   accessibilityLabel={k.label}
                   style={[styles.segItem, { borderColor: active ? t.accent : t.border, backgroundColor: active ? t.accentMuted : 'transparent' }]}
                 >
-                  <Ionicons name={k.icon} size={18} color={active ? t.accent : t.textSec} />
-                  <Text style={[styles.segLabel, { color: active ? t.accent : t.textSec }]}>{k.label}</Text>
+                  <Ionicons name={k.icon} size={18} color={active ? t.accentText : t.textSec} />
+                  <Text style={[styles.segLabel, { color: active ? t.accentText : t.textSec }]}>{k.label}</Text>
                 </Pressable>
               );
             })}
@@ -107,18 +118,10 @@ export default function Feedback() {
             accessibilityLabel="Your feedback"
           />
           <Text style={[styles.count, { color: t.textTer }]}>{message.length}/2000</Text>
-
-          <PrimaryButton
-            label={sending ? 'Sending…' : 'Send'}
-            onPress={submit}
-            loading={sending}
-            disabled={message.trim().length === 0}
-          />
           <Text style={[styles.note, { color: t.textTer }]}>
             Sent with your app version + device so we can reproduce bugs.
           </Text>
         </View>
-      </ScrollView>
     </SheetScaffold>
   );
 }
@@ -128,18 +131,18 @@ const styles = StyleSheet.create({
   seg: { flexDirection: 'row', gap: 8 },
   segItem: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 12, borderRadius: 14, borderWidth: 1,
+    paddingVertical: 12, borderRadius: RADIUS.md, borderWidth: 1,
   },
   segLabel: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
   input: {
-    minHeight: 128, borderRadius: 14, borderWidth: 1, padding: 14,
+    minHeight: 128, borderRadius: RADIUS.md, borderWidth: 1, padding: 14,
     fontFamily: FONTS.uiMedium, fontSize: 15, lineHeight: 21, textAlignVertical: 'top',
   },
   count: { fontFamily: FONTS.mono, fontSize: 11, alignSelf: 'flex-end', marginTop: -6 },
   note: { fontFamily: FONTS.uiRegular, fontSize: 12, textAlign: 'center', lineHeight: 17 },
 
   sentWrap: { alignItems: 'center', gap: 12, paddingVertical: 12, paddingBottom: 20 },
-  sentIcon: { width: 72, height: 72, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  sentIcon: { width: 72, height: 72, borderRadius: RADIUS.md, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   sentTitle: { fontFamily: FONTS.displayBold, fontSize: 22 },
   sentBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 300, marginBottom: 4 },
 });

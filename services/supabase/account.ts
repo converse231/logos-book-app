@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { QuireApi } from '../api';
-import { supabase } from '@/lib/supabase';
+import { forgetReaderOnDevice, supabase } from '@/lib/supabase';
 
 // Owner-scoped tables included in a data export (RLS returns only the caller's rows).
 const EXPORT_TABLES = [
@@ -22,6 +22,14 @@ const EXPORT_TABLES = [
   'reading_insights',
   'user_achievements',
   'xp_log',
+  // Added in the 2026-09 audit: all owner-scoped, all personal data, and a
+  // "download my data" that silently leaves tables out is not one.
+  'user_curios',
+  'streak_freezes',
+  'notification_settings',
+  'feedback',
+  'review_reports',
+  'blocked_users',
 ] as const;
 
 async function readEdgeError(err: any): Promise<string> {
@@ -58,6 +66,8 @@ export const accountApi: Partial<QuireApi> = {
   async deleteAccount(): Promise<void> {
     const { error } = await supabase.functions.invoke('delete_account', { body: {} });
     if (error) throw new Error(await readEdgeError(error));
-    await supabase.auth.signOut(); // local session is now orphaned — clear it
+    // The auth user is gone, so the server call can only 403 — clear locally.
+    await supabase.auth.signOut({ scope: 'local' });
+    await forgetReaderOnDevice();
   },
 };

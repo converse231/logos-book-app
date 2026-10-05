@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, SHADOW, RADIUS } from '@/theme/tokens';
 
 interface StatTileProps {
   label: string;
@@ -43,7 +43,7 @@ export function StatTile({ label, value, delta, icon, color, tint }: StatTilePro
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH,
     padding: 14,
     gap: 2,
@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
   },
   icon: { marginBottom: 4 },
   value: { fontFamily: FONTS.monoBold, fontSize: 23, fontVariant: ['tabular-nums'] },
-  label: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' },
+  label: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   delta: { fontFamily: FONTS.monoMedium, fontSize: 11, marginTop: 2 },
 });

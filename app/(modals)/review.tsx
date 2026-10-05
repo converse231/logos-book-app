@@ -4,12 +4,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { extremeRatingPrompt } from '@/lib/ratingPrompt';
 import { useApi } from '@/services/ApiContext';
 import { SheetScaffold } from '@/components/shared/SheetScaffold';
 import { StarRating } from '@/components/library/StarRating';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
+import { EASE } from '@/theme/motion';
 
 const MAX = 3000;
 
@@ -88,12 +89,12 @@ export default function Review() {
           {prompt ? (
             <Animated.View
               key={prompt.title}
-              entering={reduce ? undefined : FadeInDown.duration(260)}
+              entering={reduce ? undefined : FadeInDown.duration(260).easing(EASE.out)}
               style={[styles.prompt, { backgroundColor: t.accentMuted }]}
             >
-              <Ionicons name="chatbubble-ellipses" size={17} color={t.accent} />
+              <Ionicons name="chatbubble-ellipses" size={17} color={t.accentText} />
               <View style={styles.promptCopy}>
-                <Text style={[styles.promptTitle, { color: t.accent }]}>{prompt.title}</Text>
+                <Text style={[styles.promptTitle, { color: t.accentText }]}>{prompt.title}</Text>
                 <Text style={[styles.promptBody, { color: t.textSec }]}>{prompt.body}</Text>
               </View>
             </Animated.View>
@@ -117,7 +118,7 @@ export default function Review() {
 
           <Pressable
             onPress={() => setSpoiler((s) => !s)}
-            accessibilityRole="switch"
+            accessibilityRole="checkbox"
             accessibilityState={{ checked: spoiler }}
             accessibilityLabel="Contains spoilers"
             style={styles.toggleRow}
@@ -125,7 +126,7 @@ export default function Review() {
             <Ionicons
               name={spoiler ? 'checkbox' : 'square-outline'}
               size={22}
-              color={spoiler ? t.accent : t.textSec}
+              color={spoiler ? t.accentText : t.textSec}
             />
             <Text style={[styles.toggleText, { color: t.text }]}>This review contains spoilers</Text>
           </Pressable>
@@ -160,15 +161,15 @@ const styles = StyleSheet.create({
   book: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   ratingBlock: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   ratingHint: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
-  prompt: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 13, borderRadius: 14 },
+  prompt: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 13, borderRadius: RADIUS.md },
   promptCopy: { flex: 1, gap: 2 },
   promptTitle: { fontFamily: FONTS.uiBold, fontSize: 14 },
   promptBody: { fontFamily: FONTS.uiRegular, fontSize: 13, lineHeight: 18 },
-  inputWrap: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 14, minHeight: 104 },
+  inputWrap: { borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth, padding: 14, minHeight: 104 },
   input: { fontFamily: FONTS.uiRegular, fontSize: 15, lineHeight: 21, minHeight: 76, padding: 0 },
   counter: { fontFamily: FONTS.uiRegular, fontSize: 11, textAlign: 'right', marginTop: -8, fontVariant: ['tabular-nums'] },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   toggleText: { fontFamily: FONTS.uiMedium, fontSize: 14 },
-  notice: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14 },
+  notice: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: RADIUS.md },
   noticeText: { flex: 1, fontFamily: FONTS.uiRegular, fontSize: 13, lineHeight: 18 },
 });

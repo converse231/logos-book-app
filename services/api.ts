@@ -171,6 +171,9 @@ export interface QuireApi {
   updateNotificationSettings(patch: Partial<NotificationSettings>): Promise<NotificationSettings>;
   /** Store the device's Expo push token on the user row (for server-sent pushes). */
   registerPushToken(token: string): Promise<void>;
+  /** Re-stamp the device's current UTC offset + IANA zone on the user row when it
+   *  has changed. Every cron (streak break, at-risk, reminders) reads it. */
+  syncTimezone(): Promise<void>;
 
   // ── Account (B6 / §21) ───────────────────────────────────────────────────────
   /** Export all of the caller's data as a JSON string (GDPR portability). */

@@ -6,13 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { BookSearchResult, UserProfile } from '@/services/types';
 import { fetchAuthorPhoto, isSearchUnavailable, toSubject } from '@/lib/bookSearch';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { OfflineNotice } from '@/components/shared/OfflineNotice';
-import { PressBlock } from '@/components/shared/PressBlock';
 import { DiscoverRow } from '@/components/discover/DiscoverRow';
 import { Reveal } from '@/components/shared/Reveal';
 
@@ -133,36 +132,8 @@ export default function Discover() {
           </View>
         ) : null}
 
-        {/* Mood Reader banner — parked. Every open spends Anthropic credit, and
-            it isn't worth funding before launch, so the banner teases without
-            routing anywhere. Re-enable by restoring the onPress and dropping
-            `disabled`; the whole feature underneath is built and working. */}
-        <Reveal index={1}>
-          <View style={styles.padded}>
-            <PressBlock
-              onPress={() => {}}
-              disabled
-              accessibilityLabel="Mood Reader, coming soon"
-              accessibilityState={{ disabled: true }}
-              style={[styles.banner, { backgroundColor: t.bgTer, borderColor: t.border }]}
-            >
-              <View style={styles.bannerText}>
-                <View style={styles.bannerTag}>
-                  <Ionicons name="sparkles" size={13} color={t.textSec} />
-                  <Text style={[styles.bannerTagText, { color: t.textSec }]}>MOOD READER</Text>
-                </View>
-                <Text style={[styles.bannerTitle, { color: t.text }]}>Find your next read by vibe</Text>
-                <Text style={[styles.bannerSub, { color: t.textSec }]}>Pick a mood, get picks that match</Text>
-              </View>
-              <View style={[styles.soon, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-                <Text style={[styles.soonText, { color: t.textSec }]}>SOON</Text>
-              </View>
-            </PressBlock>
-          </View>
-        </Reveal>
-
         {/* For You */}
-        <Reveal index={2}>
+        <Reveal index={1}>
           <DiscoverRow
             title="For you"
             subtitle={topGenre ? `Because you like ${topGenre}` : 'Picks to get you started'}
@@ -174,7 +145,7 @@ export default function Discover() {
         </Reveal>
 
         {/* Trending */}
-        <Reveal index={3}>
+        <Reveal index={2}>
           <DiscoverRow
             title="Trending now"
             subtitle="What readers are picking up"
@@ -183,6 +154,29 @@ export default function Discover() {
             onTapBook={openBook}
             onSeeAll={() => browse('Trending', 'subject:fiction bestseller')}
           />
+        </Reveal>
+
+        {/* Mood Reader — parked. Every open spends Anthropic credit, and it isn't
+            worth funding before launch. It sits below the first two rows as a quiet
+            teaser: leading the tab with something you can't use pushed every real book
+            below the fold. Re-enable by making this a PressBlock routed to /ai. */}
+        <Reveal index={3}>
+          <View style={styles.padded}>
+            <View
+              accessible
+              accessibilityLabel="Mood Reader, find your next read by vibe. Coming soon."
+              style={[styles.banner, { backgroundColor: t.bgTer, borderColor: t.border }]}
+            >
+              <Ionicons name="sparkles" size={16} color={t.textSec} />
+              <View style={styles.bannerText}>
+                <Text style={[styles.bannerTagText, { color: t.textSec }]}>MOOD READER</Text>
+                <Text style={[styles.bannerTitle, { color: t.text }]}>Find your next read by vibe</Text>
+              </View>
+              <View style={[styles.soon, { backgroundColor: t.bgSec, borderColor: t.border }]}>
+                <Text style={[styles.soonText, { color: t.textSec }]}>SOON</Text>
+              </View>
+            </View>
+          </View>
         </Reveal>
 
         {/* NYT Bestsellers — cached weekly server-side. Attribution required by ToS. */}
@@ -262,7 +256,7 @@ function AuthorCard({ name, photo, onPress }: { name: string; photo: string | nu
         {showPhoto ? (
           <Image source={{ uri: photo! }} style={styles.authorPhoto} contentFit="cover" onError={() => setFailed(true)} />
         ) : (
-          <Text style={[styles.authorInitial, { color: t.accent }]}>{name.charAt(0)}</Text>
+          <Text style={[styles.authorInitial, { color: t.accentText }]}>{name.charAt(0)}</Text>
         )}
       </View>
       <Text style={[styles.authorName, { color: t.text }]} numberOfLines={2}>{name}</Text>
@@ -273,31 +267,29 @@ function AuthorCard({ name, photo, onPress }: { name: string; photo: string | nu
 const styles = StyleSheet.create({
   content: { gap: 22 },
   padded: { paddingHorizontal: 18 },
-  title: { fontFamily: FONTS.displayBold, fontSize: 32, lineHeight: 36, paddingHorizontal: 18 },
+  title: { fontFamily: FONTS.serifBold, fontSize: 38, lineHeight: 40, paddingHorizontal: 18 },
 
-  banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 18, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
-  bannerText: { flex: 1, gap: 4 },
-  bannerTag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bannerTagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5, opacity: 0.85 },
-  bannerTitle: { fontFamily: FONTS.displayBold, fontSize: 22, lineHeight: 25 },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
+  bannerText: { flex: 1, gap: 2 },
+  bannerTagText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.5 },
+  bannerTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 15, lineHeight: 19 },
   soon: {
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.sm,
     borderWidth: BORDER_WIDTH, alignSelf: 'center',
   },
-  soonText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1.2 },
-  bannerSub: { fontFamily: FONTS.uiMedium, fontSize: 13, opacity: 0.9 },
+  soonText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.2 },
 
   section: { gap: 12, paddingHorizontal: 18 },
   sectionTitle: { fontFamily: FONTS.displayBold, fontSize: 20, letterSpacing: -0.3 },
-  moreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  moreBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
   moreBtnText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  chip: { paddingHorizontal: 14, height: 42, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
 
   authorWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  authorCard: { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 14, borderWidth: BORDER_WIDTH },
-  authorGlyph: { width: 44, height: 44, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  authorCard: { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
+  authorGlyph: { width: 44, height: 44, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   authorPhoto: { width: '100%', height: '100%' },
   authorInitial: { fontFamily: FONTS.displayBold, fontSize: 20 },
   authorName: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 13, lineHeight: 16 },

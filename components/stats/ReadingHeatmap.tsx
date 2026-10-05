@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 
 interface HeatmapDay {
   date: string;
@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: 12 },
   grid: { flexDirection: 'row', gap: GAP },
   col: { gap: GAP },
-  cell: { width: CELL, height: CELL, borderRadius: 14 },
+  cell: { width: CELL, height: CELL, borderRadius: RADIUS.md },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
-  legendText: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5, marginHorizontal: 2 },
-  legendCell: { width: 11, height: 11, borderRadius: 14 },
+  legendText: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.5, marginHorizontal: 2 },
+  legendCell: { width: 11, height: 11, borderRadius: RADIUS.md },
 });

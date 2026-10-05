@@ -3,10 +3,10 @@ import { StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeContext';
+import { glide, DURATION } from '@/theme/motion';
 
 interface ProgressBarProps {
   value: number;
@@ -48,11 +48,9 @@ export function ProgressBar({
     if (reduceMotion || !animateOnMount) {
       fillPx.value = target;
     } else {
-      // Critically damped (ratio 1.00). A progress bar that overshoots briefly
-      // displays a value that is WRONG — it runs past the number and settles back.
-      // Fine on a mascot, not on a measurement. damping 18 gave ratio 0.82, which
-      // wobbled for ~450ms; 22 removes the bounce without making it feel abrupt.
-      fillPx.value = withSpring(target, { damping: 22, stiffness: 120 });
+      // A timing, not a spring: a bar that overshoots briefly displays a value
+      // that is WRONG. The house ease-out gives the same soft landing with none.
+      fillPx.value = glide(target, DURATION.entrance + 200);
     }
   }, [pct, trackWidth, reduceMotion, animateOnMount, fillPx]);
 

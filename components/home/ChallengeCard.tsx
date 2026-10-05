@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, BORDER_WIDTH_THICK, SHADOW, RADIUS } from '@/theme/tokens';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 
 export interface ChallengeCardProps {
@@ -24,7 +24,7 @@ export function ChallengeCard({ tone, icon, kicker, title, footer, progress, onP
   // `art` is just the tone under the name the icon registry uses — the card's hue
   // and its icon's hue are the same decision, so they can't drift apart.
   const TONE = {
-    coral: { color: t.accent, soft: t.accentMuted, art: 'accent' },
+    coral: { color: t.accentText, soft: t.accentMuted, art: 'accent' },
     gold: { color: t.gold, soft: 'rgba(243,194,60,0.16)', art: 'gold' },
     ember: { color: t.ember, soft: 'rgba(242,145,63,0.16)', art: 'ember' },
     lilac: { color: t.level, soft: 'rgba(154,123,214,0.18)', art: 'lilac' },
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   card: {
     width: 246,
     minHeight: 158,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH_THICK,
     padding: 16,
     justifyContent: 'space-between',
@@ -75,8 +75,8 @@ const styles = StyleSheet.create({
   },
   pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  iconChip: { width: 36, height: 36, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  kicker: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1 },
+  iconChip: { width: 36, height: 36, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  kicker: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
   title: { fontFamily: FONTS.uiBold, fontSize: 17, lineHeight: 22, marginTop: 12 },
   bottom: { gap: 8, marginTop: 14 },
   footer: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.3 },

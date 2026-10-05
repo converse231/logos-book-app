@@ -23,7 +23,7 @@ import type { QuireApi } from '../api';
 import type { LevelName, SubStatus, ThemePref, UserProfile } from '../types';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { supabase } from '@/lib/supabase';
+import { forgetReaderOnDevice, supabase } from '@/lib/supabase';
 
 // Local device timezone, captured once at account creation. Streak/at-risk math
 // (B4) buckets users by these; compute at signup, never re-derive server-side.
@@ -216,8 +216,37 @@ export const authApi: Partial<QuireApi> = {
   },
 
   async signOut() {
+    const uid = await currentUserId();
+    if (uid) {
+      // Unbind this device FIRST, while we still have a session to do it with.
+      // Left in place, the token kept this phone subscribed to the previous
+      // reader's streak alerts — and the next reader to sign in here got both.
+      const { error: tokErr } = await supabase.from('users').update({ expo_push_token: null }).eq('id', uid);
+      if (tokErr) console.warn('[signOut] could not clear push token', tokErr);
+    }
+    // A global sign-out needs the network, and on failure supabase-js keeps the
+    // local session — so "Sign out" while offline used to do nothing at all.
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      console.warn('[signOut] server sign-out failed; clearing locally', error);
+      await supabase.auth.signOut({ scope: 'local' });
+    }
+    await forgetReaderOnDevice();
+  },
+
+  async syncTimezone() {
+    // Captured once at onboarding and never again: after a DST change every
+    // reminder fired an hour off, and after a flight the streak cron judged
+    // "today" in the old zone and could break a streak that was never missed.
+    const uid = await currentUserId();
+    if (!uid) return;
+    const tz = localTimezone();
+    const { error } = await supabase
+      .from('users')
+      .update({ timezone_offset_minutes: tz.offsetMinutes, timezone_name: tz.name })
+      .eq('id', uid)
+      .or(`timezone_offset_minutes.neq.${tz.offsetMinutes},timezone_name.neq."${tz.name}"`);
+    if (error) console.warn('[syncTimezone]', error);
   },
 
   // OTP-code reset (not a link) so it works in Expo Go before deep links land (B5).

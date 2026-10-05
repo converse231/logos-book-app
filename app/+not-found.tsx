@@ -27,7 +27,7 @@ export default function NotFound() {
           you left off.
         </Text>
         <PressBlock
-          onPress={() => router.replace('/(tabs)/home' as Href)}
+          onPress={() => router.dismissTo('/(tabs)/home' as Href)}
           haptic="light"
           emphasis="primary"
           accessibilityLabel="Go to Home"

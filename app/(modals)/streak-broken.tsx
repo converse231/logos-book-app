@@ -20,6 +20,7 @@ import { BROKEN_FLAME, flameLayout } from '@/lib/streakCelebration';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Reveal } from '@/components/shared/Reveal';
 import { useApi } from '@/services/ApiContext';
+import { EASE } from '@/theme/motion';
 
 // Streak broken — the mirror of streak-unlocked, and deliberately its opposite in
 // every motion decision.
@@ -133,7 +134,7 @@ export default function StreakBroken() {
           </Animated.View>
         </View>
 
-        <Animated.View entering={reduce ? undefined : FadeIn.delay(900).duration(440)} style={styles.actions}>
+        <Animated.View entering={reduce ? undefined : FadeIn.delay(900).duration(440).easing(EASE.out)} style={styles.actions}>
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           {canRestore ? (

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -37,10 +37,10 @@ import {
   Fraunces_600SemiBold,
   Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
-import { ThemeProvider } from '@/theme/ThemeContext';
+import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 import { ApiProvider } from '@/services/ApiContext';
 import { liveApi } from '@/services/supabase';
-import { useAppStore } from '@/stores/appStore';
+import { useAppStore, hasHydratedPrefs, onPrefsHydrated } from '@/stores/appStore';
 import { supabase } from '@/lib/supabase';
 import { initAnalytics, identifyUser, resetAnalytics } from '@/lib/analytics';
 import { registerForPushNotifications } from '@/lib/notifications';
@@ -62,11 +62,20 @@ export default function RootLayout() {
     Fraunces_700Bold,
   });
 
+  // Hold the splash until the persisted theme is back too, or a dark-mode reader
+  // gets a flash of light paper before their preference lands.
+  const [prefsReady, setPrefsReady] = useState(hasHydratedPrefs);
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    const off = onPrefsHydrated(() => setPrefsReady(true));
+    if (hasHydratedPrefs()) setPrefsReady(true); // finished before we subscribed
+    return off;
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && prefsReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, prefsReady]);
 
   // Analytics (B6): init once, then keep PostHog's distinct_id in sync with the
   // Supabase session — identify on sign-in, reset on sign-out. Centralized here
@@ -82,12 +91,14 @@ export default function RootLayout() {
         // target. onAuthStateChange also fires INITIAL_SESSION, so this covers a
         // cold launch with a restored session. Silent: never prompts.
         registerForPushNotifications(liveApi, { prompt: false });
+        // Same moment, same reason: the streak cron reads the stored zone.
+        liveApi.syncTimezone();
       } else resetAnalytics();
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !prefsReady) {
     return null;
   }
 
@@ -96,7 +107,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ApiProvider api={liveApi}>
           <ThemeProvider preference={theme}>
-            <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
+            <ThemedStatusBar />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="(auth)" />
@@ -111,6 +122,20 @@ export default function RootLayout() {
                   left on deliberately: nothing has been saved yet, so retreating is
                   always safe. */}
               <Stack.Screen name="session/review" options={{ animation: 'slide_from_right' }} />
+              {/* Book preview opened from search sits OVER the search sheet, so going
+                  back returns to your results. That was always the behaviour, but only
+                  by accident: a route pushed after a modal inherits presentation
+                  'modal' (an iOS page sheet), and book.tsx compensated for the sheet's
+                  inset without anything saying it was intended. Declared here, it is.
+                  Every other entry stays unset ON PURPOSE — an explicit 'card' pushed
+                  after a modal lands in the root controller BEHIND the modal. */}
+              <Stack.Screen
+                name="book"
+                options={({ route }) => {
+                  const from = (route.params as { from?: string } | undefined)?.from;
+                  return from === 'search' || from === 'session_picker' ? { presentation: 'modal' } : {};
+                }}
+              />
               <Stack.Screen
                 name="(modals)"
                 options={{ presentation: 'transparentModal', animation: 'fade' }}
@@ -121,6 +146,15 @@ export default function RootLayout() {
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+// Follows the RESOLVED theme, not the preference. Reading the preference sent
+// 'system' down the 'light' branch every time, so a phone in light mode with
+// System selected got white status-bar icons on light paper — clock and battery
+// gone.
+function ThemedStatusBar() {
+  const t = useTheme();
+  return <StatusBar style={t.mode === 'dark' ? 'light' : 'dark'} />;
 }
 
 const styles = StyleSheet.create({

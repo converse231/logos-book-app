@@ -10,8 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { ANIMATION, FONTS } from '@/theme/tokens';
-import { CONTENT_MAX_WIDTH } from '@/theme/layout';
+import { ANIMATION, FONTS, RADIUS } from '@/theme/tokens';
+import { CONTENT_MAX_WIDTH, TAB_BAR_HEIGHT } from '@/theme/layout';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { SessionFab } from '@/components/navigation/SessionFab';
 import { TourProvider, useTourTarget } from '@/components/tour/TourProvider';
@@ -92,15 +92,15 @@ export default function TabsLayout() {
             backgroundColor: t.bgSec,
             borderTopColor: t.border,
             borderTopWidth: 2,
-            height: 60 + insets.bottom,
+            height: TAB_BAR_HEIGHT + insets.bottom,
             paddingBottom: insets.bottom + 6,
             paddingTop: 8,
             paddingHorizontal: barGutter,
           },
-          tabBarActiveTintColor: t.accent,
+          tabBarActiveTintColor: t.accentText,
           tabBarInactiveTintColor: t.textSec,
-          tabBarLabelStyle: { fontFamily: FONTS.monoMedium, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 2, includeFontPadding: false },
-          tabBarItemStyle: { paddingTop: 2 },
+          tabBarLabelStyle: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 2, includeFontPadding: false },
+          tabBarItemStyle: { paddingTop: 0 },
         }}
       >
         <Tabs.Screen
@@ -161,6 +161,6 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   iconWrap: { width: 52, height: 30, alignItems: 'center', justifyContent: 'center' },
-  iconPill: { position: 'absolute', width: 52, height: 30, borderRadius: 14 },
+  iconPill: { position: 'absolute', width: 52, height: 30, borderRadius: RADIUS.md },
   spacer: { flex: 1 },
 });

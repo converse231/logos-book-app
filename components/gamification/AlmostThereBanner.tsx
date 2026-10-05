@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon, type IconTint } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, SHADOW } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, SHADOW, RADIUS } from '@/theme/tokens';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 
 interface AlmostThereBannerProps {
@@ -47,8 +47,8 @@ export function AlmostThereBanner({ label, progress, icon = 'ribbon', color, tin
 }
 
 const styles = StyleSheet.create({
-  banner: { borderRadius: 14, borderWidth: BORDER_WIDTH, padding: 14, gap: 12, ...SHADOW.sm },
+  banner: { borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, padding: 14, gap: 12, ...SHADOW.sm },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  iconChip: { width: 30, height: 30, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  iconChip: { width: 30, height: 30, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   label: { flex: 1, fontFamily: FONTS.uiBold, fontSize: 14, lineHeight: 18 },
 });

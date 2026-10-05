@@ -53,6 +53,29 @@ const PROJECT_REF = SUPABASE_URL.match(/^https:\/\/([^.]+)\./)?.[1] ?? '';
 export const AUTH_STORAGE_KEY = `sb-${PROJECT_REF}-auth-token`;
 
 /**
+ * Per-reader state this device remembers outside Supabase. Cleared on sign-out
+ * and account deletion so the next reader on this phone doesn't inherit a
+ * half-finished session, someone else's celebration memory, or a jar that
+ * thinks it has already shown fireflies it never earned. The offline session
+ * queue is NOT here: its items carry their owner and wait for them.
+ * (Keys mirror lib/activeSession, lib/jarSeen and lib/streakCelebration.)
+ */
+const READER_KEYS = [
+  'logos.activeSession.v1',
+  'quire.jarSeen.v1',
+  'quire.streakCelebrated.v1',
+  'quire.streakBreakSeen.v1',
+];
+
+export async function forgetReaderOnDevice(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove(READER_KEYS);
+  } catch (e) {
+    console.warn('[forgetReaderOnDevice]', e);
+  }
+}
+
+/**
  * Is there still a session on disk?
  *
  * getSession() returns null both for "this reader has never signed in" and for

@@ -28,7 +28,8 @@ type Vars = Record<string, string | number>;
 // Body templates (§16.1). [LevelName] is always available; other tokens come from `vars`.
 const TEMPLATES: Record<string, (lvl: string, v: Vars) => string> = {
   at_risk: (lvl, v) => `${lvl} — your ${v.N}-day streak ends in ${v.X} hours`,
-  streak_broken: (lvl, v) => `${lvl} — your ${v.N}-day streak ended. Start your comeback now →`,
+  // Restores replaced Comeback Challenges (20260804000000): 48h to buy it back.
+  streak_broken: (lvl, v) => `${lvl} — your ${v.N}-day streak ended. You have 48 hours to restore it →`,
   comeback_challenge_created: (lvl, v) => `${lvl} — ${v.N}-day streak ended. Complete 3 sessions in 3 days to restore it →`,
   comeback_challenge_progress: (lvl, v) => `${lvl} — ${v.k}/3 sessions done. ${v.d} days left to restore your streak.`,
   comeback_challenge_expired: () => `Your comeback window closed. Start fresh — every streak begins with session 1.`,
@@ -44,7 +45,7 @@ const TEMPLATES: Record<string, (lvl: string, v: Vars) => string> = {
 // Per-type deep link (§16) + the notification_settings column that gates it.
 const DEEP_LINK: Record<string, string> = {
   at_risk: 'quire://home',
-  streak_broken: 'quire://comeback',
+  streak_broken: 'quire://home', // Home raises the restore overlay
   comeback_challenge_created: 'quire://comeback',
   comeback_challenge_progress: 'quire://comeback',
   comeback_challenge_expired: 'quire://home',
@@ -73,18 +74,30 @@ const GATE: Record<string, string | null> = {
   long_absence_3d: null,
 };
 
+// Returns how many Expo accepted, plus the tokens Expo says are dead. Tickets
+// come back in the same order as the batch.
 async function postBatches(messages: any[]) {
   let sent = 0;
+  const dead: string[] = [];
   for (let i = 0; i < messages.length; i += 100) {
     const batch = messages.slice(i, i + 100);
     const res = await fetch(EXPO_PUSH, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(batch),
+      signal: AbortSignal.timeout(15_000),
+    }).catch((e) => {
+      console.error('Expo push unreachable', e?.message);
+      return null;
     });
-    if (res.ok) sent += batch.length;
+    if (!res?.ok) continue;
+    const tickets: any[] = (await res.json().catch(() => null))?.data ?? [];
+    tickets.forEach((t, j) => {
+      if (t?.status === 'ok') sent += 1;
+      else if (t?.details?.error === 'DeviceNotRegistered') dead.push(batch[j].to);
+    });
   }
-  return sent;
+  return { sent, dead };
 }
 
 Deno.serve(async (req) => {
@@ -138,6 +151,12 @@ Deno.serve(async (req) => {
     });
   }
 
-  const sent = await postBatches(messages);
-  return json({ ok: true, sent, candidates: messages.length });
+  const { sent, dead } = await postBatches(messages);
+  // An uninstalled app's token stays "valid-looking" forever; Expo tells us once.
+  // Clearing it stops every future cron run from paying to push to nobody.
+  if (dead.length) {
+    const { error: clrErr } = await admin.from('users').update({ expo_push_token: null }).in('expo_push_token', dead);
+    if (clrErr) console.error('clearing dead tokens failed', clrErr.message);
+  }
+  return json({ ok: true, sent, candidates: messages.length, cleared: dead.length });
 });

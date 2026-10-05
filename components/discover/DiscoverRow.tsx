@@ -1,7 +1,7 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { BookSearchResult } from '@/services/types';
 import { BookCover } from '@/components/shared/BookCover';
 import { Skeleton } from '@/components/shared/Skeleton';
@@ -39,8 +39,8 @@ export function DiscoverRow({
         </View>
         {onSeeAll ? (
           <Pressable onPress={onSeeAll} hitSlop={8} accessibilityRole="button" accessibilityLabel={`See all ${title}`} style={styles.seeAll}>
-            <Text style={[styles.seeAllText, { color: t.accent }]}>SEE ALL</Text>
-            <Ionicons name="chevron-forward" size={13} color={t.accent} />
+            <Text style={[styles.seeAllText, { color: t.accentText }]}>SEE ALL</Text>
+            <Ionicons name="chevron-forward" size={13} color={t.accentText} />
           </Pressable>
         ) : null}
       </View>
@@ -85,11 +85,11 @@ const styles = StyleSheet.create({
   title: { fontFamily: FONTS.displayBold, fontSize: 20, letterSpacing: -0.3 },
   subtitle: { fontFamily: FONTS.uiRegular, fontSize: 13 },
   seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingBottom: 2 },
-  seeAllText: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 0.5 },
+  seeAllText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 0.5 },
   listContent: { paddingHorizontal: 18, gap: 12 },
   skelRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 18 },
   item: { width: COVER_W, gap: 5 },
-  coverFrame: { borderWidth: 2, borderRadius: 14 },
+  coverFrame: { borderWidth: 2, borderRadius: RADIUS.md },
   bookTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 12, lineHeight: 15 },
-  bookAuthor: { fontFamily: FONTS.mono, fontSize: 10 },
+  bookAuthor: { fontFamily: FONTS.mono, fontSize: 11 },
 });

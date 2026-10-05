@@ -13,7 +13,7 @@ import { AppIcon } from '@/components/shared/AppIcon';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
 import { TOTAL_STEPS, useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
@@ -154,12 +154,12 @@ const styles = StyleSheet.create({
   avatarWrap: { alignItems: 'center', alignSelf: 'center', gap: 8 },
   avatarBox: { width: 96, height: 96 },
   avatar: {
-    width: 96, height: 96, borderRadius: 14, borderWidth: BORDER_WIDTH,
+    width: 96, height: 96, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   avatarImg: { width: '100%', height: '100%' },
   avatarBadge: {
-    position: 'absolute', bottom: -6, right: -6, width: 32, height: 32, borderRadius: 14,
+    position: 'absolute', bottom: -6, right: -6, width: 32, height: 32, borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center',
   },
   avatarHint: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2 },
   input: {
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     paddingHorizontal: 16,
     fontFamily: FONTS.uiMedium,

@@ -17,7 +17,7 @@ export function LoadingIndicator({ size = 64 }: LoadingIndicatorProps) {
   if (reduce) {
     return (
       <View accessibilityRole="progressbar" accessibilityLabel="Loading">
-        <ActivityIndicator color={t.accent} size={size >= 48 ? 'large' : 'small'} />
+        <ActivityIndicator color={t.accentText} size={size >= 48 ? 'large' : 'small'} />
       </View>
     );
   }

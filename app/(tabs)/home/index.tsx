@@ -312,12 +312,19 @@ export default function Home() {
               {data.user.avatarUrl ? (
                 <Image source={{ uri: data.user.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
               ) : (
-                <Text style={[styles.avatarText, { color: t.accent }]}>{initials}</Text>
+                <Text style={[styles.avatarText, { color: t.accentText }]}>{initials}</Text>
               )}
             </Pressable>
             <View style={styles.headerText}>
               <Text style={[styles.greeting, { color: t.textSec }]}>{timeGreeting()}</Text>
-              <Text style={[styles.name, { color: t.text }]} numberOfLines={1}>
+              {/* At 33pt the row (avatar + name + jar + settings) truncated a ten-letter
+                  name at 375pt — "Alex Rea…". Shrink to 75% before truncating. */}
+              <Text
+                style={[styles.name, { color: t.text }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
                 {data.user.displayName ?? 'Reader'}
               </Text>
             </View>
@@ -360,7 +367,7 @@ export default function Home() {
               onAction={() => router.push('/(tabs)/stats' as Href)}
             />
             <View style={styles.statBlocks}>
-              <StatBlock icon="reader-outline" art="accent" tint={t.accentMuted} color={t.accent} value={stats.lifetimePages.toLocaleString()} label="PAGES" t={t} />
+              <StatBlock icon="reader-outline" art="accent" tint={t.accentMuted} color={t.accentText} value={stats.lifetimePages.toLocaleString()} label="PAGES" t={t} />
               <StatBlock icon="time-outline" art="ember" tint="rgba(242,145,63,0.16)" color={t.ember} value={`${stats.lifetimeHours}h`} label="READ" t={t} />
               <StatBlock icon="checkmark-done-outline" art="gold" tint="rgba(243,194,76,0.18)" color={t.gold} value={`${stats.booksFinished}`} label="BOOKS" t={t} />
             </View>
@@ -483,7 +490,7 @@ export default function Home() {
                 accessibilityLabel="Add a book to your list"
                 style={({ pressed }) => [styles.addTile, { borderColor: t.border }, pressed && styles.pressed]}
               >
-                <Ionicons name="add" size={26} color={t.accent} />
+                <Ionicons name="add" size={26} color={t.accentText} />
                 <Text style={[styles.addTileText, { color: t.textSec }]}>Add a book</Text>
               </Pressable>
             </Carousel>
@@ -694,13 +701,13 @@ const styles = StyleSheet.create({
   skelHeaderText: { flex: 1, gap: 6 },
   skelRow: { flexDirection: 'row', gap: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 46, height: 46, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatar: { width: 46, height: 46, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImg: { width: '100%', height: '100%' },
   avatarText: { fontFamily: FONTS.uiBold, fontSize: 19 },
   headerText: { flex: 1, gap: 1 },
   greeting: { fontFamily: FONTS.uiSemiBold, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase' },
   name: { fontFamily: FONTS.serif, fontSize: 33, lineHeight: 37 },
-  iconBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   atRisk: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   atRiskText: { flex: 1, fontFamily: FONTS.uiSemiBold, fontSize: 14, lineHeight: 19 },
 
@@ -709,14 +716,14 @@ const styles = StyleSheet.create({
   streakCell: {
     width: 92,
     borderWidth: BORDER_WIDTH,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
     ...SHADOW.sm,
   },
-  cellLabel: { fontFamily: FONTS.uiBold, fontSize: 10, letterSpacing: 1, marginBottom: 2 },
+  cellLabel: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginBottom: 2 },
   streakFlame: { width: 32, height: 32 },
   streakCount: { fontFamily: FONTS.uiBold, fontSize: 30, lineHeight: 34, fontVariant: ['tabular-nums'], marginTop: 2 },
   streakUnit: { fontFamily: FONTS.uiMedium, fontSize: 12 },
@@ -724,7 +731,7 @@ const styles = StyleSheet.create({
   statBlocks: { flexDirection: 'row', gap: 10 },
   statBlock: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH,
     ...SHADOW.sm,
     paddingVertical: 16,
@@ -735,7 +742,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   statBlockValue: { fontFamily: FONTS.monoBold, fontSize: 22, lineHeight: 24, fontVariant: ['tabular-nums'], includeFontPadding: false },
-  statBlockLabel: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.8 },
+  statBlockLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.8 },
 
 
   levelCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -755,7 +762,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     minHeight: 54,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH_THICK,
     borderColor: INK,
     backgroundColor: PALETTE.accent,
@@ -764,13 +771,13 @@ const styles = StyleSheet.create({
   startBtnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: PALETTE.onAccent, ...NO_FONT_PAD },
   emptyActive: { gap: 14, alignItems: 'center' },
   emptyText: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
-  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 46, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 20, height: 46, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK },
   emptyCtaText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 
   section: { gap: 14 },
   sessionList: { gap: 8 },
-  sessionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: 2 },
-  sessionCoverFrame: { borderWidth: 2, borderRadius: 14 },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: RADIUS.md, borderWidth: 2 },
+  sessionCoverFrame: { borderWidth: 2, borderRadius: RADIUS.md },
   sessionInfo: { flex: 1, gap: 2 },
   sessionTitle: { fontFamily: FONTS.uiBold, fontSize: 14 },
   sessionStats: { fontFamily: FONTS.mono, fontSize: 11 },
@@ -787,7 +794,7 @@ const styles = StyleSheet.create({
   addTile: {
     width: 96,
     height: 96 / 0.66,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     borderStyle: 'dashed',
     alignItems: 'center',

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,7 +9,7 @@ import { PressRow } from '@/components/shared/PressRow';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { UserProfile } from '@/services/types';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -72,10 +72,21 @@ export default function More() {
     }, [api])
   );
 
-  const signOut = async () => {
+  // Same confirmation as Settings. This entry point used to sign out on a single
+  // tap, so one mis-tap on the bottom row cost an email reader their password.
+  const signOut = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await api.signOut();
-    router.replace('/(auth)/sign-in' as Href);
+    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: async () => {
+          await api.signOut();
+          router.replace('/(auth)/sign-in' as Href);
+        },
+      },
+    ]);
   };
 
   const initials = (profile?.displayName ?? 'R').trim().charAt(0).toUpperCase();
@@ -96,7 +107,7 @@ export default function More() {
                 {profile?.avatarUrl ? (
                   <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
                 ) : (
-                  <Text style={[styles.avatarText, { color: t.accent }]}>{initials}</Text>
+                  <Text style={[styles.avatarText, { color: t.accentText }]}>{initials}</Text>
                 )}
               </View>
               <View style={styles.identityInfo}>
@@ -200,7 +211,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 16 },
   title: { fontFamily: FONTS.displayBold, fontSize: 32, lineHeight: 36 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  avatar: { width: 56, height: 56, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatar: { width: 56, height: 56, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImg: { width: '100%', height: '100%' },
   avatarText: { fontFamily: FONTS.uiBold, fontSize: 22 },
   identityInfo: { flex: 1, gap: 3 },
@@ -211,10 +222,10 @@ const styles = StyleSheet.create({
   rowCard: { overflow: 'hidden' },
   groupTitle: { fontFamily: FONTS.uiBold, fontSize: 12, letterSpacing: 0.6, marginLeft: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
-  iconChip: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  iconChip: { width: 40, height: 40, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   rowText: { flex: 1, gap: 2 },
   rowLabel: { fontFamily: FONTS.uiSemiBold, fontSize: 16 },
   rowSub: { fontFamily: FONTS.uiRegular, fontSize: 13 },
-  signOut: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 14, borderWidth: 1, marginTop: 4 },
+  signOut: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: RADIUS.md, borderWidth: 1, marginTop: 4 },
   signOutText: { fontFamily: FONTS.uiSemiBold, fontSize: 15 },
 });

@@ -6,9 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useApi } from '@/services/ApiContext';
 import { useTheme } from '@/theme/ThemeContext';
-import { BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { useTourTarget } from '@/components/tour/TourProvider';
+import { FAB_RISE, TAB_BAR_HEIGHT } from '@/theme/layout';
 
 // Raised center action on the tab bar (Strava / Duolingo pattern): the core
 // habit — start a reading session — is one tap from anywhere in the app. Floats
@@ -41,7 +42,7 @@ export function SessionFab() {
   };
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom + 14 }]}>
+    <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom + TAB_BAR_HEIGHT + FAB_RISE - FAB_SIZE }]}>
       {/* Wrapper exists only so the tour can measure where the FAB is. */}
       <View ref={tour.ref} onLayout={tour.onLayout} collapsable={false}>
       <PressBlock
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
   fab: {
     width: FAB_SIZE,
     height: FAB_SIZE,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH_THICK,
     alignItems: 'center',
     justifyContent: 'center',

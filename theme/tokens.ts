@@ -88,14 +88,23 @@ export const BG_GRADIENT_LIGHT = {
 // one place the system drops its ink border, so a row of taxonomy labels reads as
 // quiet metadata instead of six competing buttons. Index by position so a book's
 // genres (and an author's recurring themes) get a stable, varied sequence.
+// Two text tones per hue, measured against the chip's own tint flattened over
+// each theme's ground. The single `fg` this replaced was one bright value for
+// both themes and failed everywhere in light mode (sky blue measured 1.8:1).
+// Pick with genreChip(i, mode).
 export const GENRE_PALETTE = [
-  { bg: 'rgba(99,179,237,0.18)',  fg: '#63B3ED' },  // sky blue   — Fiction / Sci-Fi
-  { bg: 'rgba(154,117,244,0.18)', fg: '#9A75F4' },  // violet     — Fantasy / Mystery
-  { bg: 'rgba(224,114,158,0.18)', fg: '#E0729E' },  // rose       — Self-Help / Business
-  { bg: 'rgba(255,197,61,0.18)', fg: '#D4960A' },   // amber      — History / Biography
-  { bg: 'rgba(252,129,100,0.18)', fg: '#E06B4A' },  // coral      — Literary / Cultural
-  { bg: 'rgba(99,223,180,0.18)', fg: '#22A37A' },   // teal       — Science / Nature
+  { bg: 'rgba(99,179,237,0.18)',  light: '#396889', dark: '#63B3ED' },  // sky blue — Fiction / Sci-Fi
+  { bg: 'rgba(154,117,244,0.18)', light: '#6A51A8', dark: '#A17FF5' },  // violet   — Fantasy / Mystery
+  { bg: 'rgba(224,114,158,0.18)', light: '#924A67', dark: '#E0729E' },  // rose     — Self-Help / Business
+  { bg: 'rgba(255,197,61,0.18)',  light: '#8A6106', dark: '#D4960A' },  // amber    — History / Biography
+  { bg: 'rgba(252,129,100,0.18)', light: '#9D4B34', dark: '#E37A5C' },  // coral    — Literary / Cultural
+  { bg: 'rgba(99,223,180,0.18)',  light: '#187558', dark: '#43B18E' },  // teal     — Science / Nature
 ] as const;
+
+export function genreChip(index: number, mode: 'light' | 'dark') {
+  const p = GENRE_PALETTE[index % GENRE_PALETTE.length];
+  return { bg: p.bg, fg: mode === 'dark' ? p.dark : p.light };
+}
 
 // ─── Typography ─────────────────────────────────────────────────────────────
 
@@ -217,18 +226,16 @@ export function softStackShadow(color: string, offset = 4): { boxShadow: string 
 
 // ─── Animation ───────────────────────────────────────────────────────────────
 
+// Legacy aliases — new code imports DURATION / EASE / glide from theme/motion.
+// Values mirror motion.ts. The spring presets are gone on purpose: nothing in
+// Quire overshoots (see motion.ts for why).
 export const ANIMATION = {
   // Durations (ms)
-  durationFast:    90,    // press-in / press-out scale feedback
-  durationQuick:   150,   // icon swaps, colour transitions
-  durationNormal:  280,   // modal/sheet exits, slide dismissals
-  durationSlow:    460,   // entrance animations (FadeInUp stagger)
-  durationAmbient: 1100,  // ambient pulses (streak flame)
-
-  // Spring presets (react-native-reanimated withSpring)
-  springSnappy: { damping: 18, stiffness: 160 },
-  springSmooth: { damping: 18, stiffness: 140 },
-  springBouncy: { damping: 12, stiffness: 180 },
+  durationFast:    90,    // = DURATION.press
+  durationQuick:   200,   // = DURATION.quick
+  durationNormal:  380,   // = DURATION.base
+  durationSlow:    560,   // = DURATION.entrance
+  durationAmbient: 1600,  // ambient pulses (streak flame)
 
   // Stagger delay per list item (ms)
   staggerStep: 80,
@@ -260,10 +267,21 @@ export interface ThemeTokens {
   warning: string;
   success: string;
 
+  // Text-safe accent. `accent` is a FILL colour (CTAs, selected states); as
+  // text on light paper it measured 2.3–2.7:1. Links, labels and accent icons
+  // use this instead — the same hue, darkened to clear 4.5:1 on every surface.
+  accentText: string;
+
   // Structural
   border:  string;  // thick-border ink colour for this mode
-  ink:     string;  // shadow / hard-edge ink for this mode
-  overlay: string;
+  ink:     string;  // hard-edge ink for this mode
+  /** The hard offset shadow. Ink on paper; in dark mode a warm rim, because an
+   *  ink (black) offset on the near-black ground was invisible and the system's
+   *  signature depth disappeared. */
+  shadow:  string;
+  overlay: string;  // small badges over imagery (cover format chip)
+  /** Backdrop behind sheets, dialogs and celebrations. One value per mode. */
+  scrim:   string;
 
   // Surfaces
   glass:       string;  // SOLID surface (session bar) — no translucency
@@ -278,18 +296,27 @@ export const LIGHT_TOKENS: ThemeTokens = {
   bgSec:   '#FCF8ED',  // warm cream card (not stark white — softer, premium)
   bgTer:   '#F0E6D3',  // inset cream
   accent:  '#F0764F',  // coral
-  gold:    '#C8892C',  // readable marigold for text/icons (bright #F3C24C for fills/stars)
-  ember:   '#D9730F',  // readable amber for text/icons on light
-  level:   '#8257C7',  // readable lilac-violet for text on light
+  // Text/icon tones — the bright PALETTE values stay for FILLS. These were
+  // labelled "readable" but measured 2.4–2.8:1 (gold) and 2.6–3.1:1 (ember);
+  // each is now darkened, hue held, to clear 4.5:1 on the darkest light surface.
+  gold:    '#8B5F1F',
+  ember:   '#9D530B',
+  level:   '#7B4DC4',
   text:    '#241E19',  // warm soft-black ink
   textSec: '#6E6250',  // warm secondary
-  textTer: '#9A8E79',  // warm tertiary
+  // Was #9A8E79 (2.6–3.0:1). AA on the inset surface forces tertiary to sit
+  // almost beside textSec, so the ter/sec hierarchy now comes from size and
+  // weight, not from a grey too faint to read. 4.6–5.3:1 on every light surface.
+  textTer: '#6F6657',
   danger:  '#B4271B',  // deep crimson — distinct from the coral primary
   warning: '#B5701A',
   success: '#F0764F',
   border:  '#241E19',  // INK — bold warm-black borders everywhere
   ink:     '#241E19',
+  shadow:  '#241E19',
   overlay: 'rgba(28,22,16,0.55)',
+  scrim:   'rgba(17,19,24,0.4)',
+  accentText: '#BC3A10',  // coral, darkened — 4.5:1+ on every light surface
   glass:       '#FCF8ED',
   accentMuted: '#FBE0D3',  // pale coral selection block
   onAccent:    '#241E19',  // INK text on the warm coral fills (Paper & Ink signature)
@@ -306,13 +333,16 @@ export const DARK_TOKENS: ThemeTokens = {
   level:   '#B79BE6',  // lighter lilac on dark
   text:    PALETTE.text,
   textSec: PALETTE.textSec,
-  textTer: PALETTE.textTer,
+  textTer: '#958E82',  // was PALETTE.textTer (3.3–3.9:1 on dark); now ≥4.5
   danger:  '#E5675A',  // warmer red on dark — still distinct from coral
   warning: PALETTE.warning,
   success: '#F6875D',
   border:  '#4A4030',  // visible warm compartmentalization on dark
   ink:     '#000000',
+  shadow:  '#4A4030',  // a warm rim, not black — see ThemeTokens.shadow
   overlay: 'rgba(0,0,0,0.62)',
+  scrim:   'rgba(3,4,6,0.62)',
+  accentText: '#F6875D',  // the dark accent already passes as text (5.6:1)
   glass:       PALETTE.glass,
   accentMuted: 'rgba(246,135,93,0.20)',
   onAccent:    '#201A13',  // near-ink text on the coral fills (consistent with light)

@@ -318,12 +318,13 @@ export const libraryApi: Partial<QuireApi> = {
 
     // Goodreads-style: rating/reviewing a book marks it finished (best-effort —
     // a review is already saved either way, so a failure here shouldn't surface).
-    await supabase
+    const { error: finErr } = await supabase
       .from('user_books')
       .update({ status: 'finished', finished_at: new Date().toISOString() })
       .eq('user_id', uid)
       .eq('book_id', bookId)
       .neq('status', 'finished');
+    if (finErr) console.warn('[writeReview] could not mark finished', finErr);
 
     // Attach the author's display name (own row) from public_profiles.
     const { data: prof } = await supabase
@@ -351,7 +352,10 @@ export const libraryApi: Partial<QuireApi> = {
       .from('reviews')
       .select('*')
       .eq('book_id', bookId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      // Unbounded, one popular book would ship every review ever written (plus a
+      // profile lookup keyed on every author) to each reader who opens it.
+      .limit(100);
     if (error) throw error;
     const rows = data ?? [];
     if (rows.length === 0) return [];

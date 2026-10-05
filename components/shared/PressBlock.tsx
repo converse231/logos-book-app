@@ -2,13 +2,13 @@ import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
 import { RADIUS } from '@/theme/tokens';
+import { glide, DURATION, EASE } from '@/theme/motion';
 
 interface PressBlockProps {
   onPress: () => void;
@@ -79,22 +79,14 @@ export function PressBlock({
   const shadowStyle = useAnimatedStyle(() => ({ opacity: 1 - pressed.value }));
 
   const onPressIn = () => {
-    if (!reduce && !disabled) pressed.value = withTiming(1, { duration: 70 });
+    if (!reduce && !disabled) pressed.value = withTiming(1, { duration: DURATION.press, easing: EASE.press });
   };
   const onPressOut = () => {
     if (reduce || disabled) return;
-    if (emphasis === 'primary') {
-      // Underdamped on purpose: damping ratio ~0.51, settling over roughly half a
-      // second. What you feel is the RETURN CURVE, not the overshoot — with only
-      // 4px of travel the overshoot is about 0.6px, well under a pixel. A crisp
-      // 110ms snap and a slow springy release differ enormously in feel and barely
-      // at all in distance.
-      //
-      // pressIn stays a timing: going down must feel definite and immediate.
-      pressed.value = withSpring(0, { damping: 15, stiffness: 220, mass: 1 });
-    } else {
-      pressed.value = withTiming(0, { duration: 110 });
-    }
+    // The hierarchy signal is the RETURN CURVE, not an overshoot: the primary
+    // action rises back on a long, unhurried tail; everything else returns
+    // briskly. Neither rings past rest. Press-in stays immediate either way.
+    pressed.value = glide(0, emphasis === 'primary' ? DURATION.release + 120 : DURATION.release - 100);
   };
   const handle = () => {
     if (disabled) return;
@@ -116,7 +108,7 @@ export function PressBlock({
           pointerEvents="none"
           style={[
             styles.shadow,
-            { top: offset, left: offset, right: -offset, bottom: -offset, backgroundColor: t.ink, borderRadius: radius },
+            { top: offset, left: offset, right: -offset, bottom: -offset, backgroundColor: t.shadow, borderRadius: radius },
             shadowStyle,
           ]}
         />

@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 7,
     paddingHorizontal: 10, height: 26, borderRadius: 999, borderWidth: 1,
   },
-  jarPillText: { fontFamily: FONTS.uiBold, fontSize: 10, letterSpacing: 1 },
+  jarPillText: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1 },
   count: {
     fontFamily: FONTS.monoBold,
     fontSize: 52,

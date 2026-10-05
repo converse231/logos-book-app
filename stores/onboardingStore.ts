@@ -51,7 +51,9 @@ export const ONBOARDING_STEPS = [
   '/(onboarding)/age-gate',
   '/(onboarding)/genres',
   '/(onboarding)/goal',
-  '/(onboarding)/profile',
+  // Not `profile`: groups vanish from URLs, so that collided with (tabs)/profile at
+  // /profile and a deep link or web refresh could land on the wrong screen.
+  '/(onboarding)/reader',
   '/(onboarding)/account',
 ] as const;
 

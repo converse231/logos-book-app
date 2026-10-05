@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -70,7 +71,7 @@ export default function Account() {
       return false;
     }
     if (!username.trim()) {
-      router.replace('/(onboarding)/profile' as Href);
+      router.replace('/(onboarding)/reader' as Href);
       return false;
     }
     return true;
@@ -163,6 +164,20 @@ export default function Account() {
     setAuthEmail(null);
   };
 
+  // On a small phone the pinned footer + heading + keyboard left no room for the
+  // form, so readers typed their email and password blind. The footer now holds
+  // only the primary action, and a focused field is scrolled to the top of what
+  // is left. Scrolled twice: once now, and once after the keyboard has shrunk the
+  // viewport — only then can the scroll view reach an offset that far down.
+  const scrollRef = useRef<ScrollView>(null);
+  const bodyY = useRef(0);
+  const fieldY = useRef<Record<'email' | 'password', number>>({ email: 0, password: 0 });
+  const reveal = (field: 'email' | 'password') => {
+    const go = () => scrollRef.current?.scrollTo({ y: Math.max(0, bodyY.current + fieldY.current[field] - 12), animated: true });
+    go();
+    setTimeout(go, 320);
+  };
+
   return (
     <KeyboardLift style={styles.flex}>
       <OnboardingScaffold
@@ -175,6 +190,7 @@ export default function Account() {
             : 'An account keeps your streak, goal and library safe across devices.'
         }
         scroll
+        scrollRef={scrollRef}
         footer={
           <View style={styles.footerStack}>
             {/* "Start reading" only — the longer label wrapped to two lines and
@@ -185,35 +201,10 @@ export default function Account() {
               loading={submitting}
               disabled={!canSubmit || googling}
             />
-
-            {/* Hidden once authenticated: you can't sign up with Google twice,
-                and being asked to is what made this step feel broken. */}
-            {!authEmail ? (
-              <>
-                <View style={styles.divider}>
-                  <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
-                  <Text style={[styles.dividerText, { color: t.textTer }]}>OR</Text>
-                  <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
-                </View>
-                <GoogleButton onPress={handleGoogle} loading={googling} disabled={submitting} />
-                <Pressable
-                  onPress={() => router.push('/(auth)/sign-in' as Href)}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Sign in to an existing account"
-                  style={styles.signInLink}
-                >
-                  <Text style={[styles.signInText, { color: t.textSec }]}>
-                    Already have an account?{' '}
-                    <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>Sign in</Text>
-                  </Text>
-                </Pressable>
-              </>
-            ) : null}
           </View>
         }
       >
-        <View style={styles.body}>
+        <View style={styles.body} onLayout={(e) => { bodyY.current = e.nativeEvent.layout.y; }}>
           {/* What they're about to keep — the funnel answers, made concrete. */}
           <View style={[styles.summary, { backgroundColor: t.bgSec, borderColor: t.border }]}>
             <SummaryRow icon="person" tint="accent" label="Name" value={username.trim()} t={t} />
@@ -237,7 +228,7 @@ export default function Account() {
                 <Text style={[styles.signedInText, { color: t.text }]} numberOfLines={1}>
                   {authEmail}
                 </Text>
-                <Ionicons name="checkmark-circle" size={17} color={t.accent} />
+                <Ionicons name="checkmark-circle" size={17} color={t.accentText} />
               </View>
               <View style={styles.accountRow}>
                 <Text style={[styles.helper, { color: t.textTer, flex: 1 }]}>
@@ -249,7 +240,7 @@ export default function Account() {
                   accessibilityRole="button"
                   accessibilityLabel="Use a different account"
                 >
-                  <Text style={[styles.switchAccount, { color: t.accent }]}>
+                  <Text style={[styles.switchAccount, { color: t.accentText }]}>
                     Use a different account
                   </Text>
                 </Pressable>
@@ -257,7 +248,7 @@ export default function Account() {
             </View>
           ) : (
             <>
-              <View style={styles.field}>
+              <View style={styles.field} onLayout={(e) => { fieldY.current.email = e.nativeEvent.layout.y; }}>
                 <Text style={[styles.label, { color: t.textSec }]}>EMAIL</Text>
                 <TextInput
                   value={email}
@@ -269,6 +260,7 @@ export default function Account() {
                   keyboardType="email-address"
                   textContentType="emailAddress"
                   returnKeyType="next"
+                  onFocus={() => reveal('email')}
                   accessibilityLabel="Email"
                   style={[
                     styles.input,
@@ -277,13 +269,14 @@ export default function Account() {
                 />
               </View>
 
-              <View style={styles.field}>
+              <View style={styles.field} onLayout={(e) => { fieldY.current.password = e.nativeEvent.layout.y; }}>
                 <Text style={[styles.label, { color: t.textSec }]}>PASSWORD</Text>
                 <PasswordInput
                   value={password}
                   onChangeText={(v) => { setPassword(v); setError(null); }}
                   placeholder="At least 6 characters"
                   textContentType="newPassword"
+                  onFocus={() => reveal('password')}
                   returnKeyType="done"
                   onSubmitEditing={handleEmailSignUp}
                 />
@@ -308,12 +301,37 @@ export default function Account() {
                   accessibilityRole="button"
                   accessibilityLabel="Sign in to that account instead"
                 >
-                  <Text style={[styles.switchAccount, { color: t.accent }]}>
+                  <Text style={[styles.switchAccount, { color: t.accentText }]}>
                     Sign in to that account instead
                   </Text>
                 </Pressable>
               ) : null}
             </View>
+          ) : null}
+
+          {/* Hidden once authenticated: you can't sign up with Google twice,
+              and being asked to is what made this step feel broken. */}
+          {!authEmail ? (
+            <>
+              <View style={styles.divider}>
+                <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
+                <Text style={[styles.dividerText, { color: t.textTer }]}>OR</Text>
+                <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
+              </View>
+              <GoogleButton onPress={handleGoogle} loading={googling} disabled={submitting} />
+              <Pressable
+                onPress={() => router.push('/(auth)/sign-in' as Href)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Sign in to an existing account"
+                style={styles.signInLink}
+              >
+                <Text style={[styles.signInText, { color: t.textSec }]}>
+                  Already have an account?{' '}
+                  <Text style={{ color: t.accentText, fontFamily: FONTS.uiBold }}>Sign in</Text>
+                </Text>
+              </Pressable>
+            </>
           ) : null}
         </View>
       </OnboardingScaffold>
@@ -365,13 +383,13 @@ const styles = StyleSheet.create({
   switchAccount: { fontFamily: FONTS.uiBold, fontSize: 13 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dividerLine: { flex: 1, height: 1, opacity: 0.4 },
-  dividerText: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1.4 },
+  dividerText: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1.4 },
   signInLink: { alignItems: 'center', paddingVertical: 2 },
   signInText: { fontFamily: FONTS.uiRegular, fontSize: 14 },
   field: { gap: 10 },
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2 },
   input: {
-    minHeight: 52, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16,
+    minHeight: 52, borderRadius: RADIUS.md, borderWidth: 1, paddingHorizontal: 16,
     fontFamily: FONTS.uiMedium, fontSize: 17,
   },
   helper: { fontFamily: FONTS.uiRegular, fontSize: 13 },

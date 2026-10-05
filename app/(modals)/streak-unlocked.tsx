@@ -10,7 +10,6 @@ import Animated, {
   useSharedValue,
   withDelay,
   withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 // expo-image, not RN Image: the flames ship as WebP (95% smaller) and RN's iOS
@@ -20,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { FONTS, INK, BORDER_WIDTH_THICK, RADIUS, NO_FONT_PAD } from '@/theme/tokens';
 import { CENTER_COLUMN } from '@/theme/layout';
+import { glide, DURATION, EASE, HERO_FROM } from '@/theme/motion';
 import { flameForDay, flameLayout } from '@/lib/streakCelebration';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
@@ -57,15 +57,15 @@ export default function StreakUnlocked() {
   // over a decelerating 1.5s while it grows, then settles with one soft overshoot.
   // (Two turns in 0.76s read as a flicker — you couldn't see it was a coin.)
   // Perspective is what keeps it a solid object turning rather than a squashed texture.
-  const scale = useSharedValue(reduce ? 1 : 0.15);
+  const scale = useSharedValue(reduce ? 1 : HERO_FROM);
   const spin = useSharedValue(reduce ? 1 : 0);
   const bob = useSharedValue(0);
 
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (reduce) return;
-    scale.value = withDelay(90, withSpring(1, { damping: 14, stiffness: 62, mass: 1.15 }));
-    spin.value = withDelay(90, withTiming(1, { duration: 1500, easing: Easing.out(Easing.cubic) }));
+    scale.value = withDelay(90, glide(1, DURATION.hero));
+    spin.value = withDelay(90, withTiming(1, { duration: 1400, easing: EASE.out }));
     // ...then it never fully rests: a slow breath keeps the flame alive under the
     // rotating rays instead of sitting there like a screenshot.
     bob.value = withDelay(
@@ -78,10 +78,10 @@ export default function StreakUnlocked() {
   }, [reduce, scale, spin, bob]);
 
   const flameStyle = useAnimatedStyle(() => ({
-    opacity: reduce ? 1 : Math.min(1, scale.value * 2.2),
+    opacity: reduce ? 1 : Math.max(0, Math.min(1, (scale.value - HERO_FROM) / (1 - HERO_FROM))),
     transform: [
       { perspective: 900 },
-      { rotateY: `${spin.value * 1080}deg` },
+      { rotateY: `${spin.value * 360}deg` },
       { scale: scale.value * (1 + bob.value * 0.035) },
     ],
   }));
@@ -150,7 +150,7 @@ export default function StreakUnlocked() {
         </View>
 
         <Animated.View
-          entering={reduce ? undefined : FadeIn.delay(1220).duration(440)}
+          entering={reduce ? undefined : FadeIn.delay(1220).duration(440).easing(EASE.out)}
           style={styles.actions}
         >
           <PressBlock

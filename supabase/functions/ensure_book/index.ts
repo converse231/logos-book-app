@@ -75,22 +75,36 @@ Deno.serve(async (req) => {
   // 3) Service-role client for the privileged catalog write.
   const admin = createClient(url, serviceKey);
 
+  // The catalog is SHARED: whoever adds a book first writes the row every later
+  // reader of that book sees. So nothing a client sends lands unbounded — no
+  // megabyte descriptions, no 10,000-author arrays, no non-https covers.
+  // ponytail: bounds only; re-fetching metadata from Google by id would make the
+  // catalog fully server-sourced, worth it once books are shared socially.
+  const str = (v: unknown, max: number) =>
+    typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null;
+  const int = (v: unknown, max: number) =>
+    typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= max ? Math.round(v) : null;
+  const strs = (v: unknown, n: number, max: number) =>
+    Array.isArray(v) ? v.map((x) => str(x, max)).filter((x): x is string => !!x).slice(0, n) : [];
+  const cover = str(input.coverUrl, 1000);
+
   const row = {
-    google_books_id: input.googleBooksId ?? null,
-    open_library_id: input.openLibraryId ?? null,
-    isbn_13: input.isbn13 ?? null,
-    title: input.title,
-    subtitle: input.subtitle ?? null,
-    authors: input.authors ?? [],
-    cover_url: input.coverUrl ?? null,
-    page_count: input.pageCount ?? null,
-    duration_minutes: input.durationMinutes ?? null,
-    published_year: input.publishedYear ?? null,
-    publisher: input.publisher ?? null,
-    description: input.description ?? null,
-    genres: input.genres ?? [],
-    language: input.language ?? 'en',
+    google_books_id: str(input.googleBooksId, 64),
+    open_library_id: str(input.openLibraryId, 64),
+    isbn_13: str(input.isbn13, 17),
+    title: str(input.title, 300)!,
+    subtitle: str(input.subtitle, 300),
+    authors: strs(input.authors, 10, 200),
+    cover_url: cover && cover.startsWith('https://') ? cover : null,
+    page_count: int(input.pageCount, 20000),
+    duration_minutes: int(input.durationMinutes, 20000),
+    published_year: int(input.publishedYear, 3000),
+    publisher: str(input.publisher, 200),
+    description: str(input.description, 8000),
+    genres: strs(input.genres, 20, 80),
+    language: str(input.language, 16) ?? 'en',
   };
+  if (!row.title) return json({ error: 'title is required' }, 400);
 
   // Dedupe so the same book never lands in the catalog twice. The same title has
   // MANY Google volume IDs across editions, so google_books_id alone isn't enough

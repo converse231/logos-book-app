@@ -10,7 +10,6 @@ import Animated, {
   useSharedValue,
   withDelay,
   withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -18,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { FONTS, INK, BORDER_WIDTH_THICK, RADIUS, NO_FONT_PAD } from '@/theme/tokens';
 import { CENTER_COLUMN } from '@/theme/layout';
+import { glide, DURATION, HERO_FROM, EASE } from '@/theme/motion';
 import { flameForDay, flameLayout } from '@/lib/streakCelebration';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
@@ -49,14 +49,14 @@ export default function StreakRestored() {
   const raySize = Math.min(width * 1.15, 460);
   const art = flameLayout(tier, flameSize);
 
-  const scale = useSharedValue(reduce ? 1 : 0.4);
+  const scale = useSharedValue(reduce ? 1 : HERO_FROM);
   const bob = useSharedValue(0);
 
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (reduce) return;
     // Snappier than the unlock's 1.5s coin flip — a match catching, not a reveal.
-    scale.value = withDelay(60, withSpring(1, { damping: 11, stiffness: 150, mass: 0.9 }));
+    scale.value = withDelay(60, glide(1, DURATION.hero));
     bob.value = withDelay(
       900,
       withSequence(
@@ -67,7 +67,7 @@ export default function StreakRestored() {
   }, [reduce, scale, bob]);
 
   const flameStyle = useAnimatedStyle(() => ({
-    opacity: reduce ? 1 : Math.min(1, scale.value * 2.2),
+    opacity: reduce ? 1 : Math.max(0, Math.min(1, (scale.value - HERO_FROM) / (1 - HERO_FROM))),
     transform: [{ scale: scale.value * (1 + bob.value * 0.035) }],
   }));
 
@@ -115,7 +115,7 @@ export default function StreakRestored() {
           </Animated.View>
         </View>
 
-        <Animated.View entering={reduce ? undefined : FadeIn.delay(860).duration(440)} style={styles.actions}>
+        <Animated.View entering={reduce ? undefined : FadeIn.delay(860).duration(440).easing(EASE.out)} style={styles.actions}>
           <PressBlock
             emphasis="primary"
             onPress={close}

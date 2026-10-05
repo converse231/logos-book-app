@@ -94,10 +94,17 @@ Deno.serve(async (req) => {
       list_updated: listUpdated,
     }));
 
-    // Replace the whole list: clear stale ranks, then insert the fresh top N.
-    await admin.from('bestseller_lists').delete().eq('list_name', listName);
-    const { error } = await admin.from('bestseller_lists').insert(rows);
-    summary[listName] = error ? `insert error: ${error.message}` : rows.length;
+    // Overwrite rank by rank, THEN trim ranks the new list no longer has. The old
+    // delete-then-insert left Discover with an empty carousel whenever the
+    // insert failed; this way a failure keeps last week's list on screen.
+    const { error } = await admin.from('bestseller_lists').upsert(rows, { onConflict: 'list_name,rank' });
+    if (error) {
+      summary[listName] = `upsert error: ${error.message}`;
+      continue;
+    }
+    const maxRank = Math.max(...rows.map((r) => r.rank));
+    await admin.from('bestseller_lists').delete().eq('list_name', listName).gt('rank', maxRank);
+    summary[listName] = rows.length;
   }
 
   return json({ ok: true, synced: summary });

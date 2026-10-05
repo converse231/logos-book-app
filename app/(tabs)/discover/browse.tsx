@@ -13,6 +13,7 @@ import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { BookCover } from '@/components/shared/BookCover';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
 
 // Category / author results (reached from the Discover hub). `q` is the Google
 // Books query (e.g. "subject:Mystery" or "inauthor:Brandon Sanderson"); `title`
@@ -76,15 +77,7 @@ export default function Browse() {
 
   return (
     <ScreenBackground>
-      <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back" style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-          <Ionicons name="chevron-back" size={22} color={t.text} />
-        </Pressable>
-        <Text style={[styles.title, { color: t.text }]} numberOfLines={1}>{title ?? 'Browse'}</Text>
-        {/* Layout spacer only — must NOT reuse roundBtn, whose border painted a
-            phantom empty button here. */}
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title={title ?? 'Browse'} style={[styles.header, { paddingTop: insets.top + 6 }]} />
 
       {error ? (
         <ErrorState onRetry={() => setNonce((n) => n + 1)} />
@@ -117,7 +110,7 @@ export default function Browse() {
           windowSize={7}
           onEndReached={loadMore}
           onEndReachedThreshold={0.6}
-          ListFooterComponent={loadingMore ? <ActivityIndicator color={t.accent} style={styles.more} /> : null}
+          ListFooterComponent={loadingMore ? <ActivityIndicator color={t.accentText} style={styles.more} /> : null}
           renderItem={({ item }) => (
             <Pressable onPress={() => openBook(item)} accessibilityRole="button" accessibilityLabel={`${item.title} by ${item.authors.join(', ')}`} style={({ pressed }) => [styles.cell, { width: cellWidth }, pressed && { opacity: 0.75 }]}>
               <BookCover url={item.coverUrl} title={item.title} width={cellWidth} />
@@ -132,9 +125,6 @@ export default function Browse() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 18, paddingBottom: 10 },
-  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontFamily: FONTS.displayBold, fontSize: 22, letterSpacing: -0.4, textAlign: 'center', textTransform: 'uppercase' },
-  headerSpacer: { width: 42 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 18, gap: 12 },
   gridContent: { paddingHorizontal: 18, gap: 16 },
   gridRow: { gap: 12 },

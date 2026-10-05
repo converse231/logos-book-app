@@ -9,6 +9,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeContext';
+import { RADIUS } from '@/theme/tokens';
 
 interface ConfettiProps {
   fire: boolean;
@@ -133,5 +134,5 @@ function Particle({ startX, startY, vx, vy, size, color, delay, spin, gravity, f
 }
 
 const styles = StyleSheet.create({
-  particle: { position: 'absolute', borderRadius: 14 },
+  particle: { position: 'absolute', borderRadius: RADIUS.md },
 });

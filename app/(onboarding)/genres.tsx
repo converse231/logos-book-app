@@ -37,7 +37,7 @@ export default function Genres() {
       scroll
       footer={
         <>
-          <Text style={[styles.counter, { color: canContinue ? t.accent : t.textSec }]}>
+          <Text style={[styles.counter, { color: canContinue ? t.accentText : t.textSec }]}>
             {genres.length} selected{!canContinue ? ` · pick ${MIN_GENRES - genres.length} more` : ''}
           </Text>
           <PrimaryButton

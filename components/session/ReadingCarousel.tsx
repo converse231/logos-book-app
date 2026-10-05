@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { UserBook } from '@/services/types';
 import { BookCover } from '@/components/shared/BookCover';
 
@@ -80,7 +80,7 @@ export function ReadingCarousel({ books, initialIndex, onSelect, onAddPress }: R
           accessibilityLabel="Add a book to your current reads"
           style={[styles.addTile, { borderColor: t.accent, backgroundColor: t.bgSec }]}
         >
-          <Ionicons name="add" size={36} color={t.accent} />
+          <Ionicons name="add" size={36} color={t.accentText} />
           <Text style={[styles.addText, { color: t.text }]}>ADD A BOOK</Text>
         </Pressable>
       </CarouselItem>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   addTile: {
     width: COVER_W,
     height: COVER_H,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     borderWidth: 2,
     borderStyle: 'dashed',
     alignItems: 'center',

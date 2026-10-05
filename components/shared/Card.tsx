@@ -6,7 +6,7 @@ interface CardProps {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   padded?: boolean;
-  glow?: boolean; // hero emphasis — accent border + accent hard-shadow block
+  glow?: boolean; // hero emphasis — heavier ink frame + deeper offset
 }
 
 // Soft-brutalist paper block: warm cream fill, thick ink border, gently ROUNDED
@@ -14,15 +14,15 @@ interface CardProps {
 // is stacked with a whisper of warm ambient depth so the block reads like paper
 // lifted off the page — the cozy warmth over neubrutalism's flat harshness, while
 // the ink border + offset keep the confident bones. `glow` promotes the block to
-// an accent-framed hero surface (accent border + accent-coloured hard shadow).
+// a hero surface by WEIGHT — a heavier frame and a deeper offset — not by colour.
+// It used to frame the block in coral, which made the action colour decorative
+// and diluted it everywhere a coral button meant "tap me".
 export function Card({ children, style, padded = true, glow = false }: CardProps) {
   const t = useTheme();
-  const frame = glow ? t.accent : t.border;
   const isDark = t.mode === 'dark';
-  const shadowInk = isDark ? '#000000' : frame;
+  const offset = glow ? 6 : 4;
   // Ambient depth only on the light substrate (keeps dark crisp + Android cheap).
-  const shadow =
-    isDark || glow ? hardShadow(shadowInk, glow ? 5 : 4) : softStackShadow(shadowInk, 4);
+  const shadow = isDark ? hardShadow(t.shadow, offset) : softStackShadow(t.shadow, offset);
 
   return (
     <View
@@ -30,7 +30,7 @@ export function Card({ children, style, padded = true, glow = false }: CardProps
         styles.card,
         {
           backgroundColor: t.bgSec,
-          borderColor: frame,
+          borderColor: t.border,
           borderWidth: glow ? BORDER_WIDTH_THICK : BORDER_WIDTH,
         },
         shadow,

@@ -19,7 +19,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { useAppStore } from '@/stores/appStore';
 import { NotificationSettings, ThemePref, UserProfile } from '@/services/types';
@@ -28,6 +28,7 @@ import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { Card } from '@/components/shared/Card';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { Reveal } from '@/components/shared/Reveal';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
 
 const THEME_OPTIONS: { key: ThemePref; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'dark', label: 'Dark', icon: 'moon-outline' },
@@ -195,19 +196,7 @@ export default function Settings() {
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
-        <View style={styles.topBar}>
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            style={[styles.roundBtn, { backgroundColor: t.bgSec, borderColor: t.border }]}
-          >
-            <Ionicons name="chevron-back" size={22} color={t.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: t.text }]}>Settings</Text>
-          <View style={styles.topBarSpacer} />
-        </View>
+        <ScreenHeader title="Settings" style={styles.topBar} />
 
         <Reveal index={0}>
           <SectionTitle label="Appearance" t={t} />
@@ -276,8 +265,10 @@ export default function Settings() {
                 />
                 <NotifRow
                   icon="flash-outline"
-                  title="Comeback challenges"
-                  sub="When you can restore a broken streak"
+                  // Still the `comeback_alerts` column: the toggle outlived the
+                  // Comeback Challenge, which streak restores replaced.
+                  title="Streak restores"
+                  sub="When a streak ends and you can still restore it"
                   value={notif.comebackAlerts}
                   onToggle={(v) => patchNotif({ comebackAlerts: v })}
                   t={t}
@@ -330,7 +321,7 @@ export default function Settings() {
                   )}
                 </View>
               </View>
-              <Text style={[styles.avatarHint, { color: t.accent }]}>
+              <Text style={[styles.avatarHint, { color: t.accentText }]}>
                 {uploadingAvatar ? 'Uploading…' : 'Change photo'}
               </Text>
             </Pressable>
@@ -394,7 +385,7 @@ export default function Settings() {
             >
               {/* The gold flag was drawn for the reading goal — gold owns goals and
                   XP in this palette, so it belongs here more than the coral did. */}
-              <AppIcon name="flag" tint="gold" size={20} color={t.accent} />
+              <AppIcon name="flag" tint="gold" size={20} color={t.accentText} />
               <Text style={[styles.menuLabel, { color: t.text }]}>Edit reading goal</Text>
               <Ionicons name="chevron-forward" size={18} color={t.textTer} />
             </Pressable>
@@ -550,7 +541,7 @@ function ThemeSegment({
           <View>
             <Text style={[styles.themeLabel, { color: t.textSec }]}>{opt.label}</Text>
             <Fade pos={pos} i={i} style={StyleSheet.absoluteFill}>
-              <Text style={[styles.themeLabel, { color: t.accent }]}>{opt.label}</Text>
+              <Text style={[styles.themeLabel, { color: t.accentText }]}>{opt.label}</Text>
             </Fade>
           </View>
         </Pressable>
@@ -604,7 +595,7 @@ function NotifRow({
 }) {
   return (
     <View style={[styles.notifRow, { borderBottomColor: t.border }, last && { borderBottomWidth: 0 }]}>
-      <AppIcon name={icon} tint={tint ?? 'accent'} size={20} color={t.accent} />
+      <AppIcon name={icon} tint={tint ?? 'accent'} size={20} color={t.accentText} />
       <View style={styles.notifText}>
         <Text style={[styles.notifTitle, { color: t.text }]}>{title}</Text>
         <Text style={[styles.notifSub, { color: t.textSec }]}>{sub}</Text>
@@ -630,8 +621,6 @@ function formatHour(h: number): string {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 12 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  roundBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  topBarSpacer: { width: 42, height: 42 },
   title: { fontFamily: FONTS.uiBold, fontSize: 18 },
   sectionTitle: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginTop: 14, marginBottom: 10, marginLeft: 4 },
 
@@ -639,7 +628,7 @@ const styles = StyleSheet.create({
   // No `gap` here: the pill is positioned in thirds of the row's width, so a gap
   // between cells would put it slightly off-centre on the outer two.
   themePicker: { flexDirection: 'row' },
-  themeThumb: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 14, borderWidth: 1 },
+  themeThumb: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: RADIUS.md, borderWidth: 1 },
   themeOption: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14 },
   themeIcon: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
   center: { alignItems: 'center', justifyContent: 'center' },
@@ -658,13 +647,13 @@ const styles = StyleSheet.create({
   },
   hourLabel: { fontFamily: FONTS.uiMedium, fontSize: 14 },
   hourStepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  hourBtn: { width: 34, height: 34, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  hourBtn: { width: 34, height: 34, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   hourValue: { fontFamily: FONTS.mono, fontSize: 14, minWidth: 76, textAlign: 'center' },
 
   profileInputs: { gap: 18 },
   avatarRow: { alignItems: 'center', alignSelf: 'center', gap: 8 },
   avatarBox: { width: 80, height: 80 },
-  avatar: { width: 80, height: 80, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatar: { width: 80, height: 80, borderRadius: RADIUS.md, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImg: { width: '100%', height: '100%' },
   avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   avatarHint: { fontFamily: FONTS.uiSemiBold, fontSize: 13 },
@@ -678,7 +667,7 @@ const styles = StyleSheet.create({
   },
   usernameInput: { flex: 1 },
   bioInput: {
-    minHeight: 72, borderRadius: 14, borderWidth: 1, padding: 12, marginTop: 4,
+    minHeight: 72, borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginTop: 4,
     fontFamily: FONTS.uiMedium, fontSize: 15, textAlignVertical: 'top',
   },
   bioCount: { fontFamily: FONTS.mono, fontSize: 11, alignSelf: 'flex-end' },

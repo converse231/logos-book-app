@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, NO_FONT_PAD, PALETTE, RADIUS } from '@/theme/tokens';
 import { useContentWidth } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
@@ -22,6 +22,7 @@ import {
   type BookReport,
 } from '@/lib/bookReport';
 import type { UserBook } from '@/services/types';
+import { EASE } from '@/theme/motion';
 
 // The reading report for a finished book.
 //
@@ -153,7 +154,7 @@ export default function BookReportScreen() {
     } as unknown as Href);
   };
 
-  const anim = (i: number) => (reduce ? undefined : FadeInUp.delay(60 + i * 70).duration(420));
+  const anim = (i: number) => (reduce ? undefined : FadeInUp.delay(60 + i * 70).duration(420).easing(EASE.out));
 
   return (
     <ScreenBackground>
@@ -285,7 +286,7 @@ export default function BookReportScreen() {
                   <View style={styles.notes}>
                     {notes.map((n, i) => (
                       <View key={i} style={styles.noteRow}>
-                        <View style={[styles.dot, { backgroundColor: t.gold }]} />
+                        <View style={[styles.dot, { backgroundColor: PALETTE.gold }]} />
                         <Text style={[styles.note, { color: t.text }]}>{n}</Text>
                       </View>
                     ))}
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 12 },
   topBar: { alignSelf: 'stretch', flexDirection: 'row' },
   roundBtn: {
-    width: 42, height: 42, borderRadius: 14, borderWidth: 1,
+    width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
   loading: { gap: 14, marginTop: 10 },
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
   },
   head: { flexDirection: 'row', gap: 14, alignItems: 'flex-start', marginTop: 4, marginBottom: 4 },
   headText: { flex: 1, gap: 3, paddingTop: 2 },
-  kicker: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 2.2 },
+  kicker: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 2.2 },
   title: { fontFamily: FONTS.serifBold, fontSize: 24, lineHeight: 29 },
   author: { fontFamily: FONTS.uiRegular, fontSize: 14 },
   block: { alignSelf: 'stretch' },
@@ -345,15 +346,15 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.monoBold, fontSize: 17,
     fontVariant: ['tabular-nums'], ...NO_FONT_PAD,
   },
-  pLabel: { fontFamily: FONTS.mono, fontSize: 9.5, letterSpacing: 1.3 },
-  sectionLabel: { fontFamily: FONTS.monoMedium, fontSize: 10, letterSpacing: 2, marginBottom: 12 },
+  pLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1.3 },
+  sectionLabel: { fontFamily: FONTS.monoMedium, fontSize: 11, letterSpacing: 2, marginBottom: 12 },
   tiles: { flexDirection: 'row', gap: 10 },
   tile: { flex: 1, gap: 2 },
   tValue: {
     fontFamily: FONTS.monoBold, fontSize: 19,
     fontVariant: ['tabular-nums'], ...NO_FONT_PAD,
   },
-  tLabel: { fontFamily: FONTS.mono, fontSize: 9.5, letterSpacing: 1.3 },
+  tLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1.3 },
   notes: { gap: 9 },
   noteRow: { flexDirection: 'row', gap: 9, alignItems: 'flex-start' },
   dot: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },

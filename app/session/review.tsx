@@ -90,9 +90,11 @@ export default function SessionReview() {
         <View style={styles.empty}>
           <Text style={[styles.emptyText, { color: t.textSec }]}>This session is no longer available.</Text>
           <PressBlock
-            onPress={() => router.replace('/(tabs)/home' as Href)}
+            onPress={() => router.dismissTo('/(tabs)/home' as Href)}
             accessibilityLabel="Go home"
-            style={[styles.saveBtn, { backgroundColor: t.accent, borderColor: INK }]}
+            // saveBtn is built for a full-width footer and has no side padding; in
+            // this centred column it shrank to the label and clipped "GO HOME".
+            style={[styles.saveBtn, { backgroundColor: t.accent, borderColor: INK, paddingHorizontal: 28 }]}
           >
             <Text style={styles.saveText}>GO HOME</Text>
           </PressBlock>
@@ -182,12 +184,17 @@ export default function SessionReview() {
         });
         router.replace(`/(modals)/session-complete?finished=${markFinished ? '1' : '0'}` as Href);
       } else {
-        router.replace('/(tabs)/home' as Href);
+        router.dismissTo('/(tabs)/home' as Href);
         Alert.alert(
           'Saved offline',
           "You're offline, so we saved this session. It'll sync — along with your streak and XP — automatically once you're back online.",
         );
       }
+    } catch (e: any) {
+      // Only a server VERDICT lands here (sendOrQueue queues outages). The
+      // recovery snapshot is untouched, so the reader can fix the numbers or discard.
+      console.warn('[review] session rejected', e);
+      Alert.alert("Couldn't save this session", e?.message ?? 'Please check the pages and time, then try again.');
     } finally {
       setSubmitting(false);
     }
@@ -207,7 +214,7 @@ export default function SessionReview() {
             endReadingActivity();
             clearActiveSession();
             useSessionStore.getState().endSession();
-            router.replace('/(tabs)/home' as Href);
+            router.dismissTo('/(tabs)/home' as Href);
           },
         },
       ]
@@ -397,7 +404,7 @@ function Field({
         </View>
       </View>
       <View style={[styles.pencil, { backgroundColor: t.accentMuted, borderColor: t.border }]}>
-        <Ionicons name="pencil" size={12} color={t.accent} />
+        <Ionicons name="pencil" size={12} color={t.accentText} />
       </View>
     </View>
   );
@@ -434,7 +441,7 @@ const styles = StyleSheet.create({
     boxShadow: `3px 3px 0px ${INK}`,
   },
   fieldLeft: { flex: 1 },
-  fieldLabel: { fontFamily: FONTS.mono, fontSize: 9, letterSpacing: 1.2 },
+  fieldLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1.2 },
   fieldValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 7 },
   fieldInput: {
     fontFamily: FONTS.monoBold, fontSize: 24, padding: 0, minWidth: 62,
@@ -449,7 +456,7 @@ const styles = StyleSheet.create({
   },
   derivedCell: { flex: 1, alignItems: 'center' },
   derivedValue: { fontFamily: FONTS.monoBold, fontSize: 16, fontVariant: ['tabular-nums'] },
-  derivedLabel: { fontFamily: FONTS.mono, fontSize: 8.5, letterSpacing: 1, marginTop: 2 },
+  derivedLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1, marginTop: 2 },
 
   finishRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13,

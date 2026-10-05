@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { TOTAL_STEPS, useOnboardingStore } from '@/stores/onboardingStore';
 import { useReadingProjection } from '@/hooks/useReadingProjection';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
@@ -25,7 +25,7 @@ export default function Goal() {
   // an accepted default from a screen the reader never reached.
   const handleContinue = () => {
     setGoalBooks(goalBooks);
-    router.push('/(onboarding)/profile' as Href);
+    router.push('/(onboarding)/reader' as Href);
   };
 
   return (
@@ -55,7 +55,7 @@ export default function Goal() {
                   { borderColor: active ? t.accent : t.border, backgroundColor: active ? 'rgba(255,61,31,0.12)' : 'transparent' },
                 ]}
               >
-                <Text style={[styles.presetText, { color: active ? t.accent : t.textSec }]}>
+                <Text style={[styles.presetText, { color: active ? t.accentText : t.textSec }]}>
                   {presetLabel(p)}
                 </Text>
               </Pressable>
@@ -83,7 +83,7 @@ function presetLabel(p: number): string {
 const styles = StyleSheet.create({
   body: { paddingHorizontal: 24, paddingTop: 16, gap: 24 },
   presets: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
-  preset: { paddingHorizontal: 16, height: 40, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  preset: { paddingHorizontal: 16, height: 40, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   presetText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
   estimate: { fontFamily: FONTS.uiRegular, fontSize: 13, textAlign: 'center', marginTop: -12 },
 });

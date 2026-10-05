@@ -82,7 +82,7 @@ export default function Stats() {
   }
 
   const tiles: Tile[] = [
-    { icon: 'reader', value: stats.lifetimePages.toLocaleString(), label: 'Pages read', color: t.accent, tint: 'accent' },
+    { icon: 'reader', value: stats.lifetimePages.toLocaleString(), label: 'Pages read', color: t.accentText, tint: 'accent' },
     { icon: 'time', value: `${stats.lifetimeHours}h`, label: 'Time read', color: t.ember, tint: 'ember' },
     { icon: 'library', value: `${stats.booksFinished}`, label: 'Books finished', color: t.gold, tint: 'gold' },
     { icon: 'speedometer', value: stats.avgPph != null ? `${stats.avgPph}` : '—', label: 'Avg pages/hr', color: t.level, tint: 'lilac' },
@@ -155,7 +155,17 @@ export default function Stats() {
           </Reveal>
         ) : (
           <>
+            {/* The calendar leads: it is the one thing on Stats you can explore, and
+                the totals below it repeat Home's. At 375pt it used to sit entirely
+                below the fold, under six static tiles. */}
             <Reveal index={1}>
+              <View style={styles.calendarSection}>
+                <Text style={[styles.calendarLabel, { color: t.textSec }]}>READING ACTIVITY · TAP A DAY</Text>
+                <StreakCalendar covers={coverDates} onSelectDate={setDayDate} />
+              </View>
+            </Reveal>
+
+            <Reveal index={2}>
               <View style={styles.bento}>
                 {rows.map((row, ri) => (
                   <View key={ri} style={styles.statRow}>
@@ -167,13 +177,6 @@ export default function Stats() {
               </View>
             </Reveal>
 
-            <Reveal index={2}>
-              <View style={styles.calendarSection}>
-                <Text style={[styles.calendarLabel, { color: t.textSec }]}>READING ACTIVITY · TAP A DAY</Text>
-                <StreakCalendar covers={coverDates} onSelectDate={setDayDate} />
-              </View>
-            </Reveal>
-
             <Reveal index={3}>
               <Pressable
                 onPress={() => router.push('/session/history' as Href)}
@@ -181,7 +184,7 @@ export default function Stats() {
                 accessibilityLabel="Session history"
                 style={({ pressed }) => [styles.historyRow, { backgroundColor: t.bgSec, borderColor: t.border }, pressed && { opacity: 0.75 }]}
               >
-                <Ionicons name="time-outline" size={20} color={t.accent} />
+                <Ionicons name="time-outline" size={20} color={t.accentText} />
                 <View style={styles.historyText}>
                   <Text style={[styles.historyTitle, { color: t.text }]}>Session history</Text>
                   <Text style={[styles.historySub, { color: t.textSec }]}>
@@ -250,11 +253,17 @@ function DaySessionsSheet({
   onOpen: (s: ReadingSession, ub?: UserBook) => void;
   t: ReturnType<typeof useTheme>;
 }) {
+  const insets = useSafeAreaInsets();
   if (!date) return null;
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.sheetScrim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close">
-        <Pressable style={[styles.sheet, { backgroundColor: t.bg, borderColor: t.border }]} onPress={() => {}}>
+      <View style={[styles.sheetScrim, { backgroundColor: t.scrim }]}>
+        {/* The scrim is a SIBLING of the sheet, not its parent. As a labelled
+          button wrapping the sheet it made VoiceOver read the whole thing as one
+          element, "Close", and every control inside was unreachable. */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
+        {/* Bottom-anchored, so it has to clear the home indicator itself. */}
+        <View style={[styles.sheet, { backgroundColor: t.bg, borderColor: t.border, paddingBottom: 18 + insets.bottom }]}>
           <View style={[styles.sheetHandle, { backgroundColor: t.border }]} />
           <Text style={[styles.sheetTitle, { color: t.text }]}>{longDayLabel(date)}</Text>
           <Text style={[styles.sheetSub, { color: t.textSec }]}>
@@ -292,8 +301,8 @@ function DaySessionsSheet({
           <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={[styles.sheetCloseBtn, { borderColor: t.border }]}>
             <Text style={[styles.sheetCloseText, { color: t.text }]}>CLOSE</Text>
           </Pressable>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -364,33 +373,33 @@ const styles = StyleSheet.create({
   calendarSection: { gap: 8 },
   calendarLabel: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1, marginLeft: 4 },
 
-  sheetScrim: { flex: 1, backgroundColor: 'rgba(3,4,6,0.62)', justifyContent: 'flex-end' },
+  sheetScrim: { flex: 1, justifyContent: 'flex-end' },
   // Uniform width — a per-side border plus a radius makes RN paint the corner
   // arcs into the top edge (a thick black cap above the sheet).
   sheet: { maxHeight: '80%', borderWidth: 3, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingTop: 10, paddingHorizontal: 18, paddingBottom: 18, gap: 4 },
-  sheetHandle: { width: 44, height: 5, borderRadius: 14, alignSelf: 'center', marginBottom: 10 },
+  sheetHandle: { width: 44, height: 5, borderRadius: RADIUS.md, alignSelf: 'center', marginBottom: 10 },
   sheetTitle: { fontFamily: FONTS.serifBold, fontSize: 25, letterSpacing: 0 },
   sheetSub: { fontFamily: FONTS.mono, fontSize: 12, marginBottom: 8 },
   sheetList: { gap: 10, paddingBottom: 8 },
-  dayRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: 2 },
-  dayCoverFrame: { borderWidth: 2, borderRadius: 14 },
+  dayRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: RADIUS.md, borderWidth: 2 },
+  dayCoverFrame: { borderWidth: 2, borderRadius: RADIUS.md },
   dayRowInfo: { flex: 1, gap: 3 },
   dayRowTitle: { fontFamily: FONTS.uiBold, fontSize: 15 },
   dayRowStats: { fontFamily: FONTS.mono, fontSize: 12 },
-  sheetCloseBtn: { height: 50, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
+  sheetCloseBtn: { height: 50, borderRadius: RADIUS.md, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
   sheetCloseText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.8 },
   historyRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16,
-    borderRadius: 14, borderWidth: 2,
+    borderRadius: RADIUS.md, borderWidth: 2,
   },
   historyText: { flex: 1, gap: 2 },
   historyTitle: { fontFamily: FONTS.uiBold, fontSize: 15 },
   historySub: { fontFamily: FONTS.uiMedium, fontSize: 12 },
 
-  emptyCard: { alignItems: 'center', gap: 12, padding: 28, borderRadius: 20, borderWidth: 2 },
+  emptyCard: { alignItems: 'center', gap: 12, padding: 28, borderRadius: RADIUS.card, borderWidth: 2 },
   emptyTitle: { fontFamily: FONTS.serifBold, fontSize: 24, lineHeight: 26 },
   emptyBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   emptyCtaWrap: { marginTop: 4 },
-  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, height: 48, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, height: 48, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK },
   emptyCtaText: { fontFamily: FONTS.uiBold, fontSize: 15 },
 });

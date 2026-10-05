@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppIcon } from '@/components/shared/AppIcon';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS } from '@/theme/tokens';
 import { StreakState, UserBook } from '@/services/types';
 import { Card } from '@/components/shared/Card';
 import { BookCover } from '@/components/shared/BookCover';
@@ -145,10 +145,10 @@ const styles = StyleSheet.create({
   title: { fontFamily: FONTS.displayBold, fontSize: 18, letterSpacing: -0.3 },
   week: { flexDirection: 'row', justifyContent: 'space-between' },
   dayCol: { alignItems: 'center', gap: 4 },
-  dot: { width: 30, height: 30, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  dot: { width: 30, height: 30, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
   dayLetter: { fontFamily: FONTS.monoBold, fontSize: 12 },
-  todayDot: { width: 4, height: 4, borderRadius: 14, backgroundColor: 'transparent' },
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  todayDot: { width: 4, height: 4, borderRadius: RADIUS.md, backgroundColor: 'transparent' },
+  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
   btnText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.3 },
-  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: 14 },
+  coverFrame: { borderWidth: BORDER_WIDTH, borderRadius: RADIUS.md },
 });

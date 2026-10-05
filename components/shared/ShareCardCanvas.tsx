@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { BookCover } from './BookCover';
 import { BookProgressMark } from './BookProgressMark';
 import { CardWordmark } from './CardWordmark';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { BookFormat, CardVariant } from '@/services/types';
 import { CardTextColor, cardInk } from '@/services/cardColors';
 
@@ -200,7 +200,7 @@ ShareCardCanvas.displayName = 'ShareCardCanvas';
 const MAX_SUB = 2;
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 14, justifyContent: 'space-between', overflow: 'hidden' },
+  card: { borderRadius: RADIUS.md, justifyContent: 'space-between', overflow: 'hidden' },
   darkBg: { backgroundColor: '#241E19' },
   transparentBg: { backgroundColor: 'transparent' },
   glow: {
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     left: '15%',
     right: '15%',
     height: '50%',
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     backgroundColor: 'rgba(255,61,31,0.10)',
   },
 
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 },
   bookTitle: { flex: 1, fontFamily: FONTS.uiSemiBold },
   coverWrap: {
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     shadowColor: '#000000',
     shadowOpacity: 0.45,
     shadowRadius: 12,

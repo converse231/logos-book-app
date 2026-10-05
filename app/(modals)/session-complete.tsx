@@ -8,13 +8,13 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withSpring,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
 import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS, NO_FONT_PAD } from '@/theme/tokens';
 import { CENTER_COLUMN_FILL } from '@/theme/layout';
+import { glide, DURATION, HERO_FROM, EASE } from '@/theme/motion';
 import { useApi } from '@/services/ApiContext';
 import { useSessionStore } from '@/stores/sessionStore';
 import { celebrationFor } from '@/lib/sessionCelebration';
@@ -79,14 +79,14 @@ export default function SessionComplete() {
   );
 
   // Entrance: one spring, no loop.
-  const pop = useSharedValue(reduce ? 1 : 0.6);
+  const pop = useSharedValue(reduce ? 1 : HERO_FROM);
   useEffect(() => {
     if (!result) {
-      router.replace('/(tabs)/home' as Href);
+      router.dismissTo('/(tabs)/home' as Href);
       return;
     }
     const c = setTimeout(() => setFireConfetti(true), 150);
-    if (!reduce) pop.value = withDelay(60, withSpring(1, { damping: 13, stiffness: 140, mass: 0.9 }));
+    if (!reduce) pop.value = withDelay(60, glide(1, DURATION.hero));
 
     // Level-up is the one thing still allowed to take the screen. Streak milestones
     // celebrate on Home (see lib/streakCelebration) so they can't stack here.
@@ -108,7 +108,7 @@ export default function SessionComplete() {
   }, [result, router, reduce, pop]);
 
   const qStyle = useAnimatedStyle(() => ({
-    opacity: reduce ? 1 : Math.min(1, (pop.value - 0.55) * 3.4),
+    opacity: reduce ? 1 : Math.max(0, Math.min(1, (pop.value - HERO_FROM) / (1 - HERO_FROM))),
     transform: [{ scale: pop.value }],
   }));
 
@@ -135,7 +135,10 @@ export default function SessionComplete() {
   const finish = () => {
     clearResult();
     endSession();
-    router.replace('/(tabs)/home' as Href);
+    // dismissTo, never replace: from here a replace spliced a second copy of the
+    // tab app into the root stack, above the finished tracker and review, which
+    // stayed mounted underneath it for the rest of the session.
+    router.dismissTo('/(tabs)/home' as Href);
   };
   const share = () => router.push('/(modals)/share-card' as Href);
 
@@ -169,7 +172,7 @@ export default function SessionComplete() {
         </View>
 
         {/* Copy sits BELOW the art — it used to be behind it. */}
-        <Animated.View entering={reduce ? undefined : FadeInUp.delay(d(280)).duration(420)}>
+        <Animated.View entering={reduce ? undefined : FadeInUp.delay(d(280)).duration(420).easing(EASE.out)}>
           <Text style={[styles.headline, { color: gold ? t.gold : t.text }]}>{celebration.headline}</Text>
           {active?.bookTitle ? (
             <Text style={[styles.sub, { color: t.textSec }]} numberOfLines={1}>
@@ -180,7 +183,7 @@ export default function SessionComplete() {
 
         {fireflies > 0 ? (
           <Animated.View
-            entering={reduce ? undefined : FadeInUp.delay(d(340)).duration(420)}
+            entering={reduce ? undefined : FadeInUp.delay(d(340)).duration(420).easing(EASE.out)}
             style={styles.fireflyLine}
           >
             <Text style={[styles.fireflyText, { color: t.gold }]}>
@@ -193,7 +196,7 @@ export default function SessionComplete() {
 
         {/* The stub: three cells, plus a torn-off footer only when a badge landed. */}
         <Animated.View
-          entering={reduce ? undefined : FadeInUp.delay(d(400)).duration(420)}
+          entering={reduce ? undefined : FadeInUp.delay(d(400)).duration(420).easing(EASE.out)}
           style={[styles.ticket, { backgroundColor: t.bgSec, borderColor: t.border }]}
         >
           <View style={styles.ticketRow}>
@@ -221,7 +224,7 @@ export default function SessionComplete() {
         </Animated.View>
 
         <Animated.View
-          entering={reduce ? undefined : FadeIn.delay(d(520)).duration(380)}
+          entering={reduce ? undefined : FadeIn.delay(d(520)).duration(380).easing(EASE.out)}
           style={[styles.actions, { paddingBottom: insets.bottom + 14 }]}
         >
           <PressBlock
@@ -316,7 +319,7 @@ const styles = StyleSheet.create({
   ticketRow: { flexDirection: 'row' },
   cell: { flex: 1, alignItems: 'center', paddingVertical: 13, paddingHorizontal: 4 },
   cellValue: { fontFamily: FONTS.monoBold, fontSize: 24, fontVariant: ['tabular-nums'], ...NO_FONT_PAD },
-  cellLabel: { fontFamily: FONTS.mono, fontSize: 8.5, letterSpacing: 1.1, marginTop: 4 },
+  cellLabel: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1.1, marginTop: 4 },
   ticketFoot: {
     flexDirection: 'row',
     alignItems: 'center',

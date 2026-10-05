@@ -4,7 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS } from '@/theme/tokens';
+import { FONTS, RADIUS } from '@/theme/tokens';
 import { useApi } from '@/services/ApiContext';
 import { TOTAL_STEPS, useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
@@ -74,7 +74,7 @@ export default function AgeGate() {
           >
             <Text style={[styles.signInText, { color: t.textSec }]}>
               Already have an account?{' '}
-              <Text style={{ color: t.accent, fontFamily: FONTS.uiBold }}>Sign in</Text>
+              <Text style={{ color: t.accentText, fontFamily: FONTS.uiBold }}>Sign in</Text>
             </Text>
           </Pressable>
         </View>
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   signInLink: { alignItems: 'center', paddingVertical: 2 },
   signInText: { fontFamily: FONTS.uiRegular, fontSize: 14 },
   blockedRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 },
-  blockedIcon: { width: 80, height: 80, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  blockedIcon: { width: 80, height: 80, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   blockedTitle: { fontFamily: FONTS.displayBold, fontSize: 30, lineHeight: 36, textAlign: 'center' },
   blockedBody: { fontFamily: FONTS.uiRegular, fontSize: 16, lineHeight: 24, textAlign: 'center' },
 });

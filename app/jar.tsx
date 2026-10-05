@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { FONTS, NO_FONT_PAD } from '@/theme/tokens';
+import { FONTS, NO_FONT_PAD, RADIUS } from '@/theme/tokens';
 import { useContentWidth } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { ProgressBar } from '@/components/shared/ProgressBar';
@@ -14,6 +14,7 @@ import { FireflyJar } from '@/components/jar/FireflyJar';
 import { CURIO_KEYS, POUCH_COST } from '@/components/curio/curios';
 import { markFirefliesSeen } from '@/lib/jarSeen';
 import type { OwnedCurio } from '@/services/types';
+import { EASE } from '@/theme/motion';
 
 const BG_DAY = require('@/assets/curio/bg-jar-day.webp');
 const BG_NIGHT = require('@/assets/curio/bg-jar-night.webp');
@@ -117,7 +118,7 @@ export default function JarScreen() {
           </Pressable>
         </View>
 
-        <Animated.View entering={reduce ? undefined : FadeInUp.duration(420)} style={styles.head}>
+        <Animated.View entering={reduce ? undefined : FadeInUp.duration(420).easing(EASE.out)} style={styles.head}>
           <Text style={styles.title}>Your jar</Text>
           <Text style={styles.sub}>Every session you read puts fireflies in it.</Text>
         </Animated.View>
@@ -127,7 +128,7 @@ export default function JarScreen() {
             in the painting for the ~300ms the profile takes. An empty jar filling
             up is a better half-second than a grey rectangle. */}
         <Animated.View
-          entering={reduce ? undefined : FadeIn.delay(120).duration(520)}
+          entering={reduce ? undefined : FadeIn.delay(120).duration(520).easing(EASE.out)}
           style={styles.jarWrap}
         >
           <FireflyJar
@@ -140,7 +141,7 @@ export default function JarScreen() {
         </Animated.View>
 
         <Animated.View
-          entering={reduce ? undefined : FadeInUp.delay(200).duration(420)}
+          entering={reduce ? undefined : FadeInUp.delay(200).duration(420).easing(EASE.out)}
           style={styles.readout}
           accessibilityRole="text"
           accessibilityLabel={
@@ -216,7 +217,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 14, alignItems: 'center' },
   topBar: { alignSelf: 'stretch', flexDirection: 'row' },
   roundBtn: {
-    width: 42, height: 42, borderRadius: 14, borderWidth: 1,
+    width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: 1,
     borderColor: 'rgba(247,239,224,0.34)', backgroundColor: 'rgba(20,14,10,0.4)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
   // Ink on coral, held back a little so it reads as a subtitle without leaving
   // the accent — a second colour on an accent fill breaks the ink-on-coral rule.
   ctaSub: {
-    fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 1.6, marginTop: 3,
+    fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1.6, marginTop: 3,
     opacity: 0.62, color: INK_BORDER, fontVariant: ['tabular-nums'],
   },
   foot: {

@@ -17,9 +17,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { CENTER_COLUMN_FILL } from '@/theme/layout';
 import { CardTextColor } from '@/services/cardColors';
-import { CardColorPicker } from '@/components/shared/CardColorPicker';
+import { CardColorPicker, PreviewChecker } from '@/components/shared/CardColorPicker';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { BookFormat } from '@/services/types';
 import { ReviewShareCanvas, ReviewCardStats, ReviewCardLayout } from '@/components/shared/ReviewShareCanvas';
 import { PressBlock } from '@/components/shared/PressBlock';
@@ -137,7 +137,7 @@ export default function ShareReview() {
       <View style={styles.previewArea} onLayout={onPreviewLayout}>
         {previewW > 0 ? (
           <View style={[styles.previewBox, { width: previewW + 20 }]}>
-            {mode === 'transparent' ? <Checkerboard /> : null}
+            {mode === 'transparent' ? <PreviewChecker textColor={textColor} /> : null}
             <ReviewShareCanvas mode={mode} layout={layout} review={review} textColor={textColor} width={previewW} />
           </View>
         ) : null}
@@ -229,47 +229,29 @@ function SegGroup({
   );
 }
 
-function Checkerboard() {
-  const cols = 7;
-  const rows = 9;
-  return (
-    <View style={styles.checker} pointerEvents="none">
-      {Array.from({ length: rows }).map((_, r) => (
-        <View key={r} style={styles.checkerRow}>
-          {Array.from({ length: cols }).map((_, c) => (
-            <View key={c} style={[styles.checkerCell, { backgroundColor: (r + c) % 2 === 0 ? '#E5E0D2' : '#F6EEDF' }]} />
-          ))}
-        </View>
-      ))}
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
   column: CENTER_COLUMN_FILL,
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
   title: { fontFamily: FONTS.uiBold, fontSize: 22 },
-  closeBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 40, height: 40, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center' },
 
   previewArea: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingVertical: 12, marginTop: 12 },
-  previewBox: { borderRadius: 14, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
-  checker: { ...StyleSheet.absoluteFill },
-  checkerRow: { flex: 1, flexDirection: 'row' },
-  checkerCell: { flex: 1 },
+  previewBox: { borderRadius: RADIUS.md, overflow: 'hidden', padding: 10, alignItems: 'center', justifyContent: 'center' },
 
   controls: { paddingHorizontal: 20, paddingTop: 6, gap: 10 },
   segGroup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   segGroupLabel: { width: 92, fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1 },
-  segTrack: { flex: 1, flexDirection: 'row', height: 42, padding: 3, gap: 3, borderRadius: 14, borderWidth: BORDER_WIDTH },
-  segItem: { flex: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  segTrack: { flex: 1, flexDirection: 'row', height: 42, padding: 3, gap: 3, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
+  segItem: { flex: 1, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   segItemText: { fontFamily: FONTS.uiSemiBold, fontSize: 14 },
 
   footer: { paddingHorizontal: 24, paddingTop: 14, gap: 12 },
-  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, borderColor: INK },
+  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, borderColor: INK },
   saveText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 0.8, color: PALETTE.onAccent },
   btnBusy: { opacity: 0.7 },
-  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, borderRadius: 14, borderWidth: BORDER_WIDTH },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH },
   shareText: { fontFamily: FONTS.uiBold, fontSize: 14, letterSpacing: 0.5 },
   note: { fontFamily: FONTS.uiRegular, fontSize: 12, textAlign: 'center', marginTop: 2 },
   offscreen: { position: 'absolute', left: -100000, top: 0 },

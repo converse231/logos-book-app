@@ -7,13 +7,13 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withSpring,
   useReducedMotion,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, PALETTE, INK, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, INK, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { CENTER_COLUMN } from '@/theme/layout';
+import { glide, DURATION, HERO_FROM } from '@/theme/motion';
 import { Confetti } from '@/components/shared/Confetti';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Q } from '@/components/shared/Q';
@@ -40,7 +40,11 @@ export default function LevelUp() {
   const close = () => router.back();
 
   return (
-    <Pressable style={[styles.root, { backgroundColor: t.bg }]} onPress={close} accessibilityRole="button" accessibilityLabel="Continue">
+    // Tap anywhere to continue — but NOT an accessibility element. As a labelled
+    // button it replaced its children's text, so VoiceOver announced only
+    // "Continue, button" and never read the celebration itself. The button inside
+    // does the same thing and is the explicit, reachable way out.
+    <Pressable style={[styles.root, { backgroundColor: t.bg }]} onPress={close} accessible={false}>
       <Confetti fire particleCount={reduce ? 0 : 160} />
 
       <View style={[styles.center, { paddingTop: insets.top, paddingBottom: insets.bottom }]} pointerEvents="box-none">
@@ -81,10 +85,10 @@ export default function LevelUp() {
 
 // Q springs in on a well-damped spring, then keeps its own idle bob.
 function QHero({ reduce }: { reduce: boolean }) {
-  const scale = useSharedValue(reduce ? 1 : 0);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const scale = useSharedValue(reduce ? 1 : HERO_FROM);
+  const style = useAnimatedStyle(() => ({ opacity: Math.max(0, Math.min(1, (scale.value - HERO_FROM) / (1 - HERO_FROM))), transform: [{ scale: scale.value }] }));
   useEffect(() => {
-    if (!reduce) scale.value = withDelay(120, withSpring(1, { damping: 9, stiffness: 140 }));
+    if (!reduce) scale.value = withDelay(120, glide(1, DURATION.hero));
   }, [reduce, scale]);
   return (
     <Animated.View style={[styles.hero, style]}>
@@ -102,6 +106,6 @@ const styles = StyleSheet.create({
   name: { fontFamily: FONTS.serifBold, fontSize: 40, lineHeight: 44, textAlign: 'center', marginTop: 6 },
   blurb: { fontFamily: FONTS.serifMedium, fontSize: 18, lineHeight: 25, textAlign: 'center', marginTop: 18, maxWidth: 320 },
   footer: { ...CENTER_COLUMN, paddingHorizontal: 24 },
-  cta: { minHeight: 54, borderRadius: 14, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
+  cta: { minHeight: 54, borderRadius: RADIUS.md, borderWidth: BORDER_WIDTH_THICK, alignItems: 'center', justifyContent: 'center' },
   ctaText: { fontFamily: FONTS.uiBold, fontSize: 15, letterSpacing: 1, color: INK },
 });

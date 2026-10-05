@@ -471,6 +471,10 @@ export const mockApi: QuireApi = {
     await delay(100); // no-op in mock
   },
 
+  async syncTimezone() {
+    // no-op in mock
+  },
+
   // ── Account ────────────────────────────────────────────────────────────────
   async exportData() {
     await delay(400);

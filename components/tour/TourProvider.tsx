@@ -17,6 +17,7 @@ import { FONTS, PALETTE, INK, BORDER_WIDTH, BORDER_WIDTH_THICK, RADIUS, NO_FONT_
 import { TOUR_STEPS, markTourSeen, type TourTargetKey } from '@/lib/tour';
 import { PressBlock } from '@/components/shared/PressBlock';
 import { Q } from '@/components/shared/Q';
+import { EASE } from '@/theme/motion';
 
 interface Frame { x: number; y: number; width: number; height: number; radius: number }
 
@@ -167,8 +168,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
           <Animated.View
             style={StyleSheet.absoluteFill}
             pointerEvents="box-none"
-            entering={reduce ? undefined : FadeIn.duration(200)}
-            exiting={reduce ? undefined : FadeOut.duration(160)}
+            entering={reduce ? undefined : FadeIn.duration(200).easing(EASE.out)}
+            exiting={reduce ? undefined : FadeOut.duration(160).easing(EASE.out)}
           >
             {phase === 'offer' || !frame ? (
               // No frame yet? Dim everything rather than showing a spotlight that
@@ -178,10 +179,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
               <>
                 {/* Four rectangles around the target instead of a mask: no SVG, no
                     compositing cost, identical on both platforms. */}
-                <Pressable style={[styles.dim, { top: 0, left: 0, right: 0, height: Math.max(0, frame.y - PAD) }]} onPress={close} />
-                <Pressable style={[styles.dim, { top: frame.y + frame.height + PAD, left: 0, right: 0, bottom: 0 }]} onPress={close} />
-                <Pressable style={[styles.dim, { top: frame.y - PAD, left: 0, width: Math.max(0, frame.x - PAD), height: frame.height + PAD * 2 }]} onPress={close} />
-                <Pressable style={[styles.dim, { top: frame.y - PAD, left: frame.x + frame.width + PAD, right: 0, height: frame.height + PAD * 2 }]} onPress={close} />
+                <Pressable accessible={false} style={[styles.dim, { top: 0, left: 0, right: 0, height: Math.max(0, frame.y - PAD) }]} onPress={close} />
+                <Pressable accessible={false} style={[styles.dim, { top: frame.y + frame.height + PAD, left: 0, right: 0, bottom: 0 }]} onPress={close} />
+                <Pressable accessible={false} style={[styles.dim, { top: frame.y - PAD, left: 0, width: Math.max(0, frame.x - PAD), height: frame.height + PAD * 2 }]} onPress={close} />
+                <Pressable accessible={false} style={[styles.dim, { top: frame.y - PAD, left: frame.x + frame.width + PAD, right: 0, height: frame.height + PAD * 2 }]} onPress={close} />
                 <View
                   pointerEvents="none"
                   style={[
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
     borderWidth: BORDER_WIDTH_THICK, borderRadius: RADIUS.md,
   },
   secondaryText: { fontFamily: FONTS.uiBold, fontSize: 13.5, letterSpacing: 0.8 },
-  later: { fontFamily: FONTS.mono, fontSize: 10.5, letterSpacing: 0.6, marginTop: 12 },
+  later: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.6, marginTop: 12 },
 
   tip: {
     position: 'absolute', alignSelf: 'center',
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 6, height: 6, borderRadius: 99 },
   tipRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  skip: { fontFamily: FONTS.monoBold, fontSize: 10.5, letterSpacing: 1.2 },
+  skip: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.2 },
   next: {
     paddingHorizontal: 16, minHeight: 36, alignItems: 'center', justifyContent: 'center',
     borderWidth: BORDER_WIDTH, borderRadius: RADIUS.sm,

@@ -9,9 +9,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { FONTS, PALETTE, BORDER_WIDTH_THICK } from '@/theme/tokens';
+import { FONTS, PALETTE, BORDER_WIDTH_THICK, RADIUS } from '@/theme/tokens';
 import { BookSearchResult } from '@/services/types';
 import { BookCover } from '@/components/shared/BookCover';
+import { EASE } from '@/theme/motion';
 
 /** Final offset (px) of the hard ink shadow on the success cover. */
 const SHADOW_OFFSET = 9;
@@ -72,7 +73,7 @@ export function BookAddedOverlay({
   return (
     <Modal visible transparent animationType="fade" onRequestClose={dismiss}>
       <Pressable style={overlay.root} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Continue">
-        <Animated.View entering={reduce ? undefined : FadeIn.duration(140)} style={overlay.coverWrap}>
+        <Animated.View entering={reduce ? undefined : FadeIn.duration(140).easing(EASE.out)} style={overlay.coverWrap}>
           {/* Hard ink shadow as a real block behind the cover, so it can slide in. */}
           <Animated.View style={[overlay.shadowBlock, shadowStyle]} pointerEvents="none" />
           <View style={overlay.coverFrame}>
@@ -83,7 +84,7 @@ export function BookAddedOverlay({
           </View>
         </Animated.View>
 
-        <Animated.View entering={reduce ? undefined : FadeIn.delay(330).duration(360)} style={overlay.textBlock}>
+        <Animated.View entering={reduce ? undefined : FadeIn.delay(330).duration(360).easing(EASE.out)} style={overlay.textBlock}>
           <Text style={[overlay.kicker, { color: accent }]}>ADDED TO YOUR LIBRARY</Text>
           <Text style={overlay.title} numberOfLines={3}>{book.title}</Text>
           {book.authors.length > 0 ? (
@@ -91,7 +92,7 @@ export function BookAddedOverlay({
           ) : null}
         </Animated.View>
 
-        <Animated.Text entering={reduce ? undefined : FadeIn.delay(700).duration(400)} style={overlay.hint}>
+        <Animated.Text entering={reduce ? undefined : FadeIn.delay(700).duration(400).easing(EASE.out)} style={overlay.hint}>
           Tap anywhere to continue
         </Animated.Text>
       </Pressable>
@@ -107,13 +108,13 @@ const overlay = StyleSheet.create({
   coverWrap: { alignItems: 'center', justifyContent: 'center' },
   // Sits behind the (opaque) cover frame; the animation translates it out to the
   // bottom-right so only the offset L-shape shows — a hard neubrutalist shadow.
-  shadowBlock: { ...StyleSheet.absoluteFill, backgroundColor: PALETTE.ink, borderRadius: 14 },
+  shadowBlock: { ...StyleSheet.absoluteFill, backgroundColor: PALETTE.ink, borderRadius: RADIUS.md },
   coverFrame: {
     borderWidth: BORDER_WIDTH_THICK, borderColor: PALETTE.ink, backgroundColor: PALETTE.paper,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
   },
   sticker: {
-    position: 'absolute', top: -16, right: -16, width: 48, height: 48, borderRadius: 14,
+    position: 'absolute', top: -16, right: -16, width: 48, height: 48, borderRadius: RADIUS.md,
     borderWidth: BORDER_WIDTH_THICK, borderColor: PALETTE.ink, alignItems: 'center', justifyContent: 'center',
   },
   textBlock: { alignItems: 'center', gap: 8, maxWidth: 420 },

@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme/ThemeContext';
-import { FONTS, BORDER_WIDTH, RADIUS, NO_FONT_PAD, GENRE_PALETTE, hardShadow } from '@/theme/tokens';
+import { FONTS, BORDER_WIDTH, RADIUS, NO_FONT_PAD, genreChip, hardShadow } from '@/theme/tokens';
 import { coverGrid } from '@/theme/layout';
 import { useApi } from '@/services/ApiContext';
 import { AuthorProfile, BookSearchResult, UserBook } from '@/services/types';
@@ -113,7 +113,7 @@ export default function Author() {
     const ub = owned.get(shelfKey(b.title));
     if (ub) {
       // Already theirs — the library detail has progress, sessions and reviews.
-      router.push(`/(tabs)/library/${ub.id}` as Href);
+      router.dismissTo(`/(tabs)/library/${ub.id}` as Href);
       return;
     }
     router.push({ pathname: '/book', params: { data: JSON.stringify(b), from: 'author' } } as unknown as Href);
@@ -156,7 +156,7 @@ export default function Author() {
   }
   if (ownedCount > 0) {
     // The one fact about the reader rather than the author — so it takes the accent.
-    meta.push({ key: 'owned', text: `${compact(ownedCount)} on your shelf`, color: t.accent, icon: 'bookmark' });
+    meta.push({ key: 'owned', text: `${compact(ownedCount)} on your shelf`, color: t.accentText, icon: 'bookmark' });
   }
   if (profile?.ratingAverage != null) {
     meta.push({ key: 'rating', text: `${profile.ratingAverage.toFixed(1)} (${compact(profile.ratingCount)})`, icon: 'star' });
@@ -226,9 +226,9 @@ export default function Author() {
                   <View style={styles.metaRow}>
                     {meta.map((m, i) => (
                       <View key={m.key} style={styles.metaItem}>
-                        {i > 0 ? <View style={[styles.metaDot, { backgroundColor: t.textTer }]} /> : null}
                         {m.icon ? <Ionicons name={m.icon} size={11} color={m.color ?? t.textSec} /> : null}
                         <Text style={[styles.metaText, { color: m.color ?? t.textSec }]}>{m.text}</Text>
+                        {i < meta.length - 1 ? <View style={[styles.metaDot, { backgroundColor: t.textTer }]} /> : null}
                       </View>
                     ))}
                   </View>
@@ -276,7 +276,7 @@ export default function Author() {
               >
                 <BookCover url={knownFor.coverUrl} title={knownFor.title} width={40} />
                 <View style={styles.knownText}>
-                  <Text style={[styles.kicker, { color: t.accent }]}>BEST KNOWN FOR</Text>
+                  <Text style={[styles.kicker, { color: t.accentText }]}>BEST KNOWN FOR</Text>
                   <Text style={[styles.knownTitle, { color: t.text }]} numberOfLines={1}>{knownFor.title}</Text>
                 </View>
                 {knownFor.publishedYear ? (
@@ -310,8 +310,8 @@ export default function Author() {
                     accessibilityLabel={bioOpen ? 'Show less of the biography' : 'Read the full biography'}
                     style={styles.moreRow}
                   >
-                    <Text style={[styles.moreText, { color: t.accent }]}>{bioOpen ? 'READ LESS' : 'READ MORE'}</Text>
-                    <Ionicons name={bioOpen ? 'chevron-up' : 'chevron-down'} size={13} color={t.accent} />
+                    <Text style={[styles.moreText, { color: t.accentText }]}>{bioOpen ? 'READ LESS' : 'READ MORE'}</Text>
+                    <Ionicons name={bioOpen ? 'chevron-up' : 'chevron-down'} size={13} color={t.accentText} />
                   </Pressable>
                 ) : null}
                 {/* CC BY-SA text needs its source named. */}
@@ -335,7 +335,7 @@ export default function Author() {
                 <Text style={[styles.blockLabel, { color: t.textSec }]}>RECURRING THEMES</Text>
                 <View style={styles.chipWrap}>
                   {profile.subjects.map((subject, i) => {
-                    const { bg, fg } = GENRE_PALETTE[i % GENRE_PALETTE.length];
+                    const { bg, fg } = genreChip(i, t.mode);
                     return (
                       <Pressable
                         key={subject}
@@ -369,8 +369,8 @@ export default function Author() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={[styles.linkText, { color: t.accent }]}>{l.title}</Text>
-                    <Ionicons name="open-outline" size={13} color={t.accent} />
+                    <Text style={[styles.linkText, { color: t.accentText }]}>{l.title}</Text>
+                    <Ionicons name="open-outline" size={13} color={t.accentText} />
                   </Pressable>
                 ))}
               </View>
@@ -477,7 +477,7 @@ function Portrait({ name, url }: { name: string; url: string | null }) {
           accessibilityLabel={`Portrait of ${name}`}
         />
       ) : (
-        <Text style={[styles.monogram, { color: t.accent }]} allowFontScaling={false}>
+        <Text style={[styles.monogram, { color: t.accentText }]} allowFontScaling={false}>
           {initials || '?'}
         </Text>
       )}
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   portraitImg: { width: '100%', height: '100%' },
   monogram: { fontFamily: FONTS.serifBold, fontSize: 26, ...NO_FONT_PAD },
   heroText: { flex: 1, gap: 3 },
-  kicker: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1.8 },
+  kicker: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.8 },
   name: { fontFamily: FONTS.serifBold, fontSize: 26, lineHeight: 29, letterSpacing: -0.2 },
 
   // The book detail page's dot-separated metadata line, reused verbatim.
@@ -600,10 +600,10 @@ const styles = StyleSheet.create({
   bio: { fontFamily: FONTS.serifMedium, fontSize: 18, lineHeight: 27 },
   moreRow: { flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start' },
   moreText: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 0.8 },
-  credit: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.3, lineHeight: 14 },
+  credit: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.3, lineHeight: 14 },
 
   block: { gap: 10 },
-  blockLabel: { fontFamily: FONTS.monoBold, fontSize: 10, letterSpacing: 1.6 },
+  blockLabel: { fontFamily: FONTS.monoBold, fontSize: 11, letterSpacing: 1.6 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   // Borderless tinted pills, exactly as the book detail page renders genres.
   chip: { paddingHorizontal: 14, height: 34, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
@@ -630,13 +630,13 @@ const styles = StyleSheet.create({
     borderWidth: BORDER_WIDTH, alignItems: 'center', justifyContent: 'center',
   },
   cellTitle: { fontFamily: FONTS.uiSemiBold, fontSize: 12, lineHeight: 15 },
-  cellYear: { fontFamily: FONTS.mono, fontSize: 10, fontVariant: ['tabular-nums'] },
+  cellYear: { fontFamily: FONTS.mono, fontSize: 11, fontVariant: ['tabular-nums'] },
 
   empty: { alignItems: 'center', paddingVertical: 20, paddingHorizontal: 16, gap: 10 },
   emptyTitle: { fontFamily: FONTS.uiBold, fontSize: 18 },
   emptyBody: { fontFamily: FONTS.uiRegular, fontSize: 14, lineHeight: 20, textAlign: 'center' },
 
-  footerCredit: { fontFamily: FONTS.mono, fontSize: 10, letterSpacing: 0.5, textAlign: 'center' },
+  footerCredit: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 0.5, textAlign: 'center' },
 
   pressed: { opacity: 0.75 },
 });
