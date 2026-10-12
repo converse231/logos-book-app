@@ -75,13 +75,18 @@ let _notifSettings: NotificationSettings = {
 // Per set, mirroring open_pouch(p_set) — a pouch is bought for one shelf.
 const MOCK_CURIO_KEYS: Record<CurioSetId, string[]> = {
   found: [
-    'acorn', 'acorn-gold', 'berries', 'clover', 'egg', 'feather', 'lantern',
+    'acorn-gold', 'berries', 'chamomile', 'clover', 'egg', 'feather', 'lantern',
     'leaf', 'moonflower', 'mushroom', 'pebble', 'pinecone', 'snail',
   ],
   lit: [
-    'lit-boot', 'lit-bow', 'lit-goldfish', 'lit-harpoon', 'lit-horseshoe',
-    'lit-notebook', 'lit-paintbox', 'lit-portrait', 'lit-silk-shirt',
-    'lit-soma', 'lit-spectacles',
+    'lit-boot', 'lit-bow', 'lit-diamond', 'lit-eye', 'lit-goldfish',
+    'lit-harpoon', 'lit-horseshoe', 'lit-notebook', 'lit-paintbox',
+    'lit-portrait', 'lit-silk-shirt', 'lit-soma', 'lit-spectacles',
+  ],
+  epic: [
+    'epic-apple', 'epic-fleece', 'epic-grail', 'epic-hammer', 'epic-horn',
+    'epic-horse', 'epic-jar', 'epic-lyre', 'epic-pomegranate', 'epic-shield',
+    'epic-sword', 'epic-thread', 'epic-wing',
   ],
 };
 const mockCurios: { key: string; count: number; firstFoundAt: string }[] = [];

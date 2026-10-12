@@ -201,7 +201,8 @@ export default function CollectionScreen() {
         setPicked((p) => ({ ...p, [setOf(r.key)]: r.key as CurioKey }));
       }
       setReveal(r);
-    } catch {
+    } catch (e) {
+      console.warn('[collection] open_pouch failed', set.id, e);
       // Never report a network failure as "not enough fireflies" — nothing was
       // spent, and the balance on screen is still correct.
       setReveal({ ok: false, reason: 'error', cost: POUCH_COST });
@@ -369,8 +370,8 @@ export default function CollectionScreen() {
 /**
  * One collection: its title, its plinth, its shelves.
  *
- * Both pages stay mounted — 24 Images against a gesture that has to show two
- * rooms at once mid-drag. Unmounting the off-screen page would make every swipe
+ * Every page stays mounted — 39 Images against a gesture that has to show two
+ * rooms at once mid-drag. Unmounting the off-screen pages would make every swipe
  * pop its art in on arrival.
  */
 function SetPage({
@@ -554,14 +555,14 @@ function Backdrop({
   x: SharedValue<number>;
 }) {
   const style = useAnimatedStyle(() => ({
-    // The bottom layer never fades: two translucent paintings stacked over the
-    // root colour do not blend 50/50 mid-drag — the lower one is seen through
-    // BOTH the upper one and the root, so the halfway point sags dark. Holding
-    // the base opaque makes the drag a true cross-fade.
-    // ponytail: correct for two collections. A third would need each layer to
-    // fade only against its immediate neighbour, or one Image whose source
-    // swaps at the midpoint.
-    opacity: index === 0 ? 1 : Math.max(0, 1 - Math.abs(x.value - index)),
+    // Layers stack in page order and each fades in ON TOP of the one below as the
+    // pager reaches it, then stays opaque. So at any offset exactly two layers are
+    // in play — the lower fully opaque, the upper partly — and the drag is a true
+    // cross-fade between neighbours. Fading by distance instead (the old rule, fine
+    // for two sets) leaves earlier layers showing through at the midpoint of the
+    // second swipe: set one's painting bleeding into the move from two to three.
+    // The bottom layer never fades, so there is always an opaque base.
+    opacity: index === 0 ? 1 : Math.min(1, Math.max(0, x.value - (index - 1))),
   }));
   return (
     <Animated.View style={[StyleSheet.absoluteFill, style]} pointerEvents="none">

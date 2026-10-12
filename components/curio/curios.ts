@@ -32,10 +32,21 @@ export const LIT_KEYS = [
   'lit-portrait', 'lit-silk-shirt', 'lit-soma', 'lit-spectacles',
 ] as const;
 
-export type CurioKey = (typeof FOUND_KEYS)[number] | (typeof LIT_KEYS)[number];
+/** Set three: relics out of the old stories, the kind told by a fire. Prefixed
+ *  `epic-` like set two's `lit-` — the prefix IS the set dimension. */
+export const EPIC_KEYS = [
+  'epic-apple', 'epic-fleece', 'epic-grail', 'epic-hammer', 'epic-horn',
+  'epic-horse', 'epic-jar', 'epic-lyre', 'epic-pomegranate', 'epic-shield',
+  'epic-sword', 'epic-thread', 'epic-wing',
+] as const;
 
-/** Every key, both sets, for looking one up without knowing where it lives. */
-export const CURIO_KEYS: readonly CurioKey[] = [...FOUND_KEYS, ...LIT_KEYS];
+export type CurioKey =
+  | (typeof FOUND_KEYS)[number]
+  | (typeof LIT_KEYS)[number]
+  | (typeof EPIC_KEYS)[number];
+
+/** Every key, all sets, for looking one up without knowing where it lives. */
+export const CURIO_KEYS: readonly CurioKey[] = [...FOUND_KEYS, ...LIT_KEYS, ...EPIC_KEYS];
 
 export interface CurioDef {
   name: string;
@@ -180,12 +191,81 @@ export const CURIOS: Record<CurioKey, CurioDef> = {
     blurb: 'Set down before the one shot he ever took.',
     art: require('@/assets/curio/lit-spectacles.webp'),
   },
+
+  // ── Set three ──────────────────────────────────────────────────────────────
+  // Relics out of myth and legend. Same rule as set two: the blurb never names the
+  // story, because recognising it is the point. Alphabetical, which is shelf order.
+  'epic-apple': {
+    name: 'Golden Apple',
+    blurb: 'Marked for the fairest. Started a war.',
+    art: require('@/assets/curio/epic-apple.webp'),
+  },
+  'epic-fleece': {
+    name: 'Fleece of Gold',
+    blurb: 'Fetched, then fought over.',
+    art: require('@/assets/curio/epic-fleece.webp'),
+  },
+  'epic-grail': {
+    name: 'The Humble Cup',
+    blurb: 'Plain, which is how it was missed.',
+    art: require('@/assets/curio/epic-grail.webp'),
+  },
+  'epic-hammer': {
+    name: 'Thunder Hammer',
+    blurb: 'It always comes back to the hand.',
+    art: require('@/assets/curio/epic-hammer.webp'),
+  },
+  'epic-horn': {
+    name: 'Ivory Horn',
+    blurb: 'Blown too late, with the last of his breath.',
+    art: require('@/assets/curio/epic-horn.webp'),
+  },
+  'epic-horse': {
+    name: 'Little Wooden Horse',
+    blurb: 'A gift. Do not bring it inside.',
+    art: require('@/assets/curio/epic-horse.webp'),
+  },
+  'epic-jar': {
+    name: 'Sealed Jar',
+    blurb: 'Opened out of curiosity. Hope stayed in.',
+    art: require('@/assets/curio/epic-jar.webp'),
+  },
+  'epic-lyre': {
+    name: 'Tortoiseshell Lyre',
+    blurb: 'Moved stone. Then he looked back.',
+    art: require('@/assets/curio/epic-lyre.webp'),
+  },
+  'epic-pomegranate': {
+    name: 'Pomegranate',
+    blurb: 'Six seeds decide the winter.',
+    art: require('@/assets/curio/epic-pomegranate.webp'),
+  },
+  'epic-shield': {
+    name: 'Hammered Shield',
+    blurb: 'A whole world on the rim.',
+    art: require('@/assets/curio/epic-shield.webp'),
+  },
+  'epic-sword': {
+    name: 'The Drawn Sword',
+    blurb: "Pulled by the one who wasn't trying.",
+    art: require('@/assets/curio/epic-sword.webp'),
+  },
+  'epic-thread': {
+    name: 'Ball of Red Thread',
+    blurb: 'Unwound on the way in. Followed on the way out.',
+    art: require('@/assets/curio/epic-thread.webp'),
+  },
+  'epic-wing': {
+    name: 'Wax Wing',
+    blurb: "Fine until it wasn't.",
+    art: require('@/assets/curio/epic-wing.webp'),
+  },
 };
 
 /**
  * A collection: its shelf, its backdrop, and the words on it.
  *
- * Two sets share one screen and one currency. A pouch is bought FOR a set, so
+ * The sets share one screen and one currency. A pouch is bought FOR a set, so
  * neither collection stalls behind the other and completion stays reachable —
  * a single 24-key hat would roughly double time-to-finish for both.
  */
@@ -232,12 +312,29 @@ export const SETS: readonly CurioSet[] = [
     bg: require('@/assets/curio/bg-library.webp'),
     scrim: 0.22,
   },
+  {
+    id: 'epic',
+    name: 'Told by firelight',
+    short: 'FIRELIGHT',
+    sub: 'Handed down, and never quite put out.',
+    done: 'All thirteen found. Copies polish them from here.',
+    keys: EPIC_KEYS,
+    bg: require('@/assets/curio/bg-firelight.webp'),
+    // Measured, not eyeballed (2026-10-12): over the text band, the 90th-percentile
+    // luminance with this scrim gives the cream title 5.9:1 and the 72% subtitle
+    // ~4.5:1 (WCAG AA). 0.42 left the subtitle at 4.2. Still lighter overall than
+    // the nook, so the orange horizon survives. Violet top = the third
+    // temperature: amber, blue, violet.
+    scrim: 0.46,
+  },
 ];
 
 /** Which set a curio belongs to. The prefix carries it, so a key found in the
  *  wild (a `focus` deep-link, a pouch result) needs no lookup table. */
 export function setOf(key: string): CurioSetId {
-  return key.startsWith('lit-') ? 'lit' : 'found';
+  if (key.startsWith('lit-')) return 'lit';
+  if (key.startsWith('epic-')) return 'epic';
+  return 'found';
 }
 
 export function setById(id: CurioSetId): CurioSet {

@@ -405,7 +405,7 @@ export interface AiRecResult {
  *  in 'lit' is named `lit-*`, and the original thirteen are bare, which is why
  *  set one is not retro-prefixed — those keys are already rows in user_curios.
  *  Mirrored by open_pouch(p_set) server-side. */
-export type CurioSetId = 'found' | 'lit';
+export type CurioSetId = 'found' | 'lit' | 'epic';
 
 /** One curio on the shelf. `key` stays a plain string here so services/ does not
  *  depend on components/; components/curio/curios.ts narrows it for rendering. */
