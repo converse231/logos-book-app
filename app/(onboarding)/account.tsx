@@ -24,6 +24,13 @@ import { KeyboardLift } from '@/components/shared/KeyboardLift';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// A dropped connection surfaces as "TypeError: Network request failed" - say it in words.
+const friendly = (e: any, fallback: string): string => {
+  const msg: string = e?.message ?? '';
+  if (/network|fetch|timed? ?out/i.test(msg)) return "You're offline. Check your connection and try again.";
+  return msg || fallback;
+};
+
 // Step 6 of 6 — the ONLY thing this screen does is get the reader an account,
 // then flush the buffered funnel through the single `complete_onboarding` RPC.
 //
@@ -79,13 +86,26 @@ export default function Account() {
 
   // Shared tail: identical whichever provider created the account.
   const finish = async () => {
+    /* AN ACCOUNT THAT ALREADY EXISTS IS SIGNED INTO, NOT RE-ONBOARDED (2026-10-15).
+       A returning reader who taps through the funnel again (a reinstall, a new
+       phone) and then picks Google, or types their existing email + password,
+       lands here signed into their REAL account. Running complete_onboarding
+       then replaced their name, genres and goal with the new answers, and the
+       upload below overwrote their avatar file. Checked first, so neither runs. */
+    const existing = await api.getProfile().catch(() => null);
+    if (existing?.onboardingCompletedAt) {
+      reset();
+      router.replace('/(tabs)/home' as Href);
+      return;
+    }
     // Avatar first — it needs a session but not a profile row, and it's the one
-    // step allowed to fail silently (a photo is never worth blocking signup).
+    // step allowed to fail (a photo is never worth blocking signup).
     let avatarUrl: string | undefined;
     if (avatar?.base64) {
       try {
         avatarUrl = await api.uploadAvatar(avatar.base64);
-      } catch {
+      } catch (e) {
+        console.warn('[onboarding] avatar upload failed', e);
         avatarUrl = undefined;
       }
     }
@@ -117,7 +137,7 @@ export default function Account() {
         setEmailTaken(true);
         setError('That email already has a Quire account.');
       } else {
-        setError(e?.message ?? 'Could not create your account. Please try again.');
+        setError(friendly(e, 'Could not create your account. Please try again.'));
       }
       await refreshAuthEmail();
     } finally {
@@ -141,7 +161,7 @@ export default function Account() {
         // button read as broken and readers reached for the other one instead.
         setError('Google sign-up cancelled. Try again, or use an email and password.');
       } else {
-        setError(e?.message ?? 'Could not sign up with Google. Try again.');
+        setError(friendly(e, 'Could not sign up with Google. Try again.'));
       }
       // The attempt may still have left a session behind (the code exchange can
       // land before the browser reports back), so re-read rather than assume.
@@ -224,7 +244,10 @@ export default function Account() {
             <View style={styles.field}>
               <Text style={[styles.label, { color: t.textSec }]}>ACCOUNT</Text>
               <View style={[styles.signedIn, { backgroundColor: t.bgSec, borderColor: t.border }]}>
-                <Ionicons name="logo-google" size={17} color={t.text} />
+                {/* Not the Google logo: an email signup whose last step failed (a
+                    network blip) lands here too, and was told to sign back in
+                    with Google. The screen only knows the address, so it says that. */}
+                <Ionicons name="person-circle-outline" size={18} color={t.text} />
                 <Text style={[styles.signedInText, { color: t.text }]} numberOfLines={1}>
                   {authEmail}
                 </Text>
@@ -232,7 +255,7 @@ export default function Account() {
               </View>
               <View style={styles.accountRow}>
                 <Text style={[styles.helper, { color: t.textTer, flex: 1 }]}>
-                  You&rsquo;ll sign back in with Google.
+                  Your shelf, streak and goal will be saved to this account.
                 </Text>
                 <Pressable
                   onPress={handleSwitchAccount}

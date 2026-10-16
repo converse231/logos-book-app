@@ -19,7 +19,13 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { KeyboardLift } from '@/components/shared/KeyboardLift';
 
-const NAME_RE = /^[A-Za-z0-9 _'-]{2,24}$/;
+/* ANY REAL NAME (2026-10-15). This was /^[A-Za-z0-9 _'-]{2,24}$/, which refused
+   José, Zoë, Siobhán and every name not written in ASCII - a sign-up blocker
+   with an error that blamed the reader. The server stores them fine (verified
+   against complete_onboarding). Refuse only markup-ish symbols and a bare
+   number, which would read as broken in a greeting. */
+const NAME_BAD = /[<>{}[\]\\/|@#$%^*=+~`"]/;
+const isValidName = (s: string) => s.length >= 2 && s.length <= 24 && !NAME_BAD.test(s) && !/^\d+$/.test(s);
 
 // Step 5 of 6 — IDENTITY ONLY: who's reading, and (optionally) their face.
 //
@@ -58,7 +64,7 @@ export default function Profile() {
   };
 
   const trimmed = username.trim();
-  const nameValid = NAME_RE.test(trimmed);
+  const nameValid = isValidName(trimmed);
   const showError = touched && trimmed.length > 0 && !nameValid;
 
   const handleContinue = () => {
@@ -128,7 +134,7 @@ export default function Profile() {
             />
             {showError ? (
               <Text style={[styles.helper, { color: t.danger }]} accessibilityLiveRegion="polite">
-                Use 2–24 letters, numbers, spaces or _ - '
+                Use 2–24 characters, without symbols like @ # / or &lt; &gt;
               </Text>
             ) : (
               <Text style={[styles.helper, { color: t.textTer }]}>

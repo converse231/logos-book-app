@@ -12,14 +12,19 @@ import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { WheelPicker } from '@/components/onboarding/WheelPicker';
 
 const CURRENT_YEAR = new Date().getFullYear();
-// Oldest → youngest, but display youngest-first feels natural for a birth year.
-const YEARS = Array.from({ length: 90 }, (_, i) => CURRENT_YEAR - 13 - i);
-const DEFAULT_INDEX = 12; // ~25 years old
+/* A NEUTRAL AGE SCREEN (COPPA; Play's Families policy asks the same). The wheel
+   used to start at CURRENT_YEAR - 13, so no under-13 year could be picked and
+   the blocked screen below was unreachable - and the subtitle said "13 and up",
+   which tells a child exactly which year to choose. Every plausible year is
+   offered now and nothing on screen names the cut-off; under-13 lands on the
+   block, and complete_onboarding refuses it server-side regardless. */
+const YOUNGEST = 4;
+const YEARS = Array.from({ length: 97 }, (_, i) => CURRENT_YEAR - YOUNGEST - i);
+const DEFAULT_INDEX = 25 - YOUNGEST; // ~25 years old
 
 // COPPA age gate (blueprint Section 3 / 21). Under-13 → permanent blocked
 // screen (no account). 13–17 → proceeds but flagged is_minor (no public
-// reviews / social later). The picker only offers ages ≥13; the blocked state
-// is reached via the explicit "I'm under 13" affordance.
+// reviews / social later).
 export default function AgeGate() {
   const t = useTheme();
   const router = useRouter();
@@ -57,7 +62,7 @@ export default function AgeGate() {
       step={1}
       totalSteps={TOTAL_STEPS}
       title="When were you born?"
-      subtitle="Quire is for readers 13 and up. We only use this to keep things age-appropriate."
+      subtitle="We only use this to keep Quire age-appropriate."
       footer={
         <View style={styles.footer}>
           <PrimaryButton
