@@ -131,11 +131,16 @@ export default function SessionReview() {
     setSubmitting(true);
     Keyboard.dismiss();
 
-    // Duration edits move endedAt, not a separate stored override: pace and XP are
-    // derived server-side from startedAt/endedAt, so shifting the end is the only
-    // way to keep every consumer agreeing on one number.
-    const startedAtMs = active.startedAtMs;
-    const endedAtMs = startedAtMs + derived.mins * 60000;
+    // The duration is stored as startedAt/endedAt (pace and XP are derived from
+    // them server-side), so an edited duration has to move one of the two.
+    // It used to always move the END: raise 20 timed minutes to 48 and the
+    // session "ended" half an hour in the future, which complete_session
+    // refuses (20260928000001) — reported as "Your phone's date or time looks
+    // off" on a phone whose clock was fine. A session can't end after now, so the
+    // end is capped there and a longer duration moves the START back instead:
+    // "I'd already been reading before I hit the timer".
+    const endedAtMs = Math.min(active.startedAtMs + derived.mins * 60000, Date.now());
+    const startedAtMs = endedAtMs - derived.mins * 60000;
 
     const queued = {
       clientUuid: uuidv4(),
