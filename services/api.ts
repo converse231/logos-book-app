@@ -50,6 +50,14 @@ export interface QuireApi {
    * enforced in `completeOnboarding`, the only thing that can create a row.
    */
   signInWithGoogle(): Promise<{ userId: string }>;
+  /**
+   * Native Sign in with Apple (iOS only — required by App Store Guideline 4.8
+   * because Google is offered). Throws `APPLE_CANCELLED` when the reader closes
+   * the sheet. Same contract as Google: authenticates only, never writes
+   * `public.users`, so a new Apple account still has to clear the age gate and
+   * `completeOnboarding` like everyone else.
+   */
+  signInWithApple(): Promise<{ userId: string }>;
   /** True when a `public.users` row exists for the current session — i.e. the
    *  reader has actually been provisioned, not just authenticated. */
   hasProfile(): Promise<boolean>;

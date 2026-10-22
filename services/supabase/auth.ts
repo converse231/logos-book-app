@@ -21,6 +21,8 @@
 import { decode } from 'base64-arraybuffer';
 import type { QuireApi } from '../api';
 import type { LevelName, SubStatus, ThemePref, UserProfile } from '../types';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { forgetReaderOnDevice, supabase } from '@/lib/supabase';
@@ -200,6 +202,61 @@ export const authApi: Partial<QuireApi> = {
     // Google user who never finishes the funnel stays profile-less and the boot
     // redirect keeps routing them through the age gate. That IS the COPPA
     // guarantee now, and it no longer depends on which caller passed what.
+    return { userId };
+  },
+
+  // ── Apple (native sheet → ID token) ─────────────────────────────────────────
+  //
+  // No browser and no Apple secret: the system sheet returns an identity token
+  // signed by Apple, and Supabase verifies it against the Client IDs listed in
+  // Auth → Providers → Apple (`com.quire.app`, plus `host.exp.Exponent` while
+  // testing in Expo Go, whose tokens are issued to Expo Go's bundle id).
+  //
+  // Nonce: Apple embeds the SHA-256 of what we send; Supabase gets the raw value
+  // and checks they match, so an intercepted token can't be replayed.
+  async signInWithApple() {
+    let { data: { session } } = await supabase.auth.getSession();
+
+    // Resumable, like Google: an attempt that authenticated but died before the
+    // funnel flushed shouldn't make the reader face the sheet again. Only reuse
+    // an Apple session though — a leftover email or Google one is someone else.
+    if (session && session.user.app_metadata?.provider !== 'apple') {
+      await supabase.auth.signOut();
+      session = null;
+    }
+
+    if (!session) {
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
+
+      let credential: AppleAuthentication.AppleAuthenticationCredential;
+      try {
+        credential = await AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+          nonce: hashedNonce,
+        });
+      } catch (e: any) {
+        if (e?.code === 'ERR_REQUEST_CANCELED') throw new Error('APPLE_CANCELLED');
+        console.warn('[signInWithApple] native sheet failed', e);
+        throw new Error('Could not sign in with Apple. Try again.');
+      }
+      if (!credential.identityToken) throw new Error('Apple sign-in returned no identity token.');
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+        nonce: rawNonce,
+      });
+      if (error) throw error;
+      session = data.session;
+    }
+
+    const userId = session?.user.id;
+    if (!userId) throw new Error('Apple sign-in returned no user.');
+    // As with Google: no users row here. completeOnboarding is the only door.
     return { userId };
   },
 

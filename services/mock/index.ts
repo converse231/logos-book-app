@@ -109,6 +109,11 @@ export const mockApi: QuireApi = {
     return { userId: _user.id };
   },
 
+  async signInWithApple() {
+    await delay(400);
+    return { userId: _user.id };
+  },
+
   async getAuthEmail() {
     return null; // the mock funnel is always the email path
   },

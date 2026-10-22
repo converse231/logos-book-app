@@ -20,6 +20,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { GoogleButton } from '@/components/auth/GoogleButton';
+import { AppleButton, useAppleAuthAvailable } from '@/components/auth/AppleButton';
 import { KeyboardLift } from '@/components/shared/KeyboardLift';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -49,6 +50,9 @@ export default function Account() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [googling, setGoogling] = useState(false);
+  const [appling, setAppling] = useState(false);
+  const appleAvailable = useAppleAuthAvailable();
+  const socialBusy = googling || appling;
   const [error, setError] = useState<string | null>(null);
   const [emailTaken, setEmailTaken] = useState(false);
   // Non-null when the reader is ALREADY authenticated — Google from here, or a
@@ -124,7 +128,7 @@ export default function Account() {
   };
 
   const handleEmailSignUp = async () => {
-    if (!canSubmit || submitting || googling) return;
+    if (!canSubmit || submitting || socialBusy) return;
     if (!guardFunnel()) return;
     setSubmitting(true);
     setError(null);
@@ -146,7 +150,7 @@ export default function Account() {
   };
 
   const handleGoogle = async () => {
-    if (submitting || googling) return;
+    if (submitting || socialBusy) return;
     if (!guardFunnel()) return;
     setGoogling(true);
     setError(null);
@@ -171,10 +175,35 @@ export default function Account() {
     }
   };
 
+  // Mirrors handleGoogle. guardFunnel runs first, and finish() goes through
+  // completeOnboarding — so an Apple ID can't skip the age gate any more than a
+  // Google one can, and a returning Apple reader is signed in, not re-onboarded.
+  const handleApple = async () => {
+    if (submitting || socialBusy) return;
+    if (!guardFunnel()) return;
+    setAppling(true);
+    setError(null);
+    setEmailTaken(false);
+    try {
+      await api.signInWithApple();
+      await refreshAuthEmail();
+      await finish();
+    } catch (e: any) {
+      if (e?.message === 'APPLE_CANCELLED') {
+        setError('Apple sign-up cancelled. Try again, or use an email and password.');
+      } else {
+        setError(friendly(e, 'Could not sign up with Apple. Try again.'));
+      }
+      await refreshAuthEmail();
+    } finally {
+      setAppling(false);
+    }
+  };
+
   // Wrong Google account? Drop the session so the next attempt starts clean and
   // the chooser reappears. Without this the account chip was a dead end.
   const handleSwitchAccount = async () => {
-    if (submitting || googling) return;
+    if (submitting || socialBusy) return;
     setError(null);
     try {
       await api.signOut();
@@ -219,7 +248,7 @@ export default function Account() {
               label="Start reading"
               onPress={handleEmailSignUp}
               loading={submitting}
-              disabled={!canSubmit || googling}
+              disabled={!canSubmit || socialBusy}
             />
           </View>
         }
@@ -249,7 +278,9 @@ export default function Account() {
                     with Google. The screen only knows the address, so it says that. */}
                 <Ionicons name="person-circle-outline" size={18} color={t.text} />
                 <Text style={[styles.signedInText, { color: t.text }]} numberOfLines={1}>
-                  {authEmail}
+                  {/* "Hide My Email" gives a random relay address the reader has
+                      never seen — naming the account is clearer than showing it. */}
+                  {/@privaterelay\.appleid\.com$/i.test(authEmail) ? 'Your Apple ID' : authEmail}
                 </Text>
                 <Ionicons name="checkmark-circle" size={17} color={t.accentText} />
               </View>
@@ -341,7 +372,11 @@ export default function Account() {
                 <Text style={[styles.dividerText, { color: t.textTer }]}>OR</Text>
                 <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
               </View>
-              <GoogleButton onPress={handleGoogle} loading={googling} disabled={submitting} />
+              {/* Apple first: Guideline 4.8 wants it at least as prominent as Google. */}
+              {appleAvailable ? (
+                <AppleButton onPress={handleApple} loading={appling} disabled={submitting || googling} />
+              ) : null}
+              <GoogleButton onPress={handleGoogle} loading={googling} disabled={submitting || appling} />
               <Pressable
                 onPress={() => router.push('/(auth)/sign-in' as Href)}
                 hitSlop={8}

@@ -17,6 +17,7 @@ import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { GoogleButton } from '@/components/auth/GoogleButton';
+import { AppleButton, useAppleAuthAvailable } from '@/components/auth/AppleButton';
 import { KeyboardLift } from '@/components/shared/KeyboardLift';
 import { useEnterApp } from '@/components/navigation/enterApp';
 
@@ -38,6 +39,9 @@ export default function SignIn() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [googling, setGoogling] = useState(false);
+  const [appling, setAppling] = useState(false);
+  const appleAvailable = useAppleAuthAvailable();
+  const busy = submitting || googling || appling;
 
   const valid = EMAIL_RE.test(email.trim()) && password.length >= 6;
 
@@ -51,7 +55,7 @@ export default function SignIn() {
   // So this button is safe for new users, not just returning ones — it can't skip
   // the age gate, which is what keeps COPPA intact.
   const handleGoogle = async () => {
-    if (submitting || googling) return;
+    if (busy) return;
     setGoogling(true);
     setError(null);
     try {
@@ -67,8 +71,26 @@ export default function SignIn() {
     }
   };
 
+  // Same contract as Google: authenticates only, so a brand-new Apple ID lands
+  // profile-less and the boot redirect sends it through the age gate.
+  const handleApple = async () => {
+    if (busy) return;
+    setAppling(true);
+    setError(null);
+    try {
+      await api.signInWithApple();
+      router.replace('/' as Href);
+    } catch (e: any) {
+      if (e?.message !== 'APPLE_CANCELLED') {
+        setError(e?.message ?? 'Could not sign in with Apple. Try again.');
+      }
+    } finally {
+      setAppling(false);
+    }
+  };
+
   const handleSignIn = async () => {
-    if (!valid || submitting) return;
+    if (!valid || busy) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -153,7 +175,7 @@ export default function SignIn() {
           </View>
 
           <View style={styles.footer}>
-            <PrimaryButton label="Sign in" onPress={handleSignIn} loading={submitting} disabled={!valid || googling} />
+            <PrimaryButton label="Sign in" onPress={handleSignIn} loading={submitting} disabled={!valid || googling || appling} />
 
             <View style={styles.divider}>
               <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
@@ -161,11 +183,15 @@ export default function SignIn() {
               <View style={[styles.dividerLine, { backgroundColor: t.textTer }]} />
             </View>
 
+            {/* Apple first: Guideline 4.8 wants it at least as prominent as Google. */}
+            {appleAvailable ? (
+              <AppleButton type="signIn" onPress={handleApple} loading={appling} disabled={submitting || googling} />
+            ) : null}
             <GoogleButton
               label="Sign in with Google"
               onPress={handleGoogle}
               loading={googling}
-              disabled={submitting}
+              disabled={submitting || appling}
             />
             <Pressable
               onPress={() => router.replace('/(onboarding)/welcome' as Href)}
