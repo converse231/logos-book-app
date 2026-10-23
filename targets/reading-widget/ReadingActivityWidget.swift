@@ -2,9 +2,9 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
-// The Live Activity UI — Lock Screen banner + Dynamic Island. This file (and a
-// copy of ReadingActivityAttributes.swift) belong to a WIDGET EXTENSION target,
-// NOT the app target. See modules/reading-activity/README.md for adding it.
+// The Live Activity UI — Lock Screen banner + Dynamic Island. Compiled into the
+// ReadingWidget extension that @bacons/apple-targets generates from this folder
+// (targets/reading-widget/), not into the app.
 //
 // The timer ticks entirely on the OS via `Text(timerInterval:)` — no JS, no push.
 

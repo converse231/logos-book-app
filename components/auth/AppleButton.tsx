@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import Constants from 'expo-constants';
 import { useTheme } from '@/theme/ThemeContext';
 import { RADIUS } from '@/theme/tokens';
 
@@ -12,12 +13,17 @@ interface AppleButtonProps {
   type?: 'continue' | 'signIn';
 }
 
+// A free-Apple-ID build (app.config.js, QUIRE_FREE_SIGNING) has no Sign in with
+// Apple entitlement: the sheet would open and then fail. Hide it there.
+const isFreeSigned = Constants.expoConfig?.extra?.freeSigning === true;
+
 /** True on an iOS device that can show the Apple sheet; false everywhere else
- *  (Android, web), so callers render nothing rather than a dead button. */
+ *  (Android, web, free-signed builds), so callers render nothing rather than a
+ *  dead button. */
 export function useAppleAuthAvailable(): boolean {
   const [available, setAvailable] = useState(false);
   useEffect(() => {
-    if (Platform.OS !== 'ios') return;
+    if (Platform.OS !== 'ios' || isFreeSigned) return;
     AppleAuthentication.isAvailableAsync()
       .then(setAvailable)
       .catch((e) => {

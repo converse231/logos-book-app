@@ -1,9 +1,11 @@
 import ActivityKit
 import Foundation
 
-// The shared shape of the Live Activity. This SAME file must be a member of BOTH
-// targets: the app (so the module can request/update it) and the Widget Extension
-// (so the widget can render it). See README.md.
+// The shared shape of the Live Activity. TWO identical copies exist, and they
+// must stay identical: modules/reading-activity/ios/ (the app, which requests
+// and updates the activity) and targets/reading-widget/ (the widget, which
+// renders it). ActivityKit matches them by type name and Codable shape — a field
+// added to one copy only means the widget silently stops rendering.
 //
 // Elapsed time is derived on the native side from `startedAt`, so the widget can
 // use SwiftUI `Text(timerInterval:)` and tick on its own with no JS or push.

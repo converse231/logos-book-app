@@ -4,12 +4,32 @@
 //   • Android → adds the foreground-service permissions and declares the
 //               ReadingTimerService with a foregroundServiceType.
 //
-// The iOS WIDGET EXTENSION target itself is not added here (that's an Xcode
-// target — see modules/reading-activity/README.md). This plugin only wires the
-// parts that are safe and declarative. It is a no-op for the JS bundle / Expo Go;
-// its effects apply only during `expo prebuild` / an EAS build.
+// The iOS WIDGET EXTENSION target itself comes from @bacons/apple-targets
+// (targets/reading-widget/). This plugin only wires the parts that are safe and
+// declarative, plus a guard that the two copies of the activity's attributes
+// still match. It is a no-op for the JS bundle / Expo Go; its effects apply only
+// during `expo prebuild` / an EAS build.
 
+const fs = require('fs');
+const path = require('path');
 const { withInfoPlist, withAndroidManifest } = require('expo/config-plugins');
+
+// ActivityKit pairs the app's and the widget's ReadingActivityAttributes by type
+// name and Codable shape. Two copies drifting apart compiles cleanly and fails
+// only on a phone, as a Live Activity that never appears — so fail the prebuild.
+const ATTRIBUTES = [
+  'modules/reading-activity/ios/ReadingActivityAttributes.swift',
+  'targets/reading-widget/ReadingActivityAttributes.swift',
+];
+function assertAttributesInSync(projectRoot) {
+  const [a, b] = ATTRIBUTES.map((f) => fs.readFileSync(path.join(projectRoot, f), 'utf8'));
+  if (a !== b) {
+    throw new Error(
+      `[withReadingActivity] ${ATTRIBUTES[0]} and ${ATTRIBUTES[1]} differ. ` +
+        'They must be byte-identical or the Live Activity will not render.'
+    );
+  }
+}
 
 const SERVICE_NAME = 'expo.modules.readingactivity.ReadingTimerService';
 const ANDROID_PERMISSIONS = [
@@ -20,6 +40,7 @@ const ANDROID_PERMISSIONS = [
 
 function withIos(config) {
   return withInfoPlist(config, (cfg) => {
+    assertAttributesInSync(cfg.modRequest.projectRoot);
     cfg.modResults.NSSupportsLiveActivities = true;
     return cfg;
   });

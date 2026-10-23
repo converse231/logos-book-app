@@ -26,6 +26,9 @@ Notifications.setNotificationHandler({
 
 // Running inside Expo Go? Remote push isn't available there, so skip registration.
 const isExpoGo = Constants.appOwnership === 'expo';
+// A free-Apple-ID build (app.config.js) is signed without aps-environment, so
+// asking APNs for a token can only fail.
+const isFreeSigned = Constants.expoConfig?.extra?.freeSigning === true;
 
 function getProjectId(): string | undefined {
   return (
@@ -48,7 +51,7 @@ export async function registerForPushNotifications(
   { prompt = true }: { prompt?: boolean } = {}
 ): Promise<string | null> {
   try {
-    if (isExpoGo || !Device.isDevice) return null; // no push in Expo Go / on simulators
+    if (isExpoGo || isFreeSigned || !Device.isDevice) return null; // no push in Expo Go / free builds / simulators
 
     const existing = await Notifications.getPermissionsAsync();
     let status = existing.status;
@@ -75,7 +78,8 @@ export async function registerForPushNotifications(
     const token = tokenRes.data;
     if (token) await api.registerPushToken(token);
     return token ?? null;
-  } catch {
+  } catch (e) {
+    console.warn('[push] registration failed', e);
     return null; // never let push registration break a flow
   }
 }

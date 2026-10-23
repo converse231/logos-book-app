@@ -13,36 +13,42 @@ through `lib/liveActivity.ts`; this module is what those calls resolve to on a b
 ## Status
 
 - ✅ **JS surface** (`index.ts`) — safe no-op in Expo Go (`requireOptionalNativeModule`).
-- ✅ **Android** — module + `ReadingTimerService` (foreground service). Compile-ready.
-- ✅ **iOS module** (`ReadingActivityModule.swift`) — ActivityKit start/update/end. Compile-ready.
-- ⚠️ **iOS widget UI** — `ios/widget/*.swift` needs a **Widget Extension target** (below).
-- ✅ **Config plugin** (`plugins/withReadingActivity.js`) — Info.plist + Android manifest.
+- ✅ **Android** — module + `ReadingTimerService` (foreground service).
+- ✅ **iOS module** (`ios/ReadingActivityModule.swift`) — ActivityKit start/update/end.
+- ✅ **iOS widget** — `targets/reading-widget/` (Lock Screen + Dynamic Island UI), turned
+  into a `ReadingWidget` Widget Extension target by **`@bacons/apple-targets`** at prebuild.
+- ✅ **Config plugin** (`plugins/withReadingActivity.js`) — Info.plist `NSSupportsLiveActivities`,
+  Android manifest, and a prebuild guard that the two `ReadingActivityAttributes.swift`
+  copies are byte-identical.
 
-Nothing here runs in Expo Go. It activates on an **EAS dev/preview build** (`eas build`)
-or after `npx expo prebuild`.
+Nothing here runs in Expo Go. It activates in a dev/standalone build
+(`npx expo run:ios --device`, or `eas build`).
 
-## The one manual step: the iOS Widget Extension target
+## How the iOS widget is wired
 
-A Live Activity's UI must live in a **Widget Extension** target (a separate binary),
-which is an Xcode-target change config plugins don't do cleanly by hand. Two options:
+`ios/` is generated — **never add or edit the target in Xcode**; a `--clean` prebuild
+throws that away. The widget lives in `targets/reading-widget/`:
 
-**Option A — `@bacons/apple-targets` (recommended, declarative):**
-1. `npx expo install @bacons/apple-targets`
-2. Add `"@bacons/apple-targets"` to `app.json` → `plugins`.
-3. Create `targets/reading-widget/expo-target.config.js`:
-   ```js
-   module.exports = { type: 'widget', name: 'ReadingWidget', deploymentTarget: '16.2' };
-   ```
-4. Move `ios/widget/ReadingActivityWidget.swift` + `ReadingWidgetBundle.swift` and a
-   **copy** of `ReadingActivityAttributes.swift` into `targets/reading-widget/`.
-5. `npx expo prebuild -p ios` → the target is generated.
+- `expo-target.config.js` — `type: 'widget'`, deployment target 16.4.
+- `ReadingWidgetBundle.swift` (`@main`) + `ReadingActivityWidget.swift` — the UI.
+- `ReadingActivityAttributes.swift` — a **copy** of `ios/ReadingActivityAttributes.swift`.
+  ActivityKit pairs the app's and widget's copies by type name + Codable shape, so edit
+  both together; prebuild fails if they differ.
 
-**Option B — manual Xcode target:**
-1. Open the prebuilt `ios/*.xcworkspace`.
-2. File → New → Target → **Widget Extension** (check *Include Live Activity*), name it `ReadingWidget`.
-3. Replace its generated files with `ios/widget/ReadingActivityWidget.swift` +
-   `ReadingWidgetBundle.swift`.
-4. Add `ReadingActivityAttributes.swift` to **both** target memberships (app + widget).
+After changing anything in `targets/` or `app.json`: `npx expo prebuild -p ios --clean`.
+
+## Free Apple ID (no paid developer account)
+
+A Personal Team can sign the app and this widget, but not Sign in with Apple or push.
+`QUIRE_FREE_SIGNING=1` (see `app.config.js`) strips those two entitlements from local
+builds only:
+
+```bash
+QUIRE_FREE_SIGNING=1 npx expo prebuild -p ios --clean
+QUIRE_FREE_SIGNING=1 npx expo run:ios --device
+```
+
+Free-signed builds expire after 7 days — re-run `run:ios --device` to refresh.
 
 ## Verify on a build
 
