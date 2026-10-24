@@ -8,7 +8,7 @@
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.quire.app",
       "config": {
         "usesNonExemptEncryption": false
@@ -44,7 +44,7 @@
         "expo-media-library",
         {
           "savePhotosPermission": "Quire saves your reading share cards to your photo library so you can post them.",
-          "photosPermission": "Quire saves your reading share cards to your photo library so you can post them.",
+          "photosPermission": "Quire uses your photos so you can choose a profile picture, and saves your reading share cards to your photo library.",
           "isAccessMediaLocationEnabled": false,
           "granularPermissions": []
         }
@@ -55,13 +55,15 @@
         "expo-camera",
         {
           "cameraPermission": "Quire uses the camera to scan a book's barcode so you can add it to your shelf instantly.",
+          "microphonePermission": false,
           "recordAudioAndroid": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Quire uses your photos so you can set a profile picture.",
+          "photosPermission": "Quire uses your photos so you can choose a profile picture, and saves your reading share cards to your photo library.",
+          "cameraPermission": "Quire uses the camera to scan a book's barcode so you can add it to your shelf instantly.",
           "microphonePermission": false
         }
       ],
