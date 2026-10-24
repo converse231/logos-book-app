@@ -22,6 +22,7 @@ import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { AppleButton, useAppleAuthAvailable } from '@/components/auth/AppleButton';
 import { KeyboardLift } from '@/components/shared/KeyboardLift';
+import { openPrivacyPolicy } from '@/lib/legal';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -391,6 +392,22 @@ export default function Account() {
               </Pressable>
             </>
           ) : null}
+
+          {/* Shown whichever way the account is made — this is the step where a
+              reader hands over an email, so it is where the policy belongs. */}
+          <Pressable
+            onPress={openPrivacyPolicy}
+            hitSlop={8}
+            accessibilityRole="link"
+            accessibilityLabel="Read the privacy policy"
+            accessibilityHint="Opens in your browser"
+            style={styles.privacyLink}
+          >
+            <Text style={[styles.privacyText, { color: t.textTer }]}>
+              How we handle your data:{' '}
+              <Text style={{ color: t.accentText, fontFamily: FONTS.uiBold }}>Privacy policy</Text>
+            </Text>
+          </Pressable>
         </View>
       </OnboardingScaffold>
     </KeyboardLift>
@@ -444,6 +461,8 @@ const styles = StyleSheet.create({
   dividerText: { fontFamily: FONTS.mono, fontSize: 11, letterSpacing: 1.4 },
   signInLink: { alignItems: 'center', paddingVertical: 2 },
   signInText: { fontFamily: FONTS.uiRegular, fontSize: 14 },
+  privacyLink: { alignItems: 'center', paddingVertical: 2 },
+  privacyText: { fontFamily: FONTS.uiRegular, fontSize: 13 },
   field: { gap: 10 },
   label: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2 },
   input: {

@@ -24,6 +24,7 @@ import { useApi } from '@/services/ApiContext';
 import { useAppStore } from '@/stores/appStore';
 import { NotificationSettings, ThemePref, UserProfile } from '@/services/types';
 import { registerForPushNotifications } from '@/lib/notifications';
+import { openPrivacyPolicy } from '@/lib/legal';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { Card } from '@/components/shared/Card';
 import { PrimaryButton } from '@/components/onboarding/PrimaryButton';
@@ -415,6 +416,17 @@ export default function Settings() {
                 <Ionicons name="chevron-forward" size={18} color={t.textTer} />
               </Pressable>
             ) : null}
+            <Pressable
+              onPress={openPrivacyPolicy}
+              accessibilityRole="link"
+              accessibilityLabel="Privacy policy"
+              accessibilityHint="Opens in your browser"
+              style={({ pressed }) => [styles.menuRow, { borderBottomColor: t.border }, pressed && { opacity: 0.7 }]}
+            >
+              <AppIcon name="reader" tint="muted" size={20} color={t.textSec} />
+              <Text style={[styles.menuLabel, { color: t.text }]}>Privacy policy</Text>
+              <Ionicons name="open-outline" size={17} color={t.textTer} />
+            </Pressable>
             <Pressable
               onPress={exportData}
               disabled={!!busy}
