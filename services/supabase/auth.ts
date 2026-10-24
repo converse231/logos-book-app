@@ -252,6 +252,19 @@ export const authApi: Partial<QuireApi> = {
       });
       if (error) throw error;
       session = data.session;
+
+      // Keep Apple's refresh token server-side so delete_account can revoke it
+      // (Guideline 5.1.1(v)). Not awaited: it must never slow or fail a sign-in,
+      // and the code is good for five minutes. Expo Go's codes are issued to
+      // Expo Go's bundle id, so there the function answers stored:false.
+      if (credential.authorizationCode) {
+        supabase.functions
+          .invoke('apple_token', { body: { authorizationCode: credential.authorizationCode } })
+          .then(({ data: res, error: fnErr }) => {
+            if (fnErr || !res?.stored) console.warn('[signInWithApple] Apple token not stored', fnErr ?? res?.reason);
+          })
+          .catch((e) => console.warn('[signInWithApple] Apple token not stored', e));
+      }
     }
 
     const userId = session?.user.id;

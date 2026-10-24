@@ -40,7 +40,7 @@
 
   <h1>Privacy Policy</h1>
   <p class="sub">Quire — a reading tracker.</p>
-  <p class="updated">Last updated 6 August 2026</p>
+  <p class="updated">Last updated 24 October 2026</p>
 
   <p>This policy explains what Quire collects, why, who it is shared with, and how to
   get rid of it. It covers the Quire mobile app and its backend.</p>
@@ -114,8 +114,9 @@
       <tr><td><strong>PostHog</strong> — product analytics</td><td>Your account identifier and the usage events described above.</td></tr>
       <tr><td><strong>Google Books API</strong> and <strong>Open Library</strong> — book catalogue</td><td>The words you type when searching for a book. No account identifier is sent.</td></tr>
       <tr><td><strong>Anthropic</strong> — AI book recommendations</td><td>Only when you use the mood recommender: the mood you describe, your genre preferences, and the titles of a few books you've read recently. No name or email is sent.</td></tr>
-      <tr><td><strong>Expo push service</strong> and <strong>Google Firebase Cloud Messaging</strong></td><td>Your notification token and the text of notifications, only if you enable them.</td></tr>
+      <tr><td><strong>Expo push service</strong>, <strong>Google Firebase Cloud Messaging</strong> (Android) and <strong>Apple Push Notification service</strong> (iPhone)</td><td>Your notification token and the text of notifications, only if you enable them.</td></tr>
       <tr><td><strong>Google</strong> — if you sign in with Google</td><td>Standard sign-in. Google gives us your email address and basic profile; we don't get access to anything else in your Google account.</td></tr>
+      <tr><td><strong>Apple</strong> — if you sign in with Apple</td><td>Standard sign-in. Apple gives us an identifier for your Apple ID, your email address (or a private relay address, if you choose “Hide My Email”) and, the first time only, your name. We also keep a token from Apple solely so that we can revoke Quire's access to your Apple ID when you delete your account.</td></tr>
     </tbody>
   </table>
 
@@ -137,7 +138,8 @@
 
   <h3>Delete your account</h3>
   <p><strong>Settings → Account → Delete account</strong> permanently deletes your
-  account and all associated data — sessions, books, reviews, stats and profile. This
+  account and all associated data — sessions, books, reviews, stats and profile. If you
+  signed in with Apple, we also revoke Quire's access to your Apple ID. This
   cannot be undone. If you can't access the app, email
   <a href="mailto:danielparagas5@gmail.com">danielparagas5@gmail.com</a> from your
   account's email address and we'll do it for you.</p>

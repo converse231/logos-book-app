@@ -7,11 +7,19 @@
 // tears down the entire account (books-shelf, sessions, reviews, streaks, …) in
 // one shot. Reviews keep their book_id but lose user_book_id (set null).
 //
+// Sign in with Apple (Guideline 5.1.1(v)): if the reader ever signed in with
+// Apple, their Apple refresh token (stored by apple_token) is revoked with Apple
+// before the account goes, which also removes Quire from their Apple ID's
+// "Sign in with Apple" list. Best-effort: Apple being unreachable is logged but
+// never blocks the deletion — a reader must always be able to delete.
+//
 // Deploy: supabase functions deploy delete_account
-// (SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY auto-injected.)
+// (SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY auto-injected;
+// Apple secrets optional, see ../_shared/apple.ts.)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { appleConfig, revokeRefreshToken } from '../_shared/apple.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -48,6 +56,29 @@ Deno.serve(async (req) => {
       .from('avatars')
       .remove(files.map((f) => `${user.id}/${f.name}`));
     if (rmErr) return json({ error: `Could not clear your files: ${rmErr.message}` }, 500);
+  }
+
+  // Revoke Apple BEFORE deleting: the token row cascades away with the user.
+  const { data: apple, error: appleErr } = await admin
+    .from('apple_refresh_tokens')
+    .select('refresh_token, client_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (appleErr) console.warn('[delete_account] could not read Apple token', appleErr.message);
+  if (apple) {
+    const cfg = appleConfig();
+    if (!cfg) {
+      console.warn('[delete_account] Apple token present but Apple secrets not set — not revoked');
+    } else {
+      try {
+        await revokeRefreshToken(cfg, apple.refresh_token, apple.client_id);
+      } catch (e) {
+        console.warn('[delete_account] Apple revoke failed', e instanceof Error ? e.message : e);
+      }
+    }
+  } else if (user.identities?.some((i) => i.provider === 'apple')) {
+    // Signed in with Apple but nothing stored (Expo Go, or before secrets were set).
+    console.warn('[delete_account] Apple account with no stored token — nothing to revoke');
   }
 
   // Service-role delete of the auth user → cascades the whole account.
