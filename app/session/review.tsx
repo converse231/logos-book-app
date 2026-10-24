@@ -26,6 +26,7 @@ import { sendOrQueue } from '@/lib/sessionQueue';
 import { clearActiveSession } from '@/lib/activeSession';
 import { ScreenBackground } from '@/components/shared/ScreenBackground';
 import { PressBlock } from '@/components/shared/PressBlock';
+import { KeyboardLift } from '@/components/shared/KeyboardLift';
 
 // Session Review — the step between finishing and celebrating.
 //
@@ -228,7 +229,10 @@ export default function SessionReview() {
 
   return (
     <ScreenBackground>
-      <View style={[styles.root, { paddingTop: insets.top + 6 }]}>
+      {/* KeyboardLift, not a plain View: "End page" autofocuses, so the number pad
+          is up the moment this screen opens — and it used to cover SAVE SESSION,
+          leaving the reader to find a way to dismiss it before they could save. */}
+      <KeyboardLift style={[styles.root, { paddingTop: insets.top + 6 }]}>
         <View style={styles.header}>
           <Pressable
             onPress={() => router.back()}
@@ -364,7 +368,7 @@ export default function SessionReview() {
             <Text style={[styles.discardText, { color: t.danger }]}>Discard</Text>
           </Pressable>
         </View>
-      </View>
+      </KeyboardLift>
     </ScreenBackground>
   );
 }
